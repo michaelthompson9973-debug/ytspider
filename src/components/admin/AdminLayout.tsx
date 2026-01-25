@@ -12,6 +12,9 @@ import {
   Menu,
   X,
   LogOut,
+  Activity,
+  Bell,
+  Globe,
 } from 'lucide-react';
 
 const navItems = [
@@ -20,6 +23,9 @@ const navItems = [
   { href: '/admin/pages', label: 'Landing Pages', icon: FileText },
   { href: '/admin/orders', label: 'Orders', icon: ShoppingCart },
   { href: '/admin/media', label: 'Media', icon: Image },
+  { href: '/admin/tracking', label: 'Tracking', icon: Activity },
+  { href: '/admin/webhooks', label: 'Webhooks', icon: Bell },
+  { href: '/admin/domains', label: 'Domains', icon: Globe },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
