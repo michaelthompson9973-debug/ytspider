@@ -85,21 +85,25 @@ export default function LandingPages() {
 
   const saveMutation = useMutation({
     mutationFn: async (data: PageForm) => {
-      const payload = {
-        ...data,
-        gtm_id: data.gtm_id || null,
-        product_id: data.product_id || null,
-      };
-      
       if (editingId) {
         const { error } = await supabase
           .from('landing_pages')
-          .update(payload)
+          .update({
+            slug: data.slug,
+            product_id: data.product_id || null,
+            gtm_id: data.gtm_id || null,
+            published: data.published,
+            html_content: data.html_content,
+          })
           .eq('id', editingId);
         if (error) throw error;
       } else {
         const { error } = await supabase.from('landing_pages').insert([{
-          ...payload,
+          slug: data.slug,
+          product_id: data.product_id || null,
+          gtm_id: data.gtm_id || null,
+          published: data.published,
+          html_content: data.html_content,
           created_by: user?.id,
         }]);
         if (error) throw error;
