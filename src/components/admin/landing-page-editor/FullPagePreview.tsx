@@ -2,6 +2,7 @@ import { useRef, useState, forwardRef } from 'react';
 import { Monitor, Smartphone, Copy, Check, Layers } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Section, ThemeConfig } from './types';
+import { generateFullHTML, generatePreviewHTML } from './themeUtils';
 import { cn } from '@/lib/utils';
 
 interface FullPagePreviewProps {
@@ -11,82 +12,6 @@ interface FullPagePreviewProps {
   showCodeView?: boolean;
 }
 
-function generateThemeCSS(config: ThemeConfig): string {
-  const buttonRadius = config.buttonStyle === 'pill' 
-    ? '9999px' 
-    : config.buttonStyle === 'square' 
-    ? '0' 
-    : config.borderRadius;
-
-  return `
-    :root {
-      --theme-primary: ${config.primaryColor};
-      --theme-bg: ${config.backgroundColor};
-      --theme-font: ${config.fontFamily};
-      --theme-radius: ${config.borderRadius};
-      --theme-btn-radius: ${buttonRadius};
-      --theme-container: ${config.containerWidth};
-    }
-    body {
-      font-family: var(--theme-font);
-      background-color: var(--theme-bg);
-      margin: 0;
-      padding: 0;
-    }
-    .container {
-      max-width: var(--theme-container);
-      margin: 0 auto;
-    }
-    a, .text-primary { color: var(--theme-primary); }
-    .bg-primary { background-color: var(--theme-primary); }
-    .border-primary { border-color: var(--theme-primary); }
-    button, .btn, [class*="button"] {
-      border-radius: var(--theme-btn-radius);
-    }
-  `;
-}
-
-function generateFullHTML(sections: Section[], themeConfig: ThemeConfig, gtmId?: string): string {
-  const themeCSS = generateThemeCSS(themeConfig);
-  const sectionsHtml = sections
-    .sort((a, b) => a.sort_order - b.sort_order)
-    .map((s) => s.html)
-    .join('\n');
-
-  const gtmHead = gtmId ? `
-    <!-- Google Tag Manager -->
-    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-    })(window,document,'script','dataLayer','${gtmId}');</script>
-    <!-- End Google Tag Manager -->
-  ` : '';
-
-  const gtmBody = gtmId ? `
-    <!-- Google Tag Manager (noscript) -->
-    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=${gtmId}"
-    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
-    <!-- End Google Tag Manager (noscript) -->
-  ` : '';
-
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Landing Page</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>${themeCSS}</style>
-  ${gtmHead}
-</head>
-<body>
-  ${gtmBody}
-  ${sectionsHtml}
-</body>
-</html>`;
-}
-
 export const FullPagePreview = forwardRef<HTMLDivElement, FullPagePreviewProps>(
   function FullPagePreview({ sections, themeConfig, gtmId, showCodeView = false }, ref) {
     const [device, setDevice] = useState<'desktop' | 'mobile'>('desktop');
@@ -94,28 +19,19 @@ export const FullPagePreview = forwardRef<HTMLDivElement, FullPagePreviewProps>(
     const [viewMode, setViewMode] = useState<'preview' | 'code'>(showCodeView ? 'code' : 'preview');
     const iframeRef = useRef<HTMLIFrameElement>(null);
 
-    const fullHtml = generateFullHTML(sections, themeConfig, gtmId);
+    // Sort sections by order
+    const sortedSections = [...sections].sort((a, b) => a.sort_order - b.sort_order);
+    const sectionsHtml = sortedSections.map((s) => s.html).join('\n');
+
+    // Generate HTML
+    const fullHtml = generateFullHTML(sectionsHtml, themeConfig, gtmId);
+    const previewHtml = generatePreviewHTML(sectionsHtml, themeConfig);
 
     const handleCopy = async () => {
       await navigator.clipboard.writeText(fullHtml);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     };
-
-    const previewHtml = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <script src="https://cdn.tailwindcss.com"></script>
-        <style>${generateThemeCSS(themeConfig)}</style>
-      </head>
-      <body>
-        ${sections.sort((a, b) => a.sort_order - b.sort_order).map((s) => s.html).join('\n')}
-      </body>
-      </html>
-    `;
 
     if (sections.length === 0) {
       return (

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ThemeConfig, LandingPageTheme, defaultThemeConfig } from './types';
+import { migrateThemeConfig } from './themeUtils';
 import { useToast } from '@/hooks/use-toast';
 import { Json } from '@/integrations/supabase/types';
 
@@ -19,9 +20,14 @@ export function useTheme(landingPageId: string | null) {
         .maybeSingle();
       if (error) throw error;
       if (!data) return null;
+      
+      // Migrate old config format to new format
+      const rawConfig = data.config as Record<string, unknown>;
+      const migratedConfig = migrateThemeConfig(rawConfig as Partial<ThemeConfig>);
+      
       return {
         ...data,
-        config: data.config as unknown as ThemeConfig,
+        config: migratedConfig,
       } as LandingPageTheme;
     },
     enabled: !!landingPageId,

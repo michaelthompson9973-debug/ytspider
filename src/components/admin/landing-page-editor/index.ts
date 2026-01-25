@@ -10,3 +10,4 @@ export { DeleteConfirmDialog } from './DeleteConfirmDialog';
 export { useSections } from './useSections';
 export { useTheme } from './useTheme';
 export * from './types';
+export * from './themeUtils';
