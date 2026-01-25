@@ -22,17 +22,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Pencil, Trash2, Copy, ExternalLink, Eye } from 'lucide-react';
+import { Plus, Pencil, Trash2, Copy, ExternalLink, Layers } from 'lucide-react';
 import { z } from 'zod';
+import { SectionBuilder } from '@/components/admin/landing-page-editor';
 
 const pageSchema = z.object({
   slug: z.string().min(1, 'Slug is required').max(100).regex(/^[a-z0-9-]+$/, 'Slug must be lowercase alphanumeric with dashes'),
   product_id: z.string().nullable(),
   gtm_id: z.string().max(50).optional(),
   published: z.boolean(),
-  html_content: z.string(),
 });
 
 type PageForm = z.infer<typeof pageSchema>;
@@ -42,15 +41,27 @@ const defaultForm: PageForm = {
   product_id: null,
   gtm_id: '',
   published: false,
-  html_content: '<section class="py-12 px-4">\n  <div class="max-w-4xl mx-auto">\n    <h1 class="text-3xl font-bold mb-4">Your Landing Page</h1>\n    <p>Start editing this content...</p>\n  </div>\n</section>',
 };
+
+interface LandingPage {
+  id: string;
+  slug: string;
+  product_id: string | null;
+  gtm_id: string | null;
+  published: boolean;
+  html_content: string;
+  created_at: string;
+  updated_at: string;
+  created_by: string | null;
+  products: { name: string } | null;
+}
 
 export default function LandingPages() {
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile'>('desktop');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<PageForm>(defaultForm);
+  const [builderPageId, setBuilderPageId] = useState<string | null>(null);
+  const [builderGtmId, setBuilderGtmId] = useState<string | undefined>();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { user } = useAuth();
@@ -66,7 +77,7 @@ export default function LandingPages() {
         `)
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return data;
+      return data as LandingPage[];
     },
   });
 
@@ -93,7 +104,6 @@ export default function LandingPages() {
             product_id: data.product_id || null,
             gtm_id: data.gtm_id || null,
             published: data.published,
-            html_content: data.html_content,
           })
           .eq('id', editingId);
         if (error) throw error;
@@ -103,7 +113,7 @@ export default function LandingPages() {
           product_id: data.product_id || null,
           gtm_id: data.gtm_id || null,
           published: data.published,
-          html_content: data.html_content,
+          html_content: '', // Legacy field, sections are now used
           created_by: user?.id,
         }]);
         if (error) throw error;
@@ -135,20 +145,56 @@ export default function LandingPages() {
   });
 
   const duplicateMutation = useMutation({
-    mutationFn: async (page: NonNullable<typeof pages>[number]) => {
-      const { error } = await supabase.from('landing_pages').insert({
-        slug: `${page.slug}-copy-${Date.now()}`,
-        product_id: page.product_id,
-        gtm_id: page.gtm_id,
-        published: false,
-        html_content: page.html_content,
-        created_by: user?.id,
-      });
-      if (error) throw error;
+    mutationFn: async (page: LandingPage) => {
+      // Create the new page
+      const { data: newPage, error: pageError } = await supabase
+        .from('landing_pages')
+        .insert({
+          slug: `${page.slug}-copy-${Date.now()}`,
+          product_id: page.product_id,
+          gtm_id: page.gtm_id,
+          published: false,
+          html_content: page.html_content,
+          created_by: user?.id,
+        })
+        .select()
+        .single();
+      if (pageError) throw pageError;
+
+      // Duplicate sections
+      const { data: sections } = await supabase
+        .from('landing_page_sections')
+        .select('*')
+        .eq('landing_page_id', page.id)
+        .order('sort_order');
+
+      if (sections && sections.length > 0) {
+        const newSections = sections.map((s) => ({
+          landing_page_id: newPage.id,
+          name: s.name,
+          html: s.html,
+          sort_order: s.sort_order,
+        }));
+        await supabase.from('landing_page_sections').insert(newSections);
+      }
+
+      // Duplicate theme
+      const { data: theme } = await supabase
+        .from('landing_page_theme')
+        .select('*')
+        .eq('landing_page_id', page.id)
+        .maybeSingle();
+
+      if (theme) {
+        await supabase.from('landing_page_theme').insert({
+          landing_page_id: newPage.id,
+          config: theme.config,
+        });
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['landing-pages'] });
-      toast({ title: 'Page duplicated' });
+      toast({ title: 'Page duplicated with sections and theme' });
     },
     onError: (error) => {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
@@ -160,16 +206,20 @@ export default function LandingPages() {
     setEditingId(null);
   };
 
-  const openEdit = (page: NonNullable<typeof pages>[number]) => {
+  const openEdit = (page: LandingPage) => {
     setForm({
       slug: page.slug,
       product_id: page.product_id,
       gtm_id: page.gtm_id ?? '',
       published: page.published,
-      html_content: page.html_content,
     });
     setEditingId(page.id);
     setDialogOpen(true);
+  };
+
+  const openBuilder = (page: LandingPage) => {
+    setBuilderPageId(page.id);
+    setBuilderGtmId(page.gtm_id ?? undefined);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -185,6 +235,19 @@ export default function LandingPages() {
     }
     saveMutation.mutate(form);
   };
+
+  // If we're in builder mode, show the section builder
+  if (builderPageId) {
+    return (
+      <AdminLayout>
+        <SectionBuilder
+          landingPageId={builderPageId}
+          gtmId={builderGtmId}
+          onBack={() => setBuilderPageId(null)}
+        />
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>
@@ -249,7 +312,16 @@ export default function LandingPages() {
                           <Button
                             variant="ghost"
                             size="sm"
+                            onClick={() => openBuilder(page)}
+                            title="Edit Sections"
+                          >
+                            <Layers className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             onClick={() => openEdit(page)}
+                            title="Page Settings"
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
@@ -278,103 +350,58 @@ export default function LandingPages() {
         </Card>
 
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle>{editingId ? 'Edit Landing Page' : 'New Landing Page'}</DialogTitle>
+              <DialogTitle>{editingId ? 'Edit Page Settings' : 'New Landing Page'}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="slug">Slug (URL path)</Label>
-                  <Input
-                    id="slug"
-                    placeholder="my-product-page"
-                    value={form.slug}
-                    onChange={(e) => setForm({ ...form, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="product">Product</Label>
-                  <Select
-                    value={form.product_id ?? 'none'}
-                    onValueChange={(val) => setForm({ ...form, product_id: val === 'none' ? null : val })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a product" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">No product</SelectItem>
-                      {products?.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="slug">Slug (URL path)</Label>
+                <Input
+                  id="slug"
+                  placeholder="my-product-page"
+                  value={form.slug}
+                  onChange={(e) => setForm({ ...form, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })}
+                  required
+                />
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="gtm">GTM Container ID</Label>
-                  <Input
-                    id="gtm"
-                    placeholder="GTM-XXXXXXX"
-                    value={form.gtm_id}
-                    onChange={(e) => setForm({ ...form, gtm_id: e.target.value })}
-                  />
-                </div>
-                <div className="flex items-center gap-2 pt-6">
-                  <Switch
-                    id="published"
-                    checked={form.published}
-                    onCheckedChange={(checked) => setForm({ ...form, published: checked })}
-                  />
-                  <Label htmlFor="published">Published</Label>
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="product">Product</Label>
+                <Select
+                  value={form.product_id ?? 'none'}
+                  onValueChange={(val) => setForm({ ...form, product_id: val === 'none' ? null : val })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a product" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No product</SelectItem>
+                    {products?.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
-              <Tabs defaultValue="editor" className="w-full">
-                <div className="flex items-center justify-between">
-                  <TabsList>
-                    <TabsTrigger value="editor">HTML Editor</TabsTrigger>
-                    <TabsTrigger value="preview">Preview</TabsTrigger>
-                  </TabsList>
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant={previewDevice === 'desktop' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setPreviewDevice('desktop')}
-                    >
-                      Desktop
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={previewDevice === 'mobile' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setPreviewDevice('mobile')}
-                    >
-                      Mobile
-                    </Button>
-                  </div>
-                </div>
-                <TabsContent value="editor" className="mt-2">
-                  <textarea
-                    className="w-full h-80 font-mono text-sm p-4 border rounded-md bg-muted"
-                    value={form.html_content}
-                    onChange={(e) => setForm({ ...form, html_content: e.target.value })}
-                    placeholder="<section>Your HTML content here...</section>"
-                  />
-                </TabsContent>
-                <TabsContent value="preview" className="mt-2">
-                  <div className={`border rounded-md bg-white mx-auto ${previewDevice === 'mobile' ? 'max-w-[375px]' : 'w-full'}`}>
-                    <div
-                      className="p-4"
-                      dangerouslySetInnerHTML={{ __html: form.html_content }}
-                    />
-                  </div>
-                </TabsContent>
-              </Tabs>
+              <div className="space-y-2">
+                <Label htmlFor="gtm">GTM Container ID</Label>
+                <Input
+                  id="gtm"
+                  placeholder="GTM-XXXXXXX"
+                  value={form.gtm_id}
+                  onChange={(e) => setForm({ ...form, gtm_id: e.target.value })}
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="published"
+                  checked={form.published}
+                  onCheckedChange={(checked) => setForm({ ...form, published: checked })}
+                />
+                <Label htmlFor="published">Published</Label>
+              </div>
 
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
