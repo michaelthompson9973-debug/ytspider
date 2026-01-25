@@ -55,41 +55,65 @@ serve(async (req) => {
     }
 
     // Get all active Gemini API keys
-    const { data: apiKeys, error: apiError } = await supabaseAdmin
+    const { data: activeKeys, error: apiError } = await supabaseAdmin
       .from("api_keys")
       .select("*")
       .eq("provider", "gemini")
       .eq("status", "active")
-      .order("usage_count", { ascending: true }); // Use least used key first
+      .order("usage_count", { ascending: true });
 
-    if (apiError || !apiKeys || apiKeys.length === 0) {
-      // Try to get rate_limited keys that might have recovered
-      const { data: rateLimitedKeys } = await supabaseAdmin
-        .from("api_keys")
-        .select("*")
-        .eq("provider", "gemini")
-        .eq("status", "rate_limited")
-        .lt("rate_limited_until", new Date().toISOString());
+    if (!apiError && activeKeys && activeKeys.length > 0) {
+      return await handleRequest(req, supabaseAdmin, activeKeys, html, instruction);
+    }
 
-      if (rateLimitedKeys && rateLimitedKeys.length > 0) {
-        // Reset these keys to active
-        for (const key of rateLimitedKeys) {
-          await supabaseAdmin
-            .from("api_keys")
-            .update({ status: "active", rate_limited_until: null })
-            .eq("id", key.id);
-        }
-        // Retry with recovered keys
-        return await handleRequest(req, supabaseAdmin, rateLimitedKeys, html, instruction);
+    // Try rate_limited keys that might have recovered
+    const { data: recoveredKeys } = await supabaseAdmin
+      .from("api_keys")
+      .select("*")
+      .eq("provider", "gemini")
+      .eq("status", "rate_limited")
+      .lt("rate_limited_until", new Date().toISOString());
+
+    if (recoveredKeys && recoveredKeys.length > 0) {
+      // Reset these keys to active
+      for (const key of recoveredKeys) {
+        await supabaseAdmin
+          .from("api_keys")
+          .update({ status: "active", rate_limited_until: null })
+          .eq("id", key.id);
       }
+      return await handleRequest(req, supabaseAdmin, recoveredKeys, html, instruction);
+    }
 
+    // Last resort: try any rate_limited keys (they might work now)
+    const { data: rateLimitedKeys } = await supabaseAdmin
+      .from("api_keys")
+      .select("*")
+      .eq("provider", "gemini")
+      .eq("status", "rate_limited")
+      .order("rate_limited_until", { ascending: true });
+
+    if (rateLimitedKeys && rateLimitedKeys.length > 0) {
+      return await handleRequest(req, supabaseAdmin, rateLimitedKeys, html, instruction);
+    }
+
+    // Check if there are any keys at all (including invalid ones)
+    const { data: allKeys } = await supabaseAdmin
+      .from("api_keys")
+      .select("*")
+      .eq("provider", "gemini");
+
+    if (!allKeys || allKeys.length === 0) {
       return new Response(
         JSON.stringify({ error: "No API keys configured. Please add them in API Settings." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    return await handleRequest(req, supabaseAdmin, apiKeys, html, instruction);
+    return new Response(
+      JSON.stringify({ error: "All API keys are invalid. Please add valid keys in API Settings." }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
 
   } catch (error) {
     console.error("Error:", error);
