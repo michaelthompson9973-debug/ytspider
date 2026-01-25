@@ -24,6 +24,7 @@ export const ThemePanel = forwardRef<HTMLDivElement, ThemePanelProps>(
   function ThemePanel({ themeConfig, onSave, isSaving, onChange }, ref) {
     const [config, setConfig] = useState<ThemeConfig>(defaultThemeConfig);
     const [isDirty, setIsDirty] = useState(false);
+    const [fontsLoaded, setFontsLoaded] = useState(false);
 
     useEffect(() => {
       setConfig(themeConfig);
@@ -34,6 +35,8 @@ export const ThemePanel = forwardRef<HTMLDivElement, ThemePanelProps>(
     useEffect(() => {
       const fontsToLoad = [config.headingFont, config.bodyFont, config.buttonFont, config.digitFont];
       const uniqueFonts = [...new Set(fontsToLoad)];
+      
+      setFontsLoaded(false);
       
       uniqueFonts.forEach((fontName) => {
         const fontConfig = availableFonts.find(f => f.value === fontName);
@@ -48,6 +51,16 @@ export const ThemePanel = forwardRef<HTMLDivElement, ThemePanelProps>(
           }
         }
       });
+      
+      // Wait for fonts to load
+      if (document.fonts) {
+        document.fonts.ready.then(() => {
+          setFontsLoaded(true);
+        });
+      } else {
+        // Fallback for browsers that don't support Font Loading API
+        setTimeout(() => setFontsLoaded(true), 1000);
+      }
     }, [config.headingFont, config.bodyFont, config.buttonFont, config.digitFont]);
 
     const updateConfig = (key: keyof ThemeConfig, value: string) => {
@@ -78,7 +91,7 @@ export const ThemePanel = forwardRef<HTMLDivElement, ThemePanelProps>(
       return {
         backgroundColor: config.primaryColor,
         borderRadius: radius,
-        fontFamily: `'${config.buttonFont}', sans-serif`,
+        fontFamily: config.buttonFont,
       };
     };
 
@@ -300,7 +313,7 @@ export const ThemePanel = forwardRef<HTMLDivElement, ThemePanelProps>(
           <h2 
             className="text-xl font-bold"
             style={{ 
-              fontFamily: `'${config.headingFont}', sans-serif`,
+              fontFamily: config.headingFont,
               color: config.primaryColor 
             }}
           >
@@ -308,13 +321,13 @@ export const ThemePanel = forwardRef<HTMLDivElement, ThemePanelProps>(
           </h2>
           <p 
             className="text-sm"
-            style={{ fontFamily: `'${config.bodyFont}', sans-serif` }}
+            style={{ fontFamily: config.bodyFont }}
           >
             এটি একটি প্যারাগ্রাফ টেক্সট যা বডি ফন্ট ব্যবহার করে।
           </p>
           <p 
-            className="text-sm"
-            style={{ fontFamily: `'${config.digitFont}', sans-serif` }}
+            className="text-sm font-digit"
+            style={{ fontFamily: config.digitFont }}
           >
             ডিজিট: ১২৩৪৫৬৭৮৯০ | 1234567890
           </p>
