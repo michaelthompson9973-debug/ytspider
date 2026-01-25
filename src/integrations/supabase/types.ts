@@ -14,27 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
-      api_settings: {
+      api_keys: {
         Row: {
           created_at: string
           id: string
           key_name: string
           key_value: string
+          last_used_at: string | null
+          provider: string
+          rate_limited_until: string | null
+          status: string
           updated_at: string
+          usage_count: number
         }
         Insert: {
           created_at?: string
           id?: string
-          key_name: string
+          key_name?: string
           key_value: string
+          last_used_at?: string | null
+          provider?: string
+          rate_limited_until?: string | null
+          status?: string
           updated_at?: string
+          usage_count?: number
         }
         Update: {
           created_at?: string
           id?: string
           key_name?: string
           key_value?: string
+          last_used_at?: string | null
+          provider?: string
+          rate_limited_until?: string | null
+          status?: string
           updated_at?: string
+          usage_count?: number
         }
         Relationships: []
       }
