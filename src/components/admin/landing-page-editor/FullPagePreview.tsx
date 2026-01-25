@@ -1,7 +1,6 @@
-import { useRef, useState } from 'react';
-import { Monitor, Smartphone, Code, Copy, Check } from 'lucide-react';
+import { useRef, useState, forwardRef } from 'react';
+import { Monitor, Smartphone, Copy, Check, Layers } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Section, ThemeConfig } from './types';
 import { cn } from '@/lib/utils';
 
@@ -9,6 +8,7 @@ interface FullPagePreviewProps {
   sections: Section[];
   themeConfig: ThemeConfig;
   gtmId?: string;
+  showCodeView?: boolean;
 }
 
 function generateThemeCSS(config: ThemeConfig): string {
@@ -30,6 +30,8 @@ function generateThemeCSS(config: ThemeConfig): string {
     body {
       font-family: var(--theme-font);
       background-color: var(--theme-bg);
+      margin: 0;
+      padding: 0;
     }
     .container {
       max-width: var(--theme-container);
@@ -85,103 +87,133 @@ function generateFullHTML(sections: Section[], themeConfig: ThemeConfig, gtmId?:
 </html>`;
 }
 
-export function FullPagePreview({ sections, themeConfig, gtmId }: FullPagePreviewProps) {
-  const [device, setDevice] = useState<'desktop' | 'mobile'>('desktop');
-  const [copied, setCopied] = useState(false);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
+export const FullPagePreview = forwardRef<HTMLDivElement, FullPagePreviewProps>(
+  function FullPagePreview({ sections, themeConfig, gtmId, showCodeView = false }, ref) {
+    const [device, setDevice] = useState<'desktop' | 'mobile'>('desktop');
+    const [copied, setCopied] = useState(false);
+    const [viewMode, setViewMode] = useState<'preview' | 'code'>(showCodeView ? 'code' : 'preview');
+    const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  const fullHtml = generateFullHTML(sections, themeConfig, gtmId);
+    const fullHtml = generateFullHTML(sections, themeConfig, gtmId);
 
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(fullHtml);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+    const handleCopy = async () => {
+      await navigator.clipboard.writeText(fullHtml);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    };
 
-  const previewHtml = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <script src="https://cdn.tailwindcss.com"></script>
-      <style>${generateThemeCSS(themeConfig)}</style>
-    </head>
-    <body>
-      ${sections.sort((a, b) => a.sort_order - b.sort_order).map((s) => s.html).join('\n')}
-    </body>
-    </html>
-  `;
+    const previewHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src="https://cdn.tailwindcss.com"></script>
+        <style>${generateThemeCSS(themeConfig)}</style>
+      </head>
+      <body>
+        ${sections.sort((a, b) => a.sort_order - b.sort_order).map((s) => s.html).join('\n')}
+      </body>
+      </html>
+    `;
 
-  return (
-    <div className="h-full flex flex-col">
-      <Tabs defaultValue="preview" className="flex-1 flex flex-col">
-        <div className="flex items-center justify-between mb-2">
-          <TabsList>
-            <TabsTrigger value="preview">Preview</TabsTrigger>
-            <TabsTrigger value="code">HTML Code</TabsTrigger>
-          </TabsList>
+    if (sections.length === 0) {
+      return (
+        <div ref={ref} className="h-full flex flex-col items-center justify-center text-muted-foreground p-6">
+          <Layers className="h-12 w-12 mb-4 opacity-50" />
+          <p className="text-sm text-center">
+            Add sections to see the preview
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <div ref={ref} className="h-full flex flex-col">
+        {/* Toolbar */}
+        <div className="flex items-center justify-between mb-3 pb-3 border-b">
+          <div className="flex items-center gap-1">
+            <Button
+              variant={viewMode === 'preview' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('preview')}
+            >
+              Preview
+            </Button>
+            <Button
+              variant={viewMode === 'code' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('code')}
+            >
+              HTML
+            </Button>
+          </div>
           
           <div className="flex items-center gap-2">
-            <Button
-              variant={device === 'desktop' ? 'default' : 'outline'}
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => setDevice('desktop')}
-            >
-              <Monitor className="h-4 w-4" />
-            </Button>
-            <Button
-              variant={device === 'mobile' ? 'default' : 'outline'}
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => setDevice('mobile')}
-            >
-              <Smartphone className="h-4 w-4" />
-            </Button>
+            {viewMode === 'preview' && (
+              <>
+                <Button
+                  variant={device === 'desktop' ? 'secondary' : 'ghost'}
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setDevice('desktop')}
+                >
+                  <Monitor className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={device === 'mobile' ? 'secondary' : 'ghost'}
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setDevice('mobile')}
+                >
+                  <Smartphone className="h-4 w-4" />
+                </Button>
+              </>
+            )}
+            {viewMode === 'code' && (
+              <Button size="sm" variant="outline" onClick={handleCopy}>
+                {copied ? (
+                  <>
+                    <Check className="h-4 w-4 mr-1" />
+                    Copied!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-4 w-4 mr-1" />
+                    Copy
+                  </>
+                )}
+              </Button>
+            )}
           </div>
         </div>
 
-        <TabsContent value="preview" className="flex-1 mt-0">
-          <div className="h-full border rounded-md bg-background overflow-hidden">
-            <div
-              className={cn(
-                'h-full mx-auto transition-all duration-300',
-                device === 'mobile' ? 'max-w-[375px]' : 'w-full'
-              )}
-            >
-              <iframe
-                ref={iframeRef}
-                srcDoc={previewHtml}
-                className="w-full h-full border-0"
-                sandbox="allow-scripts"
-                title="Landing Page Preview"
-              />
+        {/* Content */}
+        <div className="flex-1 min-h-0">
+          {viewMode === 'preview' ? (
+            <div className="h-full border rounded-md bg-background overflow-hidden">
+              <div
+                className={cn(
+                  'h-full mx-auto transition-all duration-300',
+                  device === 'mobile' ? 'max-w-[375px] border-x' : 'w-full'
+                )}
+              >
+                <iframe
+                  ref={iframeRef}
+                  srcDoc={previewHtml}
+                  className="w-full h-full border-0"
+                  sandbox="allow-scripts"
+                  title="Landing Page Preview"
+                />
+              </div>
             </div>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="code" className="flex-1 mt-0 flex flex-col">
-          <div className="flex justify-end mb-2">
-            <Button size="sm" variant="outline" onClick={handleCopy}>
-              {copied ? (
-                <>
-                  <Check className="h-4 w-4 mr-1" />
-                  Copied!
-                </>
-              ) : (
-                <>
-                  <Copy className="h-4 w-4 mr-1" />
-                  Copy HTML
-                </>
-              )}
-            </Button>
-          </div>
-          <pre className="flex-1 p-4 text-xs font-mono bg-muted rounded-md overflow-auto whitespace-pre-wrap break-all">
-            {fullHtml}
-          </pre>
-        </TabsContent>
-      </Tabs>
-    </div>
-  );
-}
+          ) : (
+            <pre className="h-full p-4 text-xs font-mono bg-muted rounded-md overflow-auto whitespace-pre-wrap break-all">
+              {fullHtml}
+            </pre>
+          )}
+        </div>
+      </div>
+    );
+  }
+);

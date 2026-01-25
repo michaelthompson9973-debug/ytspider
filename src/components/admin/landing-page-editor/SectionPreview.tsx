@@ -1,4 +1,6 @@
+import { forwardRef } from 'react';
 import { Section, ThemeConfig } from './types';
+import { Layers } from 'lucide-react';
 
 interface SectionPreviewProps {
   sections: Section[];
@@ -31,44 +33,47 @@ function generateThemeCSS(config: ThemeConfig): string {
   `;
 }
 
-export function SectionPreview({
-  sections,
-  previewingSections,
-  themeConfig,
-}: SectionPreviewProps) {
-  const sectionsToPreview = sections
-    .filter((s) => previewingSections.has(s.id))
-    .sort((a, b) => a.sort_order - b.sort_order);
+export const SectionPreview = forwardRef<HTMLDivElement, SectionPreviewProps>(
+  function SectionPreview({ sections, previewingSections, themeConfig }, ref) {
+    const sectionsToPreview = sections
+      .filter((s) => previewingSections.has(s.id))
+      .sort((a, b) => a.sort_order - b.sort_order);
 
-  if (sectionsToPreview.length === 0) {
+    if (sectionsToPreview.length === 0) {
+      return (
+        <div ref={ref} className="h-full flex flex-col items-center justify-center text-muted-foreground p-6">
+          <Layers className="h-12 w-12 mb-4 opacity-50" />
+          <p className="text-sm text-center">
+            Toggle preview on sections to see them here
+          </p>
+        </div>
+      );
+    }
+
+    const previewHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src="https://cdn.tailwindcss.com"></script>
+        <style>${generateThemeCSS(themeConfig)}</style>
+      </head>
+      <body>
+        ${sectionsToPreview.map((s) => s.html).join('\n')}
+      </body>
+      </html>
+    `;
+
     return (
-      <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
-        Toggle preview on sections to see them here
+      <div ref={ref} className="h-full">
+        <iframe
+          srcDoc={previewHtml}
+          className="w-full h-full border-0 rounded-md"
+          sandbox="allow-scripts"
+          title="Section Preview"
+        />
       </div>
     );
   }
-
-  const previewHtml = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <script src="https://cdn.tailwindcss.com"></script>
-      <style>${generateThemeCSS(themeConfig)}</style>
-    </head>
-    <body>
-      ${sectionsToPreview.map((s) => s.html).join('\n')}
-    </body>
-    </html>
-  `;
-
-  return (
-    <iframe
-      srcDoc={previewHtml}
-      className="w-full h-full border-0 rounded-md"
-      sandbox="allow-scripts"
-      title="Section Preview"
-    />
-  );
-}
+);
