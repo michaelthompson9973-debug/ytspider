@@ -52,17 +52,10 @@ serve(async (req) => {
 
     console.log(`Checking API key: ${keyId}`);
 
-    // Test the API key with a minimal request
+    // Ping: Just check if model info is accessible (no content generation)
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${keyValue}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: "Hi" }] }],
-          generationConfig: { maxOutputTokens: 1 }
-        }),
-      }
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash?key=${keyValue}`,
+      { method: "GET" }
     );
 
     let status = "active";
