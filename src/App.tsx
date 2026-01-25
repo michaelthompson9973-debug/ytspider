@@ -11,6 +11,9 @@ import Products from "./pages/admin/Products";
 import LandingPages from "./pages/admin/LandingPages";
 import Orders from "./pages/admin/Orders";
 import Media from "./pages/admin/Media";
+import Tracking from "./pages/admin/Tracking";
+import Webhooks from "./pages/admin/Webhooks";
+import Domains from "./pages/admin/Domains";
 import LandingPage from "./pages/LandingPage";
 import NotFound from "./pages/NotFound";
 
@@ -31,6 +34,9 @@ const App = () => (
             <Route path="/admin/pages" element={<ProtectedRoute requireAdmin><LandingPages /></ProtectedRoute>} />
             <Route path="/admin/orders" element={<ProtectedRoute requireAdmin><Orders /></ProtectedRoute>} />
             <Route path="/admin/media" element={<ProtectedRoute requireAdmin><Media /></ProtectedRoute>} />
+            <Route path="/admin/tracking" element={<ProtectedRoute requireAdmin><Tracking /></ProtectedRoute>} />
+            <Route path="/admin/webhooks" element={<ProtectedRoute requireAdmin><Webhooks /></ProtectedRoute>} />
+            <Route path="/admin/domains" element={<ProtectedRoute requireAdmin><Domains /></ProtectedRoute>} />
             <Route path="/p/:slug" element={<LandingPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
