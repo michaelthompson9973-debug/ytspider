@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
+import { ThemeConfig, defaultThemeConfig } from '@/components/admin/landing-page-editor/types';
 
 declare global {
   interface Window {
@@ -32,6 +33,41 @@ const pushDataLayer = (event: string, data?: Record<string, unknown>) => {
     });
   }
 };
+
+function generateThemeStyles(config: ThemeConfig): string {
+  const buttonRadius = config.buttonStyle === 'pill' 
+    ? '9999px' 
+    : config.buttonStyle === 'square' 
+    ? '0' 
+    : config.borderRadius;
+
+  return `
+    :root {
+      --theme-primary: ${config.primaryColor};
+      --theme-bg: ${config.backgroundColor};
+      --theme-font: ${config.fontFamily};
+      --theme-radius: ${config.borderRadius};
+      --theme-btn-radius: ${buttonRadius};
+      --theme-container: ${config.containerWidth};
+    }
+    body {
+      font-family: var(--theme-font);
+    }
+    .landing-content {
+      background-color: var(--theme-bg);
+    }
+    .landing-content .container {
+      max-width: var(--theme-container);
+      margin: 0 auto;
+    }
+    .landing-content a, .landing-content .text-primary { color: var(--theme-primary); }
+    .landing-content .bg-primary { background-color: var(--theme-primary); }
+    .landing-content .border-primary { border-color: var(--theme-primary); }
+    .landing-content button, .landing-content .btn, .landing-content [class*="button"] {
+      border-radius: var(--theme-btn-radius);
+    }
+  `;
+}
 
 export default function LandingPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -63,6 +99,40 @@ export default function LandingPage() {
       return data;
     },
   });
+
+  // Fetch sections for the landing page
+  const { data: sections = [] } = useQuery({
+    queryKey: ['landing-page-sections', page?.id],
+    queryFn: async () => {
+      if (!page?.id) return [];
+      const { data, error } = await supabase
+        .from('landing_page_sections')
+        .select('*')
+        .eq('landing_page_id', page.id)
+        .order('sort_order', { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!page?.id,
+  });
+
+  // Fetch theme for the landing page
+  const { data: themeData } = useQuery({
+    queryKey: ['landing-page-theme', page?.id],
+    queryFn: async () => {
+      if (!page?.id) return null;
+      const { data, error } = await supabase
+        .from('landing_page_theme')
+        .select('*')
+        .eq('landing_page_id', page.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!page?.id,
+  });
+
+  const themeConfig = (themeData?.config as unknown as ThemeConfig) ?? defaultThemeConfig;
 
   // Inject GTM and fire page_view
   useEffect(() => {
@@ -107,6 +177,24 @@ export default function LandingPage() {
       noscript.remove();
     };
   }, [page?.gtm_id, page?.products, slug]);
+
+  // Inject theme styles
+  useEffect(() => {
+    const styleId = 'landing-theme-styles';
+    let styleEl = document.getElementById(styleId) as HTMLStyleElement | null;
+    
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = styleId;
+      document.head.appendChild(styleEl);
+    }
+    
+    styleEl.textContent = generateThemeStyles(themeConfig);
+
+    return () => {
+      styleEl?.remove();
+    };
+  }, [themeConfig]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -238,10 +326,15 @@ export default function LandingPage() {
     );
   }
 
+  // Determine content to render: sections (new system) or html_content (legacy)
+  const htmlContent = sections.length > 0
+    ? sections.map((s) => s.html).join('\n')
+    : page.html_content;
+
   return (
     <div className="min-h-screen">
-      {/* Render HTML content */}
-      <div dangerouslySetInnerHTML={{ __html: page.html_content }} />
+      {/* Render sections or legacy HTML content */}
+      <div className="landing-content" dangerouslySetInnerHTML={{ __html: htmlContent }} />
 
       {/* Order Form */}
       <section className="py-12 px-4 bg-muted" id="order">

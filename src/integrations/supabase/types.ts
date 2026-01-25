@@ -55,6 +55,73 @@ export type Database = {
           },
         ]
       }
+      landing_page_sections: {
+        Row: {
+          created_at: string
+          html: string
+          id: string
+          landing_page_id: string
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          html?: string
+          id?: string
+          landing_page_id: string
+          name?: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          html?: string
+          id?: string
+          landing_page_id?: string
+          name?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "landing_page_sections_landing_page_id_fkey"
+            columns: ["landing_page_id"]
+            isOneToOne: false
+            referencedRelation: "landing_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      landing_page_theme: {
+        Row: {
+          config: Json
+          created_at: string
+          id: string
+          landing_page_id: string
+          updated_at: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          id?: string
+          landing_page_id: string
+          updated_at?: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          id?: string
+          landing_page_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "landing_page_theme_landing_page_id_fkey"
+            columns: ["landing_page_id"]
+            isOneToOne: true
+            referencedRelation: "landing_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       landing_pages: {
         Row: {
           created_at: string
