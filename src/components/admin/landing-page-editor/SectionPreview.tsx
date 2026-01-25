@@ -1,36 +1,12 @@
 import { forwardRef } from 'react';
 import { Section, ThemeConfig } from './types';
+import { generatePreviewHTML } from './themeUtils';
 import { Layers } from 'lucide-react';
 
 interface SectionPreviewProps {
   sections: Section[];
   previewingSections: Set<string>;
   themeConfig: ThemeConfig;
-}
-
-function generateThemeCSS(config: ThemeConfig): string {
-  const buttonRadius = config.buttonStyle === 'pill' 
-    ? '9999px' 
-    : config.buttonStyle === 'square' 
-    ? '0' 
-    : config.borderRadius;
-
-  return `
-    :root {
-      --theme-primary: ${config.primaryColor};
-      --theme-bg: ${config.backgroundColor};
-      --theme-font: ${config.fontFamily};
-      --theme-radius: ${config.borderRadius};
-      --theme-btn-radius: ${buttonRadius};
-      --theme-container: ${config.containerWidth};
-    }
-    body {
-      font-family: var(--theme-font);
-      background-color: var(--theme-bg);
-      margin: 0;
-      padding: 0;
-    }
-  `;
 }
 
 export const SectionPreview = forwardRef<HTMLDivElement, SectionPreviewProps>(
@@ -50,20 +26,8 @@ export const SectionPreview = forwardRef<HTMLDivElement, SectionPreviewProps>(
       );
     }
 
-    const previewHtml = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <script src="https://cdn.tailwindcss.com"></script>
-        <style>${generateThemeCSS(themeConfig)}</style>
-      </head>
-      <body>
-        ${sectionsToPreview.map((s) => s.html).join('\n')}
-      </body>
-      </html>
-    `;
+    const sectionsHtml = sectionsToPreview.map((s) => s.html).join('\n');
+    const previewHtml = generatePreviewHTML(sectionsHtml, themeConfig);
 
     return (
       <div ref={ref} className="h-full">

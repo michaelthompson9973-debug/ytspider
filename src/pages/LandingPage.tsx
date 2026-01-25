@@ -8,7 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
-import { ThemeConfig, defaultThemeConfig } from '@/components/admin/landing-page-editor/types';
+import { ThemeConfig, defaultThemeConfig, availableFonts } from '@/components/admin/landing-page-editor/types';
+import { generateThemeCSS, getGoogleFontsImports } from '@/components/admin/landing-page-editor/themeUtils';
 
 declare global {
   interface Window {
@@ -33,41 +34,6 @@ const pushDataLayer = (event: string, data?: Record<string, unknown>) => {
     });
   }
 };
-
-function generateThemeStyles(config: ThemeConfig): string {
-  const buttonRadius = config.buttonStyle === 'pill' 
-    ? '9999px' 
-    : config.buttonStyle === 'square' 
-    ? '0' 
-    : config.borderRadius;
-
-  return `
-    :root {
-      --theme-primary: ${config.primaryColor};
-      --theme-bg: ${config.backgroundColor};
-      --theme-font: ${config.fontFamily};
-      --theme-radius: ${config.borderRadius};
-      --theme-btn-radius: ${buttonRadius};
-      --theme-container: ${config.containerWidth};
-    }
-    body {
-      font-family: var(--theme-font);
-    }
-    .landing-content {
-      background-color: var(--theme-bg);
-    }
-    .landing-content .container {
-      max-width: var(--theme-container);
-      margin: 0 auto;
-    }
-    .landing-content a, .landing-content .text-primary { color: var(--theme-primary); }
-    .landing-content .bg-primary { background-color: var(--theme-primary); }
-    .landing-content .border-primary { border-color: var(--theme-primary); }
-    .landing-content button, .landing-content .btn, .landing-content [class*="button"] {
-      border-radius: var(--theme-btn-radius);
-    }
-  `;
-}
 
 export default function LandingPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -134,6 +100,49 @@ export default function LandingPage() {
 
   const themeConfig = (themeData?.config as unknown as ThemeConfig) ?? defaultThemeConfig;
 
+  // Inject Google Fonts
+  useEffect(() => {
+    const fontUrls = getGoogleFontsImports(themeConfig);
+    const linkIds: string[] = [];
+
+    fontUrls.forEach((url, index) => {
+      const linkId = `theme-font-${index}`;
+      let link = document.getElementById(linkId) as HTMLLinkElement | null;
+      
+      if (!link) {
+        // Add preconnect links first
+        if (index === 0) {
+          const preconnect1 = document.createElement('link');
+          preconnect1.rel = 'preconnect';
+          preconnect1.href = 'https://fonts.googleapis.com';
+          document.head.appendChild(preconnect1);
+
+          const preconnect2 = document.createElement('link');
+          preconnect2.rel = 'preconnect';
+          preconnect2.href = 'https://fonts.gstatic.com';
+          preconnect2.crossOrigin = 'anonymous';
+          document.head.appendChild(preconnect2);
+        }
+
+        link = document.createElement('link');
+        link.id = linkId;
+        link.rel = 'stylesheet';
+        link.href = url;
+        document.head.appendChild(link);
+      } else {
+        link.href = url;
+      }
+      linkIds.push(linkId);
+    });
+
+    return () => {
+      // Clean up font links on unmount
+      linkIds.forEach(id => {
+        document.getElementById(id)?.remove();
+      });
+    };
+  }, [themeConfig]);
+
   // Inject GTM and fire page_view
   useEffect(() => {
     if (!page?.gtm_id) return;
@@ -189,7 +198,22 @@ export default function LandingPage() {
       document.head.appendChild(styleEl);
     }
     
-    styleEl.textContent = generateThemeStyles(themeConfig);
+    // Use the new generateThemeCSS from themeUtils
+    const themeStyles = generateThemeCSS(themeConfig);
+    
+    // Add scoping for landing content
+    const scopedStyles = `
+      ${themeStyles}
+      .landing-content {
+        background-color: var(--theme-bg);
+      }
+      .landing-content .container {
+        max-width: var(--theme-container);
+        margin: 0 auto;
+      }
+    `;
+    
+    styleEl.textContent = scopedStyles;
 
     return () => {
       styleEl?.remove();

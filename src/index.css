@@ -2,9 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import Google Fonts for admin panel */
+@import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&family=Anek+Bangla:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap');
+
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL.
 */
+
+/* Global smooth scrolling */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+}
 
 @layer base {
   :root {

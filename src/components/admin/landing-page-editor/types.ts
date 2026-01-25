@@ -8,12 +8,20 @@ export interface Section {
 }
 
 export interface ThemeConfig {
+  // Colors
   primaryColor: string;
-  fontFamily: string;
+  backgroundColor: string;
+  
+  // Typography
+  headingFont: string;
+  bodyFont: string;
+  buttonFont: string;
+  digitFont: string;
+  
+  // Layout
   buttonStyle: 'rounded' | 'square' | 'pill';
   borderRadius: string;
   containerWidth: string;
-  backgroundColor: string;
 }
 
 export interface LandingPageTheme {
@@ -26,22 +34,26 @@ export interface LandingPageTheme {
 
 export const defaultThemeConfig: ThemeConfig = {
   primaryColor: '#3B82F6',
-  fontFamily: 'Inter, sans-serif',
+  backgroundColor: '#ffffff',
+  headingFont: 'Hind Siliguri',
+  bodyFont: 'Anek Bangla',
+  buttonFont: 'Inter',
+  digitFont: 'Poppins',
   buttonStyle: 'rounded',
   borderRadius: '8px',
   containerWidth: '1200px',
-  backgroundColor: '#ffffff',
 };
 
-export const fontFamilies = [
-  { value: 'Inter, sans-serif', label: 'Inter' },
-  { value: 'Roboto, sans-serif', label: 'Roboto' },
-  { value: 'Open Sans, sans-serif', label: 'Open Sans' },
-  { value: 'Lato, sans-serif', label: 'Lato' },
-  { value: 'Poppins, sans-serif', label: 'Poppins' },
-  { value: 'Montserrat, sans-serif', label: 'Montserrat' },
-  { value: 'Georgia, serif', label: 'Georgia' },
-  { value: 'Arial, sans-serif', label: 'Arial' },
+// Available fonts with Google Fonts URLs
+export const availableFonts = [
+  { value: 'Hind Siliguri', label: 'Hind Siliguri (বাংলা)', url: 'https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap' },
+  { value: 'Anek Bangla', label: 'Anek Bangla (বাংলা)', url: 'https://fonts.googleapis.com/css2?family=Anek+Bangla:wght@300;400;500;600;700&display=swap' },
+  { value: 'Inter', label: 'Inter', url: 'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap' },
+  { value: 'Poppins', label: 'Poppins', url: 'https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap' },
+  { value: 'Roboto', label: 'Roboto', url: 'https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap' },
+  { value: 'Open Sans', label: 'Open Sans', url: 'https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700&display=swap' },
+  { value: 'Montserrat', label: 'Montserrat', url: 'https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap' },
+  { value: 'Lato', label: 'Lato', url: 'https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap' },
 ];
 
 export const buttonStyles = [
@@ -49,3 +61,6 @@ export const buttonStyles = [
   { value: 'square', label: 'Square' },
   { value: 'pill', label: 'Pill' },
 ];
+
+// Legacy export for backward compatibility
+export const fontFamilies = availableFonts.map(f => ({ value: f.value, label: f.label }));
