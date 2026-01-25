@@ -8,6 +8,7 @@ export { FullPagePreview } from './FullPagePreview';
 export { ThemePanel } from './ThemePanel';
 export { MobileNavigation } from './MobileNavigation';
 export { DeleteConfirmDialog } from './DeleteConfirmDialog';
+export { AiEnhanceButton } from './AiEnhanceButton';
 
 // Hooks
 export { useSections } from './useSections';

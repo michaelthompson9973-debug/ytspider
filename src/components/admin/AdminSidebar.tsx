@@ -14,6 +14,7 @@ import {
   Globe,
   ChevronDown,
   PanelLeftClose,
+  Key,
   PanelLeft,
 } from 'lucide-react';
 import {
@@ -82,6 +83,7 @@ const navGroups: NavGroup[] = [
     items: [
       { href: '/admin/domains', label: 'Domains', icon: Globe },
       { href: '/admin/webhooks', label: 'Webhooks', icon: Bell },
+      { href: '/admin/api', label: 'API', icon: Key },
     ],
   },
 ];
