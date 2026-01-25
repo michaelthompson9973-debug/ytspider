@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.trigger-order-webhooks]
 verify_jwt = false
+
+[functions.enhance-html]
+verify_jwt = false

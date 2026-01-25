@@ -4,6 +4,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Save, FileCode } from 'lucide-react';
 import { Section } from './types';
+import { AiEnhanceButton } from './AiEnhanceButton';
 
 interface SectionEditorProps {
   section: Section | null;
@@ -74,7 +75,17 @@ export const SectionEditor = forwardRef<HTMLDivElement, SectionEditorProps>(
 
         {/* Editor */}
         <div className="flex-1 flex flex-col min-h-0">
-          <Label className="text-xs text-muted-foreground mb-2">HTML Content</Label>
+          <div className="flex items-center justify-between mb-2">
+            <Label className="text-xs text-muted-foreground">HTML Content</Label>
+            <AiEnhanceButton
+              html={html}
+              onEnhanced={(enhancedHtml) => {
+                setHtml(enhancedHtml);
+                setIsDirty(true);
+              }}
+              disabled={isSaving}
+            />
+          </div>
           <textarea
             className="flex-1 w-full font-mono text-sm p-4 border rounded-md bg-muted/50 resize-none focus:outline-none focus:ring-2 focus:ring-ring"
             value={html}
