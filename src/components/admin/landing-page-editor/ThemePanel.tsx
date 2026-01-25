@@ -30,6 +30,26 @@ export const ThemePanel = forwardRef<HTMLDivElement, ThemePanelProps>(
       setIsDirty(false);
     }, [themeConfig]);
 
+    // Load all fonts dynamically for the preview
+    useEffect(() => {
+      const fontsToLoad = [config.headingFont, config.bodyFont, config.buttonFont, config.digitFont];
+      const uniqueFonts = [...new Set(fontsToLoad)];
+      
+      uniqueFonts.forEach((fontName) => {
+        const fontConfig = availableFonts.find(f => f.value === fontName);
+        if (fontConfig?.url) {
+          const linkId = `font-${fontName.replace(/\s+/g, '-')}`;
+          if (!document.getElementById(linkId)) {
+            const link = document.createElement('link');
+            link.id = linkId;
+            link.rel = 'stylesheet';
+            link.href = fontConfig.url;
+            document.head.appendChild(link);
+          }
+        }
+      });
+    }, [config.headingFont, config.bodyFont, config.buttonFont, config.digitFont]);
+
     const updateConfig = (key: keyof ThemeConfig, value: string) => {
       const newConfig = { ...config, [key]: value };
       setConfig(newConfig);
