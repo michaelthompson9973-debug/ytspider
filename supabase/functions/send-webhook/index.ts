@@ -13,13 +13,113 @@ interface WebhookPayload {
   message?: string;
 }
 
+function getClientIp(req: Request): string {
+  return req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 
+         req.headers.get('x-real-ip') || 
+         'unknown';
+}
+
+function logRequest(
+  functionName: string,
+  req: Request,
+  userId: string | null,
+  isServiceRole: boolean,
+  result: string,
+  details?: string
+) {
+  const ip = getClientIp(req);
+  console.log(JSON.stringify({
+    timestamp: new Date().toISOString(),
+    function: functionName,
+    method: req.method,
+    ip,
+    userId: userId || 'anonymous',
+    isServiceRole,
+    result,
+    details,
+  }));
+}
+
+async function verifyAuth(req: Request): Promise<{
+  authenticated: boolean;
+  userId?: string;
+  isAdmin?: boolean;
+  isServiceRole?: boolean;
+  error?: string;
+}> {
+  const authHeader = req.headers.get('Authorization');
+  
+  // Check for service role key (internal calls from trigger-order-webhooks)
+  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (authHeader === `Bearer ${serviceRoleKey}`) {
+    return { authenticated: true, isServiceRole: true };
+  }
+
+  if (!authHeader?.startsWith('Bearer ')) {
+    return { authenticated: false, error: 'Missing or invalid Authorization header' };
+  }
+
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_ANON_KEY')!,
+    { global: { headers: { Authorization: authHeader } } }
+  );
+
+  const token = authHeader.replace('Bearer ', '');
+  
+  try {
+    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+    
+    if (claimsError || !claimsData?.claims) {
+      return { authenticated: false, error: 'Invalid token' };
+    }
+
+    const userId = claimsData.claims.sub as string;
+
+    // Check admin status
+    const { data: isAdminData } = await supabase
+      .rpc('has_role', { _user_id: userId, _role: 'admin' });
+
+    return {
+      authenticated: true,
+      userId,
+      isAdmin: !!isAdminData,
+    };
+  } catch (error) {
+    console.error('Auth verification error:', error);
+    return { authenticated: false, error: 'Token verification failed' };
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Verify authentication - must be admin or service role
+  const auth = await verifyAuth(req);
+  
+  if (!auth.authenticated) {
+    logRequest('send-webhook', req, null, false, 'unauthorized', auth.error);
+    return new Response(
+      JSON.stringify({ error: auth.error || 'Unauthorized' }),
+      { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // Only allow service role (internal) or admin users
+  if (!auth.isServiceRole && !auth.isAdmin) {
+    logRequest('send-webhook', req, auth.userId || null, false, 'forbidden', 'Not admin');
+    return new Response(
+      JSON.stringify({ error: 'Admin access required' }),
+      { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
   try {
     const { webhookId, orderId, test, message }: WebhookPayload = await req.json();
+
+    logRequest('send-webhook', req, auth.userId || null, auth.isServiceRole || false, 'processing', `webhookId: ${webhookId}`);
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -43,7 +143,7 @@ serve(async (req) => {
     }
 
     if (!webhook.enabled && !test) {
-      console.log('Webhook disabled, skipping');
+      logRequest('send-webhook', req, auth.userId || null, auth.isServiceRole || false, 'skipped', 'Webhook disabled');
       return new Response(JSON.stringify({ skipped: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -70,7 +170,6 @@ serve(async (req) => {
     // Send based on type
     let response;
     if (webhook.type === 'telegram' && webhook.url) {
-      // Extract bot token and chat ID from URL or use URL directly
       response = await fetch(webhook.url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -88,25 +187,23 @@ serve(async (req) => {
         }),
       });
     } else if (webhook.type === 'email' && webhook.email) {
-      // For email, you'd integrate with a service like Resend
       console.log('Email notification would be sent to:', webhook.email);
-      console.log('Message:', notificationMessage);
-      // Return success for now - actual email integration requires RESEND_API_KEY
+      logRequest('send-webhook', req, auth.userId || null, auth.isServiceRole || false, 'success', 'Email logged');
       return new Response(JSON.stringify({ success: true, type: 'email', note: 'Email integration requires setup' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     const responseText = response ? await response.text() : '';
-    console.log('Webhook response:', responseText);
+    logRequest('send-webhook', req, auth.userId || null, auth.isServiceRole || false, 'success', `Response: ${responseText.substring(0, 100)}`);
 
     return new Response(
       JSON.stringify({ success: true, response: responseText }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error: unknown) {
-    console.error('Webhook error:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';
+    logRequest('send-webhook', req, auth.userId || null, auth.isServiceRole || false, 'error', message);
     return new Response(
       JSON.stringify({ error: message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
