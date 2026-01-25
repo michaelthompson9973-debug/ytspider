@@ -1,73 +1,206 @@
-# Welcome to your Lovable project
+# Ytspider
 
-## Project info
+A minimal, mobile-friendly internal web app for quickly creating and publishing product landing pages for paid traffic (YouTube Ads focus).
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Features
 
-## How can I edit this code?
+- **Product Management**: Create, edit, delete products with images/videos
+- **Landing Page Builder**: HTML-only editor with live preview, GTM integration
+- **Order Management**: Track orders with status updates, filters, CSV export
+- **Media Library**: Upload and organize images/videos with folder support
+- **Tracking**: GTM per page, UTM capture, server-side conversion events
+- **Webhooks**: Telegram, Slack, Email notifications for new orders
+- **Multi-Domain**: Map custom domains to landing page slugs
 
-There are several ways of editing your application.
+## Tech Stack
 
-**Use Lovable**
+- **Frontend**: React + Vite + TypeScript + Tailwind CSS + shadcn/ui
+- **Backend**: Supabase (Auth, PostgreSQL, Storage, Edge Functions)
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+---
 
-Changes made via Lovable will be committed automatically to this repo.
+## Self-Hosted Setup Guide
 
-**Use your preferred IDE**
+### 1. Create Supabase Project
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+1. Go to [supabase.com](https://supabase.com) and create a new project
+2. Wait for the project to finish provisioning
+3. Note your project URL and API keys from **Project Settings > API**
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### 2. Run Database Migration
 
-Follow these steps:
+1. Go to **SQL Editor** in your Supabase dashboard
+2. Copy the contents of `supabase/migrations/master.sql`
+3. Paste and run the entire script
+4. Verify tables were created in **Table Editor**
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### 3. Configure Environment Variables
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+1. Copy `.env.example` to `.env`:
+   ```bash
+   cp .env.example .env
+   ```
 
-# Step 3: Install the necessary dependencies.
-npm i
+2. Fill in your Supabase credentials:
+   ```env
+   VITE_SUPABASE_URL=https://your-project-id.supabase.co
+   VITE_SUPABASE_PUBLISHABLE_KEY=your-anon-key
+   VITE_SUPABASE_PROJECT_ID=your-project-id
+   ```
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+### 4. Deploy Edge Functions
+
+1. Install Supabase CLI:
+   ```bash
+   npm install -g supabase
+   ```
+
+2. Login to Supabase:
+   ```bash
+   supabase login
+   ```
+
+3. Link your project:
+   ```bash
+   supabase link --project-ref your-project-id
+   ```
+
+4. Deploy all edge functions:
+   ```bash
+   supabase functions deploy send-webhook
+   supabase functions deploy track-conversion
+   supabase functions deploy trigger-order-webhooks
+   ```
+
+### 5. Configure Auth Settings
+
+1. Go to **Authentication > Providers** in Supabase dashboard
+2. Enable **Email** provider
+3. (Optional) Disable "Confirm email" for faster testing in **Authentication > Settings**
+
+### 6. Create Admin User
+
+1. Start the app locally:
+   ```bash
+   npm install
+   npm run dev
+   ```
+
+2. Go to `/auth` and sign up with your email
+
+3. In Supabase **SQL Editor**, run:
+   ```sql
+   INSERT INTO public.user_roles (user_id, role)
+   SELECT id, 'admin' FROM auth.users WHERE email = 'your-admin@email.com';
+   ```
+
+4. Refresh the app - you should now have admin access
+
+---
+
+## Local Development
+
+```bash
+# Install dependencies
+npm install
+
+# Start development server
 npm run dev
+
+# Build for production
+npm run build
+
+# Preview production build
+npm run preview
 ```
 
-**Edit a file directly in GitHub**
+---
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Project Structure
 
-**Use GitHub Codespaces**
+```
+├── src/
+│   ├── components/
+│   │   ├── admin/          # Admin layout components
+│   │   └── ui/             # shadcn/ui components
+│   ├── contexts/
+│   │   └── AuthContext.tsx # Authentication context
+│   ├── integrations/
+│   │   └── supabase/       # Supabase client & types
+│   ├── pages/
+│   │   ├── admin/          # Admin dashboard pages
+│   │   ├── Auth.tsx        # Login/signup page
+│   │   ├── LandingPage.tsx # Public landing page renderer
+│   │   └── Index.tsx       # Home redirect
+│   └── App.tsx             # Route definitions
+├── supabase/
+│   ├── functions/          # Edge functions
+│   │   ├── send-webhook/
+│   │   ├── track-conversion/
+│   │   └── trigger-order-webhooks/
+│   └── migrations/
+│       └── master.sql      # Full database schema
+└── .env.example            # Environment template
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+---
 
-## What technologies are used for this project?
+## Edge Functions
 
-This project is built with:
+| Function | Purpose |
+|----------|---------|
+| `send-webhook` | Sends notifications to Telegram/Slack/Email |
+| `track-conversion` | Logs server-side conversion events |
+| `trigger-order-webhooks` | Fires all enabled webhooks on new order |
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+---
 
-## How can I deploy this project?
+## Database Tables
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+| Table | Description |
+|-------|-------------|
+| `user_roles` | Admin role assignments |
+| `products` | Product catalog |
+| `landing_pages` | Landing page content & config |
+| `orders` | Customer orders with UTM data |
+| `media` | Uploaded files metadata |
+| `conversion_events` | Tracking event logs |
+| `webhooks` | Webhook configurations |
+| `domain_mappings` | Custom domain → slug mappings |
 
-## Can I connect a custom domain to my Lovable project?
+---
 
-Yes, you can!
+## Validation Checklist
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+After setup, verify:
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+- [ ] App runs locally (`npm run dev`)
+- [ ] Auth works (signup/login)
+- [ ] Admin role grants dashboard access
+- [ ] Product CRUD works
+- [ ] Landing pages publish and display publicly
+- [ ] Orders insert from public forms
+- [ ] GTM fires on landing pages
+- [ ] Tracking debug panel shows events
+- [ ] Webhooks trigger on new orders
+
+---
+
+## Troubleshooting
+
+### "Row level security policy violation"
+- Ensure you've added your user to `user_roles` table with admin role
+
+### Edge functions not working
+- Check function logs in Supabase dashboard
+- Verify functions are deployed: `supabase functions list`
+
+### Media upload fails
+- Ensure storage bucket `media` exists and is public
+- Check storage policies in SQL Editor
+
+---
+
+## License
+
+Internal tool - not for public distribution.
