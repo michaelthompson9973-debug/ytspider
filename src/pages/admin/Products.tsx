@@ -65,11 +65,25 @@ export default function Products() {
       if (editingId) {
         const { error } = await supabase
           .from('products')
-          .update(data)
+          .update({
+            name: data.name,
+            price: data.price,
+            description: data.description || null,
+            active: data.active,
+            images: data.images,
+            videos: data.videos,
+          })
           .eq('id', editingId);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from('products').insert([data]);
+        const { error } = await supabase.from('products').insert([{
+          name: data.name,
+          price: data.price,
+          description: data.description || null,
+          active: data.active,
+          images: data.images,
+          videos: data.videos,
+        }]);
         if (error) throw error;
       }
     },
