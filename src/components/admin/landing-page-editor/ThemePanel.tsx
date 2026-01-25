@@ -63,7 +63,7 @@ export const ThemePanel = forwardRef<HTMLDivElement, ThemePanelProps>(
     };
 
   return (
-    <div ref={ref} className="space-y-6">
+    <div ref={ref} className="h-full overflow-y-auto space-y-6 pr-1">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-sm">Theme Settings</h3>
