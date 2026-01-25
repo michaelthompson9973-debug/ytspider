@@ -1,1 +1,10 @@
 project_id = "otibsrdecgygoeshfoho"
+
+[functions.track-conversion]
+verify_jwt = false
+
+[functions.send-webhook]
+verify_jwt = false
+
+[functions.trigger-order-webhooks]
+verify_jwt = false

@@ -30,7 +30,7 @@ A minimal, mobile-friendly internal web app for quickly creating and publishing 
 ### 2. Run Database Migration
 
 1. Go to **SQL Editor** in your Supabase dashboard
-2. Copy the contents of `supabase/migrations/master.sql`
+2. Copy the contents of `docs/master.sql`
 3. Paste and run the entire script
 4. Verify tables were created in **Table Editor**
 
@@ -98,6 +98,60 @@ A minimal, mobile-friendly internal web app for quickly creating and publishing 
 
 ---
 
+## Security
+
+### Authentication & Authorization
+
+- **Route Protection**: All `/admin/*` routes are protected by `ProtectedRoute` component
+- **Admin Role Check**: Users must have an `admin` role in `user_roles` table to access dashboard
+- **Non-admin users**: See "Access Denied" screen when trying to access admin routes
+- **Unauthenticated users**: Redirected to `/auth` login page
+
+### Row Level Security (RLS)
+
+All database tables have RLS enabled with the following policies:
+
+| Table | Public Access | Admin Access |
+|-------|---------------|--------------|
+| `landing_pages` | SELECT (published only) | Full CRUD |
+| `orders` | INSERT only | Full CRUD |
+| `products` | SELECT (active only) | Full CRUD |
+| `media` | None | Full CRUD |
+| `webhooks` | None | Full CRUD |
+| `conversion_events` | INSERT only | SELECT |
+| `user_roles` | None | Full CRUD |
+| `domain_mappings` | SELECT | Full CRUD |
+
+### Edge Function Security
+
+All edge functions implement:
+
+| Security Layer | Description |
+|----------------|-------------|
+| **JWT Verification** | Validates Authorization header using `supabase.auth.getClaims()` |
+| **Admin Role Check** | Verifies caller has admin role via `has_role()` function |
+| **Service Role Auth** | Allows internal server-to-server calls with service role key |
+| **Rate Limiting** | IP-based throttling (20-30 requests/minute per IP) |
+| **Request Logging** | Logs timestamp, function, IP, user ID, and result |
+
+#### Function Access Matrix
+
+| Function | Public | Authenticated | Admin | Service Role |
+|----------|--------|---------------|-------|--------------|
+| `track-conversion` | ✅ (rate limited) | ✅ | ✅ | ✅ |
+| `send-webhook` | ❌ | ❌ | ✅ | ✅ |
+| `trigger-order-webhooks` | ❌ | ❌ | ✅ | ✅ |
+
+### Security Best Practices
+
+1. **Never expose service role key** - Only use in edge functions, never in client code
+2. **Use anon key in frontend** - The publishable key has limited permissions via RLS
+3. **Admin role verification** - Always checked server-side via `is_admin()` function
+4. **Token validation** - JWTs are validated on every protected request
+5. **No client-side role storage** - Roles are always fetched from database
+
+---
+
 ## Local Development
 
 ```bash
@@ -122,6 +176,7 @@ npm run preview
 ├── src/
 │   ├── components/
 │   │   ├── admin/          # Admin layout components
+│   │   ├── ProtectedRoute.tsx # Route guard for admin access
 │   │   └── ui/             # shadcn/ui components
 │   ├── contexts/
 │   │   └── AuthContext.tsx # Authentication context
@@ -135,11 +190,13 @@ npm run preview
 │   └── App.tsx             # Route definitions
 ├── supabase/
 │   ├── functions/          # Edge functions
+│   │   ├── _shared/        # Shared auth utilities
 │   │   ├── send-webhook/
 │   │   ├── track-conversion/
 │   │   └── trigger-order-webhooks/
-│   └── migrations/
-│       └── master.sql      # Full database schema
+│   └── config.toml         # Supabase CLI config
+├── docs/
+│   └── master.sql          # Full database schema
 └── .env.example            # Environment template
 ```
 
@@ -147,11 +204,11 @@ npm run preview
 
 ## Edge Functions
 
-| Function | Purpose |
-|----------|---------|
-| `send-webhook` | Sends notifications to Telegram/Slack/Email |
-| `track-conversion` | Logs server-side conversion events |
-| `trigger-order-webhooks` | Fires all enabled webhooks on new order |
+| Function | Purpose | Auth Required |
+|----------|---------|---------------|
+| `send-webhook` | Sends notifications to Telegram/Slack/Email | Admin or Service Role |
+| `track-conversion` | Logs server-side conversion events | Public (rate limited) |
+| `trigger-order-webhooks` | Fires all enabled webhooks on new order | Admin or Service Role |
 
 ---
 
@@ -177,12 +234,14 @@ After setup, verify:
 - [ ] App runs locally (`npm run dev`)
 - [ ] Auth works (signup/login)
 - [ ] Admin role grants dashboard access
+- [ ] Non-admin users see "Access Denied"
 - [ ] Product CRUD works
 - [ ] Landing pages publish and display publicly
 - [ ] Orders insert from public forms
 - [ ] GTM fires on landing pages
 - [ ] Tracking debug panel shows events
 - [ ] Webhooks trigger on new orders
+- [ ] Invalid tokens return 401
 
 ---
 
@@ -194,6 +253,10 @@ After setup, verify:
 ### Edge functions not working
 - Check function logs in Supabase dashboard
 - Verify functions are deployed: `supabase functions list`
+
+### "Unauthorized" from edge functions
+- Verify Authorization header is being sent
+- Check that user has admin role in database
 
 ### Media upload fails
 - Ensure storage bucket `media` exists and is public
