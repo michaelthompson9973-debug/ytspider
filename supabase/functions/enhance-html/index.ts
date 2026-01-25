@@ -153,7 +153,7 @@ Guidelines:
       console.log(`Trying API key: ${apiKey.id}`);
       
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey.key_value}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey.key_value}`,
         {
           method: "POST",
           headers: {
