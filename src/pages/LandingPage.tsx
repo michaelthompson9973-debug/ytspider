@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
-import { ThemeConfig, defaultThemeConfig, availableFonts } from '@/components/admin/landing-page-editor/types';
+import { ThemeConfig, defaultThemeConfig } from '@/components/admin/landing-page-editor/types';
 import { generateThemeCSS, getGoogleFontsImports } from '@/components/admin/landing-page-editor/themeUtils';
 
 declare global {
