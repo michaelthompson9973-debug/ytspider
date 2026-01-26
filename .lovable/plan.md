@@ -1,87 +1,156 @@
 
+# Checkout Field Editor & Dynamic Product Preview Plan
 
-# Section Builder Enhancement Plan
+## সমস্যার বিশ্লেষণ
 
-## Overview
-প্রতিটি section-এ individual preview/code toggle এবং checkout section-এর theme-integrated preview যোগ করা হবে। Global preview তে refresh button যোগ করা হবে।
+### সমস্যা ১: Checkout Field Editor নেই
+বর্তমানে CheckoutEditor শুধু title, ctaText, এবং enabled fields সম্পাদনা করতে দেয়। ফর্ম ফিল্ড (নাম, ফোন, ঠিকানা, শহর) গুলো হার্ডকোডেড এবং কাস্টমাইজ করা যায় না।
 
-## Key Changes
+### সমস্যা ২: Product Preview Static
+Checkout preview তে "Product Name" এবং "৳XXX" placeholder দেখায়। আসল product data (নাম, দাম, ছবি) দেখায় না।
 
-### 1. Individual Section Preview (in Section Editor)
+### সমস্যা ৩: Database তে Product Link আছে কিন্তু Preview তে দেখাচ্ছে না
+`landing_pages.product_id = a4d2e594...` সঠিকভাবে linked আছে, কিন্তু `CheckoutEditor` এবং `generateCheckoutPreviewHTML()` এই data fetch করছে না।
 
-**Current State:**
-- SectionEditor শুধু HTML textarea দেখায়
-- Preview দেখতে হলে right panel-এ যেতে হয়
+---
 
-**New Design:**
-- SectionEditor এ Preview/HTML toggle tabs যোগ হবে
-- Preview tab section-এর rendered output দেখাবে (theme applied)
-- HTML tab existing textarea দেখাবে (code editing)
+## সমাধান
+
+### পরিবর্তন ১: CheckoutConfig Type এ Fields Array যোগ
+
+```typescript
+// types.ts
+export interface CheckoutField {
+  id: string;
+  name: string;           // field name (customer_name, custom_field_1)
+  type: 'text' | 'tel' | 'email' | 'textarea';
+  label: string;          // "আপনার নাম"
+  placeholder: string;    // "সম্পূর্ণ নাম লিখুন"
+  required: boolean;
+  enabled: boolean;
+}
+
+export interface CheckoutConfig {
+  title: string;
+  ctaText: string;
+  enabled: boolean;
+  fields: CheckoutField[];  // নতুন
+}
+
+export const defaultCheckoutFields: CheckoutField[] = [
+  { id: 'name', name: 'customer_name', type: 'text', label: 'আপনার নাম', placeholder: 'সম্পূর্ণ নাম লিখুন', required: true, enabled: true },
+  { id: 'phone', name: 'customer_phone', type: 'tel', label: 'মোবাইল নম্বর', placeholder: '01XXXXXXXXX', required: true, enabled: true },
+  { id: 'address', name: 'customer_address', type: 'text', label: 'ডেলিভারি ঠিকানা', placeholder: 'বাড়ি নং, রাস্তা, এলাকা', required: true, enabled: true },
+  { id: 'city', name: 'customer_city', type: 'text', label: 'শহর/জেলা', placeholder: 'ঢাকা', required: true, enabled: true },
+];
+```
+
+### পরিবর্তন ২: CheckoutEditor এ Field Editor যোগ
+
+Settings tab এ Field Editor section যোগ হবে:
 
 ```text
 ┌──────────────────────────────────────────┐
-│  Section Name: [Search Box    ] [Save]   │
+│  Section Name: [Order Form    ] [Save]   │
 ├──────────────────────────────────────────┤
-│  [Preview] [HTML]                    AI  │
+│  [Preview] [Settings]                    │
 ├──────────────────────────────────────────┤
+│  Form Title: [অর্ডার করুন            ]   │
+│  Submit Button: [অর্ডার সম্পন্ন করুন   ]   │
+│  ☑ Enable Checkout                       │
 │                                          │
-│   ┌────────────────────────────┐         │
-│   │  Section Title             │         │
-│   │  Your content here...      │         │
-│   └────────────────────────────┘         │
+│  ─────── Form Fields ───────             │
 │                                          │
+│  ☑ আপনার নাম                    [Edit]   │
+│    Label: [আপনার নাম          ]          │
+│    Placeholder: [সম্পূর্ণ নাম লিখুন]       │
+│                                          │
+│  ☑ মোবাইল নম্বর                  [Edit]   │
+│  ☑ ডেলিভারি ঠিকানা               [Edit]   │
+│  ☑ শহর/জেলা                     [Edit]   │
+│                                          │
+│  [+ Add Custom Field]                    │
 └──────────────────────────────────────────┘
 ```
 
-### 2. Checkout Section Auto-Render
+### পরিবর্তন ৩: CheckoutEditor এ Product Data Fetch
 
-**Problem:**
-- Checkout sections have empty `html` field
-- Preview uses `section.html` directly, so checkout shows nothing
+CheckoutEditor component এ linked product fetch করতে হবে:
 
-**Solution:**
-Create a utility function `generateCheckoutPreviewHTML()` that:
-- Takes checkout config + theme config
-- Returns static HTML representation of checkout form
-- Includes product placeholder, quantity selector, form fields
-- Uses theme CSS variables for styling
-
-```text
-┌────────────────────────────────┐
-│      অর্ডার করুন               │
-├────────────────────────────────┤
-│  [Product Image Placeholder]   │
-│  Product Name        ৳XXX      │
-│  Quantity: [-] 1 [+]           │
-│  ─────────────────────────     │
-│  সাবটোটাল:          ৳XXX       │
-│  ডেলিভারি:          ৳60        │
-│  সর্বমোট:           ৳XXX       │
-├────────────────────────────────┤
-│  [আপনার নাম            ]       │
-│  [মোবাইল নম্বর          ]       │
-│  [ডেলিভারি ঠিকানা       ]       │
-│  [শহর/জেলা             ]       │
-├────────────────────────────────┤
-│  [অর্ডার সম্পন্ন করুন    ]       │
-└────────────────────────────────┘
+```typescript
+// CheckoutEditor.tsx
+const { data: linkedProduct } = useQuery({
+  queryKey: ['linked-product', landingPageId],
+  queryFn: async () => {
+    const { data: lp } = await supabase
+      .from('landing_pages')
+      .select('product_id')
+      .eq('id', landingPageId)
+      .maybeSingle();
+    
+    if (!lp?.product_id) return null;
+    
+    const { data: product } = await supabase
+      .from('products')
+      .select('id, name, price, images')
+      .eq('id', lp.product_id)
+      .maybeSingle();
+    
+    return product;
+  },
+});
 ```
 
-### 3. Global Preview with Refresh Button
+### পরিবর্তন ৪: generateCheckoutPreviewHTML() এ Product Data Pass
 
-**Addition:**
-- Refresh icon button next to device toggle buttons
-- Clicking it forces iframe to reload
-- Uses key-based re-render technique
+```typescript
+export function generateCheckoutPreviewHTML(
+  config: CheckoutConfig = defaultCheckoutConfig,
+  themeConfig: ThemeConfig = defaultThemeConfig,
+  product?: { name: string; price: number; images?: string[] } | null,  // নতুন
+  checkoutSettings?: { currency: string; delivery_amount: number } | null  // নতুন
+): string {
+  const currencySymbol = '৳';
+  const productName = product?.name || 'Product Name';
+  const productPrice = product?.price || 0;
+  const productImage = product?.images?.[0] || null;
+  const deliveryAmount = checkoutSettings?.delivery_amount || 60;
+  
+  // Dynamic HTML with actual product data
+  return `...`;
+}
+```
 
-```text
-┌────────────────────────────────────────┐
-│ [Preview] [HTML]   [Desktop][Mobile]🔄 │
-├────────────────────────────────────────┤
-│                                        │
-│          Full Page Preview             │
-│                                        │
-└────────────────────────────────────────┘
+### পরিবর্তন ৫: SectionBuilder থেকে Props Pass
+
+```typescript
+// SectionBuilder.tsx
+<CheckoutEditor
+  section={activeSection}
+  themeConfig={themeConfig}
+  landingPageId={landingPageId}  // নতুন - product fetch করার জন্য
+  onSave={...}
+  isSaving={isUpdating}
+/>
+```
+
+### পরিবর্তন ৬: CheckoutSection (Public) এ Dynamic Fields Support
+
+```typescript
+// CheckoutSection.tsx
+// config.fields থেকে dynamic fields render করবে
+{config.fields?.filter(f => f.enabled).map(field => (
+  <div key={field.id} className="space-y-2">
+    <label>{field.label}</label>
+    <input
+      type={field.type}
+      placeholder={field.placeholder}
+      required={field.required}
+      value={form[field.name]}
+      onChange={(e) => setForm({ ...form, [field.name]: e.target.value })}
+    />
+  </div>
+))}
 ```
 
 ---
@@ -90,112 +159,104 @@ Create a utility function `generateCheckoutPreviewHTML()` that:
 
 ### Files to Modify
 
-#### 1. `src/components/admin/landing-page-editor/themeUtils.ts`
+| File | Changes |
+|------|---------|
+| `types.ts` | Add `CheckoutField` interface, update `CheckoutConfig` |
+| `CheckoutEditor.tsx` | Add field editor UI, fetch product data, pass to preview |
+| `themeUtils.ts` | Update `generateCheckoutPreviewHTML()` to accept product data |
+| `SectionBuilder.tsx` | Pass `landingPageId` to `CheckoutEditor` |
+| `CheckoutSection.tsx` | Render dynamic fields from config |
+| `FullPagePreview.tsx` | Pass product data to checkout preview generation |
 
-Add new function:
+### New Component: FieldEditor
 
 ```typescript
-export function generateCheckoutPreviewHTML(
-  config: CheckoutConfig,
-  themeConfig: ThemeConfig
-): string {
-  // Returns static HTML matching CheckoutSection appearance
-  // Uses theme CSS variables for styling
-  return `
-    <section class="py-12 px-4 bg-gray-50" id="checkout">
-      <div class="container max-w-md mx-auto">
-        <div class="rounded-theme bg-white border shadow-sm p-6">
-          <h2 class="font-heading text-2xl text-primary mb-4 text-center">
-            ${config.title}
-          </h2>
-          <!-- Product placeholder -->
-          <div class="mb-6 p-4 rounded-theme bg-gray-50 border">
-            <div class="w-full h-32 bg-gray-200 rounded mb-3 flex items-center justify-center text-gray-400">
-              Product Image
-            </div>
-            <div class="flex justify-between">
-              <span class="font-body">Product Name</span>
-              <span class="font-digit text-primary font-bold">৳XXX</span>
-            </div>
-          </div>
-          <!-- Form fields preview -->
-          <div class="space-y-3">
-            <input class="w-full rounded-theme border px-3 py-2" placeholder="আপনার নাম" disabled />
-            <input class="w-full rounded-theme border px-3 py-2" placeholder="মোবাইল নম্বর" disabled />
-            <input class="w-full rounded-theme border px-3 py-2" placeholder="ডেলিভারি ঠিকানা" disabled />
-            <input class="w-full rounded-theme border px-3 py-2" placeholder="শহর/জেলা" disabled />
-          </div>
-          <button class="w-full mt-4 bg-primary text-white py-3 rounded-theme font-button font-semibold">
-            ${config.ctaText}
-          </button>
-        </div>
+interface FieldEditorProps {
+  field: CheckoutField;
+  onChange: (field: CheckoutField) => void;
+  onRemove?: () => void;
+  isDefault?: boolean;
+}
+
+export function FieldEditor({ field, onChange, onRemove, isDefault }: FieldEditorProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  return (
+    <div className="border rounded-lg p-3">
+      <div className="flex items-center justify-between">
+        <Switch checked={field.enabled} onCheckedChange={(enabled) => onChange({ ...field, enabled })} />
+        <span className="flex-1 ml-2">{field.label}</span>
+        <Button variant="ghost" size="sm" onClick={() => setIsExpanded(!isExpanded)}>
+          <ChevronDown className={cn("h-4 w-4", isExpanded && "rotate-180")} />
+        </Button>
       </div>
-    </section>
-  `;
+      
+      {isExpanded && (
+        <div className="mt-3 space-y-3">
+          <div>
+            <Label>Label</Label>
+            <Input value={field.label} onChange={(e) => onChange({ ...field, label: e.target.value })} />
+          </div>
+          <div>
+            <Label>Placeholder</Label>
+            <Input value={field.placeholder} onChange={(e) => onChange({ ...field, placeholder: e.target.value })} />
+          </div>
+          <div className="flex items-center gap-2">
+            <Switch checked={field.required} onCheckedChange={(required) => onChange({ ...field, required })} />
+            <Label>Required</Label>
+          </div>
+          {!isDefault && onRemove && (
+            <Button variant="destructive" size="sm" onClick={onRemove}>Remove Field</Button>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 ```
 
-#### 2. `src/components/admin/landing-page-editor/SectionEditor.tsx`
+---
 
-- Add `viewMode` state: `'preview' | 'code'`
-- Add Preview/HTML toggle buttons in toolbar
-- Render iframe with single section HTML when in preview mode
-- Pass themeConfig as new prop
+## Data Flow Diagram
 
-```typescript
-interface SectionEditorProps {
-  section: Section | null;
-  themeConfig: ThemeConfig; // New prop
-  onSave: (data) => void;
-  isSaving: boolean;
-}
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│                        SectionBuilder                           │
+│                                                                 │
+│  landingPageId ──────────────────────────────────────────────┐ │
+│                                                               │ │
+│  ┌───────────────┐    ┌────────────────────────────────────┐ │ │
+│  │  SectionList  │    │         CheckoutEditor             │ │ │
+│  │               │    │                                    │ │ │
+│  │  - Add        │    │  landingPageId ─┐                  │ │ │
+│  │  - Reorder    │    │                 ↓                  │ │ │
+│  │  - Delete     │    │  useQuery(product) ─┐              │ │ │
+│  │               │    │                     ↓              │ │ │
+│  └───────────────┘    │  useQuery(checkout-settings)       │ │ │
+│                       │                     ↓              │ │ │
+│                       │  generateCheckoutPreviewHTML(      │ │ │
+│                       │    config,                         │ │ │
+│                       │    themeConfig,                    │ │ │
+│                       │    product,     ← Dynamic!         │ │ │
+│                       │    settings     ← Dynamic!         │ │ │
+│                       │  )                                 │ │ │
+│                       │                                    │ │ │
+│                       │  FieldEditor × N                   │ │ │
+│                       │    - Label input                   │ │ │
+│                       │    - Placeholder input             │ │ │
+│                       │    - Required toggle               │ │ │
+│                       │    - Enable/Disable toggle         │ │ │
+│                       └────────────────────────────────────┘ │ │
+└─────────────────────────────────────────────────────────────────┘
 ```
-
-#### 3. `src/components/admin/landing-page-editor/CheckoutEditor.tsx`
-
-- Add similar Preview/Code toggle
-- In preview mode, show rendered checkout form using `generateCheckoutPreviewHTML`
-- Uses actual config values for live preview
-
-#### 4. `src/components/admin/landing-page-editor/FullPagePreview.tsx`
-
-- Add `refreshKey` state
-- Add Refresh button with `RefreshCw` icon
-- Update section HTML generation to use `generateCheckoutPreviewHTML` for checkout sections
-
-```typescript
-// Generate HTML for sections (handle checkout type)
-const sectionsHtml = sortedSections.map((s) => {
-  if (s.type === 'checkout') {
-    return generateCheckoutPreviewHTML(s.config, themeConfig);
-  }
-  return s.html;
-}).join('\n');
-```
-
-#### 5. `src/components/admin/landing-page-editor/SectionBuilder.tsx`
-
-- Pass `themeConfig` to `SectionEditor` and `CheckoutEditor`
-- Update props interface
 
 ---
 
-## Summary Table
+## Summary of Changes
 
-| Component | Change |
-|-----------|--------|
-| `themeUtils.ts` | Add `generateCheckoutPreviewHTML()` function |
-| `SectionEditor.tsx` | Add Preview/Code toggle, individual section preview |
-| `CheckoutEditor.tsx` | Add Preview/Code toggle, themed checkout preview |
-| `FullPagePreview.tsx` | Add refresh button, handle checkout sections in preview |
-| `SectionBuilder.tsx` | Pass themeConfig to editor components |
-
----
-
-## User Experience Flow
-
-1. **HTML Section Edit**: User selects section → sees Preview tab by default → can switch to HTML tab to edit code
-2. **Checkout Section Edit**: User selects checkout → sees form preview with theme → can switch to Code view for config JSON
-3. **Global Preview**: User clicks "Preview" in right panel → sees full page → can click 🔄 to refresh after changes
-4. **Checkout in Global Preview**: Checkout section renders as styled form (not empty)
-
+1. **CheckoutField Type** - নতুন type যোগ করা হবে যাতে প্রতিটি ফিল্ডের label, placeholder, required, enabled সেভ করা যায়
+2. **CheckoutEditor Update** - Field editor UI যোগ করা হবে যেখানে প্রতিটি ফিল্ড edit করা যাবে
+3. **Product Data Fetch** - CheckoutEditor এ linked product এর তথ্য fetch করা হবে
+4. **Dynamic Preview** - Preview তে আসল product name, price, image দেখাবে
+5. **Public Checkout** - CheckoutSection dynamic fields render করবে config থেকে
+6. **Custom Fields** - Admin চাইলে custom field যোগ করতে পারবে (optional feature)
