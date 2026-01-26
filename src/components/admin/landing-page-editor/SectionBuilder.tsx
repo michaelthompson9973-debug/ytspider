@@ -5,10 +5,11 @@ import { useSections } from './useSections';
 import { useTheme } from './useTheme';
 import { SectionList } from './SectionList';
 import { SectionEditor } from './SectionEditor';
+import { CheckoutEditor } from './CheckoutEditor';
 import { ThemePanel } from './ThemePanel';
 import { FullPagePreview } from './FullPagePreview';
 import { MobileNavigation } from './MobileNavigation';
-import { Section } from './types';
+import { Section, SectionType, CheckoutConfig } from './types';
 import { cn } from '@/lib/utils';
 
 interface SectionBuilderProps {
@@ -138,7 +139,7 @@ export function SectionBuilder({ landingPageId, gtmId, onBack }: SectionBuilderP
             previewingSections={previewingSections}
             onSelectSection={handleSelectSection}
             onTogglePreview={toggleSectionPreview}
-            onAddSection={(name, html) => addSection({ name, html })}
+            onAddSection={(data: { name: string; html: string; type: SectionType; config: unknown }) => addSection(data)}
             onDuplicateSection={duplicateSection}
             onDeleteSection={handleDeleteSection}
             onReorderSections={reorderSections}
@@ -148,11 +149,19 @@ export function SectionBuilder({ landingPageId, gtmId, onBack }: SectionBuilderP
 
         {/* Center: Editor */}
         <div className="col-span-5 border rounded-lg p-4 overflow-hidden">
-          <SectionEditor
-            section={activeSection}
-            onSave={updateSection}
-            isSaving={isUpdating}
-          />
+          {activeSection?.type === 'checkout' ? (
+            <CheckoutEditor
+              section={activeSection}
+              onSave={(data) => updateSection({ id: data.id, name: data.name, config: data.config })}
+              isSaving={isUpdating}
+            />
+          ) : (
+            <SectionEditor
+              section={activeSection}
+              onSave={updateSection}
+              isSaving={isUpdating}
+            />
+          )}
         </div>
 
         {/* Right: Preview or Theme */}
@@ -185,7 +194,7 @@ export function SectionBuilder({ landingPageId, gtmId, onBack }: SectionBuilderP
             previewingSections={previewingSections}
             onSelectSection={handleSelectSection}
             onTogglePreview={toggleSectionPreview}
-            onAddSection={(name, html) => addSection({ name, html })}
+            onAddSection={(data: { name: string; html: string; type: SectionType; config: unknown }) => addSection(data)}
             onDuplicateSection={duplicateSection}
             onDeleteSection={handleDeleteSection}
             onReorderSections={reorderSections}
@@ -197,11 +206,19 @@ export function SectionBuilder({ landingPageId, gtmId, onBack }: SectionBuilderP
           'h-full border rounded-lg p-4 overflow-hidden',
           mobileTab !== 'editor' && 'hidden'
         )}>
-          <SectionEditor
-            section={activeSection}
-            onSave={updateSection}
-            isSaving={isUpdating}
-          />
+          {activeSection?.type === 'checkout' ? (
+            <CheckoutEditor
+              section={activeSection}
+              onSave={(data) => updateSection({ id: data.id, name: data.name, config: data.config })}
+              isSaving={isUpdating}
+            />
+          ) : (
+            <SectionEditor
+              section={activeSection}
+              onSave={updateSection}
+              isSaving={isUpdating}
+            />
+          )}
         </div>
 
         <div className={cn(

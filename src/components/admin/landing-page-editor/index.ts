@@ -3,6 +3,7 @@ export { SectionBuilder } from './SectionBuilder';
 export { SectionList } from './SectionList';
 export { SectionItem } from './SectionItem';
 export { SectionEditor } from './SectionEditor';
+export { CheckoutEditor } from './CheckoutEditor';
 export { SectionPreview } from './SectionPreview';
 export { FullPagePreview } from './FullPagePreview';
 export { ThemePanel } from './ThemePanel';

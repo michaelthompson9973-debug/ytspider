@@ -96,28 +96,34 @@ export type Database = {
       }
       landing_page_sections: {
         Row: {
+          config: Json | null
           created_at: string
           html: string
           id: string
           landing_page_id: string
           name: string
           sort_order: number
+          type: string
         }
         Insert: {
+          config?: Json | null
           created_at?: string
           html?: string
           id?: string
           landing_page_id: string
           name?: string
           sort_order?: number
+          type?: string
         }
         Update: {
+          config?: Json | null
           created_at?: string
           html?: string
           id?: string
           landing_page_id?: string
           name?: string
           sort_order?: number
+          type?: string
         }
         Relationships: [
           {
