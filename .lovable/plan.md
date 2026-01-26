@@ -1,172 +1,132 @@
 
-
-# Preview এবং Real Landing Page সমান করার Plan
+# Desktop Preview Simulation Fix Plan
 
 ## সমস্যা বিশ্লেষণ
 
-Screenshots থেকে দেখা যাচ্ছে:
-1. **Preview তে**: Image gallery ছোট (120px height), form fields এ label নেই, compact layout
-2. **Real page এ**: Full-width aspect-square image gallery with thumbnails/navigation, proper labels সহ form fields
+Screenshots দেখে সমস্যাটি চিহ্নিত হয়েছে:
 
-এটা হচ্ছে কারণ:
-- **Real page** ব্যবহার করে: `CheckoutSection.tsx` (React component) + `ProductImageGallery.tsx`
-- **Admin preview** ব্যবহার করে: `generateCheckoutPreviewHTML()` (Static HTML function)
+1. **Real Page (Image 1)**: Full-width content, সমস্ত screen জুড়ে
+2. **Desktop Preview (Image 2)**: Content centered এবং সংকীর্ণ, দুপাশে ফাঁকা grey space
 
-## সমাধান পরিকল্পনা
+**দুটি সমস্যা রয়েছে:**
 
-Preview HTML কে real `CheckoutSection` component এর সাথে হুবহু মেলাতে হবে।
+### সমস্যা ১: Preview Container Layout
+বর্তমানে preview area তে `flex items-start justify-center p-4` ব্যবহার করা হচ্ছে যা Desktop mode এও content কে centered রাখছে। Desktop mode এ iframe সরাসরি পুরো preview area জুড়ে থাকা উচিত।
 
-### পরিবর্তন ১: `generateCheckoutPreviewHTML` আপডেট
+### সমস্যা ২: FullPagePreview vs FullscreenPreviewModal Consistency
+`FullPagePreview.tsx` (inline preview) এবং `FullscreenPreviewModal.tsx` (fullscreen) দুটোতে একই সমস্যা থাকতে পারে।
 
-`themeUtils.ts` এ `generateCheckoutPreviewHTML` function টিকে সম্পূর্ণ re-write করতে হবে যেন এটি `CheckoutSection.tsx` এর exact HTML structure mirror করে।
+## সমাধান
 
-**Key Changes:**
-- Image: `height: 120px` → `aspect-ratio: 1/1` (square, full-width)
-- Form fields: `<input placeholder="...">` → `<label>...</label><input ...>`
-- Image gallery: Navigation arrows + thumbnail strip যোগ
-- Labels: "আপনার নাম *", "মোবাইল নম্বর *" etc. যোগ
+### File: `FullscreenPreviewModal.tsx`
 
-### পরিবর্তন ২: Device Simulation with User-Agent
+**পরিবর্তন:**
+- Desktop mode এ `p-4` padding এবং `items-start justify-center` সরিয়ে দেওয়া
+- iframe কে সরাসরি full width/height দেওয়া
+- শুধুমাত্র mobile/tablet mode এ device frame এবং centered layout রাখা
 
-Fullscreen preview modal এ real device simulation যোগ করা হবে multiple device presets এবং user-agent injection সহ।
-
-**Device Presets:**
-```text
-┌─────────────────────────────────────────────┐
-│ [iPhone 14 Pro ▼] [Desktop][Mobile] [🔄][X] │
-└─────────────────────────────────────────────┘
-```
-
-**Device Options:**
-- iPhone 14 Pro (390x844)
-- iPhone SE (375x667)
-- Samsung Galaxy S21 (360x800)
-- iPad (768x1024)
-- Desktop (full width)
-
-**User-Agent Injection:**
-- iframe এ sandbox="allow-scripts allow-same-origin" রেখে
-- iframe content এ JavaScript inject করে `navigator.userAgent` override করার চেষ্টা করা যায় না (browser security)
-- তবে CSS media query এবং viewport simulation করা যায়
-
-### File Changes
-
-| File | Changes |
-|------|---------|
-| `themeUtils.ts` | `generateCheckoutPreviewHTML` সম্পূর্ণ re-write করে real component এর সাথে match করা |
-| `FullscreenPreviewModal.tsx` | Device presets dropdown যোগ, realistic viewport dimensions |
-
----
-
-## Technical Details
-
-### 1. Updated `generateCheckoutPreviewHTML` Structure
-
-নতুন HTML structure যা `CheckoutSection.tsx` mirror করবে:
-
-```html
-<section class="py-12 px-4 bg-muted/50" id="checkout">
-  <div class="container max-w-md mx-auto">
-    <div class="rounded-theme bg-background border shadow-sm p-6">
-      <!-- Title -->
-      <h2 class="font-heading ...">অর্ডার করুন</h2>
-      
-      <!-- Product Card -->
-      <div class="mb-6 p-4 rounded-theme ...">
-        <!-- Image Gallery (aspect-square) -->
-        <div class="w-full aspect-square rounded-theme overflow-hidden bg-muted relative">
-          <img src="..." class="w-full h-full object-cover" />
-          <!-- Navigation arrows (if multiple images) -->
-          <!-- Image counter badge -->
-        </div>
-        <!-- Thumbnails row -->
-        
-        <!-- Product name + price -->
-        <div class="flex justify-between items-start">...</div>
-        
-        <!-- Quantity selector -->
-        <div class="flex items-center justify-between">...</div>
-        
-        <!-- Price breakdown -->
-        <div class="border-t pt-3 space-y-2">...</div>
-      </div>
-      
-      <!-- Form with LABELS -->
-      <form class="space-y-4">
-        <div class="space-y-2">
-          <label class="font-body text-sm font-medium">
-            আপনার নাম <span class="text-destructive">*</span>
-          </label>
-          <input ... />
-        </div>
-        <!-- More fields with labels -->
-        
-        <button>অর্ডার সম্পন্ন করুন</button>
-      </form>
+```typescript
+// Preview area - Different layout for desktop vs mobile
+<div className={cn(
+  'flex-1 min-h-0 overflow-auto',
+  isMobileDevice 
+    ? 'bg-muted/30 flex items-start justify-center p-4' 
+    : 'bg-white' // Desktop: no padding, no centering
+)}>
+  {isMobileDevice ? (
+    // Mobile device frame
+    <div
+      className="shadow-2xl rounded-[2rem] border-[8px] border-border overflow-hidden"
+      style={getContainerStyle()}
+    >
+      <iframe ... style={{ borderRadius: '1.5rem' }} />
     </div>
-  </div>
-</section>
-```
-
-### 2. Device Simulation
-
-Device selector dropdown যোগ করা হবে FullscreenPreviewModal এ:
-
-```typescript
-const devicePresets = [
-  { name: 'Desktop', width: 'full', height: 'full' },
-  { name: 'iPhone 14 Pro', width: 393, height: 852 },
-  { name: 'iPhone SE', width: 375, height: 667 },
-  { name: 'Samsung Galaxy S21', width: 360, height: 800 },
-  { name: 'iPad', width: 768, height: 1024 },
-  { name: 'iPad Pro', width: 1024, height: 1366 },
-];
-
-// In modal header
-<Select value={selectedDevice} onValueChange={setSelectedDevice}>
-  <SelectTrigger className="w-40">
-    <SelectValue />
-  </SelectTrigger>
-  <SelectContent>
-    {devicePresets.map(d => (
-      <SelectItem key={d.name} value={d.name}>{d.name}</SelectItem>
-    ))}
-  </SelectContent>
-</Select>
-```
-
-### 3. Viewport Simulation
-
-```typescript
-const currentDevice = devicePresets.find(d => d.name === selectedDevice);
-
-<div
-  className="mx-auto bg-white shadow-2xl rounded-lg overflow-hidden"
-  style={{
-    width: currentDevice.width === 'full' ? '100%' : `${currentDevice.width}px`,
-    height: currentDevice.height === 'full' ? '100%' : `${currentDevice.height}px`,
-    maxWidth: '100%',
-    maxHeight: '100%',
-  }}
->
-  <iframe ... />
+  ) : (
+    // Desktop: full width iframe
+    <iframe ... className="w-full h-full border-0" />
+  )}
 </div>
 ```
 
----
+### Preview Area Layout Changes
 
-## Summary
+**Desktop Mode:**
+```text
+┌─────────────────────────────────────────────────────────────┐
+│  [Header Controls]                                          │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  ████████████████████████████████████████████████████████   │
+│  ████████  FULL WIDTH IFRAME (no frame)  ████████████████   │
+│  ████████████████████████████████████████████████████████   │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
 
-| Component | What Changes |
-|-----------|--------------|
-| `themeUtils.ts` | `generateCheckoutPreviewHTML` কে `CheckoutSection` এর exact structure এ re-write |
-| `FullscreenPreviewModal.tsx` | Device presets dropdown + realistic viewport simulation যোগ |
+**Mobile Mode:**
+```text
+┌─────────────────────────────────────────────────────────────┐
+│  [Header Controls]                                          │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│        ┌──────────────────┐                                 │
+│        │  (device frame)  │                                 │
+│        │   ┌──────────┐   │                                 │
+│        │   │  iframe  │   │                                 │
+│        │   └──────────┘   │                                 │
+│        └──────────────────┘                                 │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## পরিবর্তিত Files
+
+| File | Changes |
+|------|---------|
+| `FullscreenPreviewModal.tsx` | Desktop mode এ full-width layout, mobile mode এ device frame সহ centered layout |
+
+## Implementation Details
+
+```typescript
+// FullscreenPreviewModal.tsx preview area
+
+{/* Preview area - conditional layout based on device */}
+<div className={cn(
+  'flex-1 min-h-0 overflow-auto',
+  isMobileDevice 
+    ? 'bg-muted/30 flex items-center justify-center p-4' 
+    : '' // Desktop: no extra styles, iframe fills space
+)}>
+  {isMobileDevice ? (
+    // Mobile/tablet with device frame
+    <div
+      className="transition-all duration-300 bg-white overflow-hidden shadow-2xl rounded-[2rem] border-[8px] border-border"
+      style={getContainerStyle()}
+    >
+      <iframe
+        key={refreshKey}
+        srcDoc={previewHtml}
+        className="w-full h-full border-0"
+        sandbox="allow-scripts"
+        title="Landing Page Preview"
+        style={{ borderRadius: '1.5rem' }}
+      />
+    </div>
+  ) : (
+    // Desktop: full width/height iframe without frame
+    <iframe
+      key={refreshKey}
+      srcDoc={previewHtml}
+      className="w-full h-full border-0 bg-white"
+      sandbox="allow-scripts"
+      title="Landing Page Preview"
+    />
+  )}
+</div>
+```
 
 ## Expected Result
 
-1. Admin preview এবং real landing page **identical** দেখাবে
-2. Image gallery সমান size এ দেখাবে (aspect-square)
-3. Form fields এ proper labels থাকবে
-4. Multiple device এ preview দেখা যাবে (iPhone, Samsung, iPad, Desktop)
-5. Realistic viewport dimensions সহ device frame দেখানো হবে
-
+1. **Desktop mode এ** iframe সম্পূর্ণ preview area জুড়ে থাকবে - real page এর মতো দেখাবে
+2. **Mobile mode এ** device frame সহ centered layout থাকবে - realistic device simulation
+3. Real page এবং preview এর মধ্যে কোন visual difference থাকবে না
