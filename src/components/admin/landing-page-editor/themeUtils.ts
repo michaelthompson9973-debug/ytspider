@@ -226,6 +226,7 @@ export interface CheckoutSettingsPreviewData {
 
 /**
  * Generate checkout form preview HTML for admin preview
+ * This mirrors the exact structure of CheckoutSection.tsx for consistency
  */
 export function generateCheckoutPreviewHTML(
   config: CheckoutConfig = defaultCheckoutConfig,
@@ -242,7 +243,7 @@ export function generateCheckoutPreviewHTML(
   // Use actual product data or placeholders
   const productName = product?.name || 'Product Name';
   const productPrice = product?.price || 0;
-  const productImage = product?.images?.[0] || null;
+  const productImages = product?.images || [];
   
   // Checkout settings
   const deliveryAmount = checkoutSettings?.delivery_amount ?? 60;
@@ -255,68 +256,147 @@ export function generateCheckoutPreviewHTML(
   // Get enabled fields
   const fields = config.fields?.filter(f => f.enabled) || defaultCheckoutFields;
   
-  // Generate form fields HTML
+  // Generate form fields HTML with proper labels (matching CheckoutSection.tsx)
   const formFieldsHtml = fields.map(field => `
-    <input 
-      style="width: 100%; border-radius: ${themeConfig.borderRadius}; border: 1px solid #d1d5db; padding: 0.625rem 0.75rem; font-family: var(--font-body); background: #f9fafb;" 
-      placeholder="${field.placeholder}" 
-      disabled 
-    />
+    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+      <label style="font-family: var(--font-body); font-size: 0.875rem; font-weight: 500; display: block;">
+        ${field.label}${field.required ? '<span style="color: #ef4444; margin-left: 0.25rem;">*</span>' : ''}
+      </label>
+      ${field.type === 'textarea' 
+        ? `<textarea 
+            style="width: 100%; border-radius: ${themeConfig.borderRadius}; border: 1px solid #e5e7eb; padding: 0.5rem 0.75rem; font-family: var(--font-body); background: white; font-size: 1rem; resize: vertical; min-height: 4.5rem;" 
+            placeholder="${field.placeholder}" 
+            disabled
+          ></textarea>`
+        : `<input 
+            style="width: 100%; border-radius: ${themeConfig.borderRadius}; border: 1px solid #e5e7eb; padding: 0.5rem 0.75rem; font-family: var(--font-body); background: white; font-size: 1rem; height: 2.5rem;" 
+            placeholder="${field.placeholder}" 
+            type="${field.type || 'text'}"
+            disabled 
+          />`
+      }
+    </div>
   `).join('\n');
 
-  // Product image HTML
-  const productImageHtml = productImage 
-    ? `<img src="${productImage}" alt="${productName}" style="width: 100%; height: 120px; object-fit: cover; border-radius: ${themeConfig.borderRadius}; margin-bottom: 0.75rem;" />`
-    : `<div style="width: 100%; height: 120px; background: #e5e7eb; border-radius: ${themeConfig.borderRadius}; margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: center; color: #9ca3af; font-family: var(--font-body);">
-        Product Image
+  // Generate image gallery HTML (matching ProductImageGallery.tsx)
+  const hasMultipleImages = productImages.length > 1;
+  const firstImage = productImages[0] || null;
+  
+  const imageGalleryHtml = firstImage 
+    ? `
+      <div style="width: 100%; display: flex; flex-direction: column; gap: 0.75rem;">
+        <!-- Main Image with aspect-square -->
+        <div style="position: relative; width: 100%; padding-bottom: 100%; border-radius: ${themeConfig.borderRadius}; overflow: hidden; background: #f3f4f6;">
+          <img 
+            src="${firstImage}" 
+            alt="${productName}" 
+            style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;" 
+          />
+          ${hasMultipleImages ? `
+            <!-- Navigation arrows -->
+            <button 
+              type="button" 
+              style="position: absolute; left: 0.5rem; top: 50%; transform: translateY(-50%); width: 2rem; height: 2rem; border-radius: 9999px; background: rgba(255,255,255,0.8); backdrop-filter: blur(4px); border: 1px solid #e5e7eb; display: flex; align-items: center; justify-content: center; cursor: pointer;"
+              disabled
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+            </button>
+            <button 
+              type="button" 
+              style="position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); width: 2rem; height: 2rem; border-radius: 9999px; background: rgba(255,255,255,0.8); backdrop-filter: blur(4px); border: 1px solid #e5e7eb; display: flex; align-items: center; justify-content: center; cursor: pointer;"
+              disabled
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+            </button>
+            <!-- Image counter -->
+            <div style="position: absolute; bottom: 0.5rem; right: 0.5rem; padding: 0.25rem 0.5rem; border-radius: 9999px; background: rgba(255,255,255,0.8); backdrop-filter: blur(4px); font-size: 0.75rem; font-family: var(--font-digit);">
+              1 / ${productImages.length}
+            </div>
+          ` : ''}
+        </div>
+        ${hasMultipleImages ? `
+          <!-- Thumbnail Navigation -->
+          <div style="display: flex; gap: 0.5rem; overflow-x: auto; padding-bottom: 0.25rem;">
+            ${productImages.map((img, idx) => `
+              <button 
+                type="button" 
+                style="flex-shrink: 0; width: 4rem; height: 4rem; border-radius: ${themeConfig.borderRadius}; overflow: hidden; border: 2px solid ${idx === 0 ? themeConfig.primaryColor : 'transparent'}; cursor: pointer;"
+                disabled
+              >
+                <img src="${img}" alt="Thumbnail ${idx + 1}" style="width: 100%; height: 100%; object-fit: cover;" />
+              </button>
+            `).join('')}
+          </div>
+        ` : ''}
+      </div>
+    `
+    : `<div style="width: 100%; padding-bottom: 100%; position: relative; background: #e5e7eb; border-radius: ${themeConfig.borderRadius}; overflow: hidden;">
+        <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #9ca3af; font-family: var(--font-body);">
+          Product Image
+        </div>
       </div>`;
 
   return `
-    <section class="py-12 px-4" style="background-color: #f9fafb;" id="checkout">
+    <section class="py-12 px-4" style="background-color: hsl(var(--muted) / 0.5);" id="checkout">
       <div class="container max-w-md mx-auto">
         <div style="border-radius: ${themeConfig.borderRadius}; background: white; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 1.5rem;">
           <h2 style="font-family: var(--font-heading); color: ${themeConfig.primaryColor}; font-size: 1.5rem; font-weight: 600; text-align: center; margin-bottom: 1rem;">
             ${config.title || 'অর্ডার করুন'}
           </h2>
           
-          <!-- Product section -->
-          <div style="margin-bottom: 1.5rem; padding: 1rem; border-radius: ${themeConfig.borderRadius}; background: #f9fafb; border: 1px solid #e5e7eb;">
-            ${productImageHtml}
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-family: var(--font-body); color: #374151; font-weight: 500;">${productName}</span>
-              <span style="font-family: var(--font-digit); color: ${themeConfig.primaryColor}; font-weight: 700;">${currencySymbol}${productPrice.toLocaleString()}</span>
+          <!-- Product section (matching CheckoutSection.tsx) -->
+          <div style="margin-bottom: 1.5rem; padding: 1rem; border-radius: ${themeConfig.borderRadius}; background: hsl(var(--muted) / 0.5); border: 1px solid #e5e7eb; display: flex; flex-direction: column; gap: 1rem;">
+            <!-- Image Gallery -->
+            ${imageGalleryHtml}
+            
+            <!-- Product name + price -->
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <p style="font-family: var(--font-body); font-size: 1.125rem; font-weight: 500; margin: 0;">${productName}</p>
+              <p style="font-family: var(--font-digit); font-size: 1.125rem; color: ${themeConfig.primaryColor}; font-weight: 700; margin: 0;">${currencySymbol}${productPrice.toLocaleString()}</p>
             </div>
-            <div style="display: flex; align-items: center; justify-content: center; gap: 1rem; margin-top: 0.75rem;">
-              <button style="width: 2rem; height: 2rem; border-radius: ${buttonRadius}; border: 1px solid #d1d5db; background: white; cursor: pointer;">−</button>
-              <span style="font-family: var(--font-digit); font-weight: 500; min-width: 2rem; text-align: center;">1</span>
-              <button style="width: 2rem; height: 2rem; border-radius: ${buttonRadius}; border: 1px solid #d1d5db; background: white; cursor: pointer;">+</button>
+            
+            <!-- Quantity selector -->
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <span style="font-family: var(--font-body); font-size: 0.875rem; color: #6b7280;">পরিমাণ:</span>
+              <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <button type="button" style="width: 2rem; height: 2rem; border-radius: ${themeConfig.borderRadius}; border: 1px solid #e5e7eb; background: white; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/></svg>
+                </button>
+                <span style="font-family: var(--font-digit); font-size: 1.125rem; width: 2rem; text-align: center;">1</span>
+                <button type="button" style="width: 2rem; height: 2rem; border-radius: ${themeConfig.borderRadius}; border: 1px solid #e5e7eb; background: white; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                </button>
+              </div>
+            </div>
+            
+            <!-- Price breakdown -->
+            <div style="border-top: 1px solid #e5e7eb; padding-top: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.875rem;">
+              <div style="display: flex; justify-content: space-between; font-family: var(--font-body);">
+                <span style="color: #6b7280;">সাবটোটাল:</span>
+                <span style="font-family: var(--font-digit);">${currencySymbol}${subtotal.toLocaleString()}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-family: var(--font-body);">
+                <span style="color: #6b7280;">ডেলিভারি চার্জ:</span>
+                <span style="font-family: var(--font-digit);">${currencySymbol}${deliveryAmount.toLocaleString()}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-family: var(--font-body); font-weight: 600; font-size: 1rem; border-top: 1px solid #e5e7eb; padding-top: 0.5rem;">
+                <span>সর্বমোট:</span>
+                <span style="font-family: var(--font-digit); color: ${themeConfig.primaryColor};">${currencySymbol}${total.toLocaleString()}</span>
+              </div>
             </div>
           </div>
           
-          <!-- Price breakdown -->
-          <div style="margin-bottom: 1rem; padding: 0.75rem; background: #f9fafb; border-radius: ${themeConfig.borderRadius}; font-family: var(--font-body); font-size: 0.875rem;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
-              <span>সাবটোটাল:</span>
-              <span style="font-family: var(--font-digit);">${currencySymbol}${subtotal.toLocaleString()}</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
-              <span>ডেলিভারি:</span>
-              <span style="font-family: var(--font-digit);">${currencySymbol}${deliveryAmount.toLocaleString()}</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; font-weight: 600; padding-top: 0.5rem; border-top: 1px solid #e5e7eb;">
-              <span>সর্বমোট:</span>
-              <span style="font-family: var(--font-digit); color: ${themeConfig.primaryColor};">${currencySymbol}${total.toLocaleString()}</span>
-            </div>
-          </div>
-          
-          <!-- Form fields preview -->
-          <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1rem;">
+          <!-- Form fields with proper labels -->
+          <form style="display: flex; flex-direction: column; gap: 1rem;">
             ${formFieldsHtml}
-          </div>
-          
-          <button style="width: 100%; background: ${themeConfig.primaryColor}; color: white; padding: 0.875rem; border-radius: ${buttonRadius}; font-family: var(--font-button); font-weight: 600; border: none; cursor: pointer;">
-            ${config.ctaText || 'অর্ডার সম্পন্ন করুন'}
-          </button>
+            
+            <button 
+              type="button" 
+              style="width: 100%; background: ${themeConfig.primaryColor}; color: white; padding: 0.75rem; border-radius: ${buttonRadius}; font-family: var(--font-button); font-size: 1.125rem; font-weight: 600; border: none; cursor: pointer;"
+            >
+              ${config.ctaText || 'অর্ডার সম্পন্ন করুন'}
+            </button>
+          </form>
         </div>
       </div>
     </section>
