@@ -1,183 +1,103 @@
 
-# Preview Click এ Unique Real Preview Link তৈরির Plan
 
-## বর্তমান সিস্টেম
+# Simple Preview Link for Published + Unpublished Pages
 
-বর্তমানে preview button click করলে:
-1. `FullscreenPreviewModal` ওপেন হয় (iframe with srcDoc)
-2. এটি static HTML generate করে iframe এ show করে
-3. এটা real landing page `/p/{slug}` থেকে আলাদা behave করে
+## সমাধান
 
-## নতুন সমাধান
+**Preview URL Format:** `/p/{slug}?preview=true`
 
-**Preview button এ click করলে সরাসরি real landing page `/p/{slug}` নতুন tab এ ওপেন হবে।**
+এই URL দিয়ে published বা unpublished যেকোনো page দেখা যাবে।
 
-এটি সত্যিকারের page দেখাবে কারণ:
-- Real React components render হবে (`CheckoutSection.tsx`)
-- সব fonts, theme, styles properly load হবে
-- Real device এ যেমন দেখাবে হুবহু তেমন দেখাবে
+## পরিবর্তন
 
-### Implementation Details
+### File 1: `src/pages/LandingPage.tsx`
 
-**File: `FullPagePreview.tsx`**
-
-নতুন "Open Preview" button যোগ করা হবে যা:
-1. Landing page এর slug fetch করবে
-2. নতুন tab এ `/p/{slug}` route ওপেন করবে
+**পরিবর্তন:**
+- `?preview=true` query parameter চেক করা
+- Preview mode এ `.eq('published', true)` condition সরিয়ে দেওয়া
+- Preview mode এ একটি ছোট banner দেখানো (optional)
 
 ```typescript
-// Fetch landing page slug
-const { data: landingPage } = useQuery({
-  queryKey: ['landing-page-slug', landingPageId],
+// Get preview mode from URL
+const isPreviewMode = searchParams.get('preview') === 'true';
+
+// Query - conditionally check published status
+const { data: page } = useQuery({
+  queryKey: ['landing-page', slug, isPreviewMode],
   queryFn: async () => {
-    const { data } = await supabase
+    let query = supabase
       .from('landing_pages')
-      .select('slug, published')
-      .eq('id', landingPageId)
-      .maybeSingle();
+      .select(`*, products (id, name, price, description, images)`)
+      .eq('slug', slug);
+    
+    // Only check published if NOT in preview mode
+    if (!isPreviewMode) {
+      query = query.eq('published', true);
+    }
+    
+    const { data, error } = await query.maybeSingle();
+    if (error) throw error;
     return data;
   },
-  enabled: !!landingPageId,
 });
+```
 
-// Open real preview in new tab
+### File 2: `src/components/admin/landing-page-editor/FullPagePreview.tsx`
+
+**পরিবর্তন:**
+- `handleOpenRealPreview` function এ `?preview=true` যোগ করা
+- Published check সরিয়ে দেওয়া
+
+```typescript
 const handleOpenRealPreview = () => {
   if (!landingPage?.slug) {
-    toast({ 
-      title: 'Error', 
-      description: 'Page slug not found', 
-      variant: 'destructive' 
-    });
+    toast({ title: 'Slug not found', variant: 'destructive' });
     return;
   }
   
-  // Note: For unpublished pages, we need a preview token system
-  // Or we can show warning that page needs to be published first
-  window.open(`/p/${landingPage.slug}`, '_blank');
+  // Always open with preview=true (works for both published & unpublished)
+  window.open(`/p/${landingPage.slug}?preview=true`, '_blank');
 };
 ```
 
-### Preview Token System (Optional Enhancement)
+### File 3: `src/components/admin/landing-page-editor/FullscreenPreviewModal.tsx`
 
-Unpublished pages preview করার জন্য preview token system:
-
-1. **Database**: `landing_page_preview_tokens` table
-   - `id`, `landing_page_id`, `token`, `expires_at`, `created_at`
-
-2. **Route**: `/p/{slug}?preview_token={token}`
-   - Token validate করে unpublished page ও দেখাবে
-
-3. **Edge Function**: `generate-preview-token`
-   - 24 hour validity সহ unique token generate করবে
-
-### সহজ Solution (Recommended First)
-
-প্রথমে সহজ solution implement করি:
-- Published pages এর জন্য সরাসরি `/p/{slug}` ওপেন করা
-- Unpublished pages এর জন্য warning দেখানো যে "Please publish first to preview"
+**পরিবর্তন:**
+- Same update - `?preview=true` যোগ করা
 
 ---
 
-## File Changes
+## Preview Banner (Optional)
+
+Unpublished page preview তে একটি ছোট banner দেখানো যেতে পারে:
+
+```typescript
+// LandingPage.tsx - at the top
+{isPreviewMode && !page.published && (
+  <div className="bg-amber-500 text-white text-center py-2 text-sm">
+    Preview Mode - This page is not published yet
+  </div>
+)}
+```
+
+---
+
+## Result
+
+| Scenario | URL | Works? |
+|----------|-----|--------|
+| Published page (normal) | `/p/my-page` | Yes |
+| Published page (preview) | `/p/my-page?preview=true` | Yes |
+| Unpublished page (preview) | `/p/my-page?preview=true` | Yes |
+| Unpublished page (normal) | `/p/my-page` | No (404) |
+
+---
+
+## Files Summary
 
 | File | Changes |
 |------|---------|
-| `FullPagePreview.tsx` | "Open in New Tab" button যোগ + slug fetch + warning for unpublished |
-| `FullscreenPreviewModal.tsx` | Same "Open in New Tab" button header এ যোগ |
+| `LandingPage.tsx` | `?preview=true` check + conditional published filter |
+| `FullPagePreview.tsx` | Preview link এ `?preview=true` যোগ |
+| `FullscreenPreviewModal.tsx` | Same update |
 
----
-
-## Implementation: FullPagePreview.tsx
-
-```typescript
-import { ExternalLink } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-
-// Inside component:
-
-// Fetch landing page details for slug
-const { data: landingPage } = useQuery({
-  queryKey: ['landing-page-details', landingPageId],
-  queryFn: async () => {
-    const { data } = await supabase
-      .from('landing_pages')
-      .select('slug, published')
-      .eq('id', landingPageId)
-      .maybeSingle();
-    return data;
-  },
-  enabled: !!landingPageId,
-});
-
-const { toast } = useToast();
-
-const handleOpenRealPreview = () => {
-  if (!landingPage?.slug) {
-    toast({ 
-      title: 'Slug not found', 
-      variant: 'destructive' 
-    });
-    return;
-  }
-  
-  if (!landingPage.published) {
-    toast({
-      title: 'Page Not Published',
-      description: 'Please publish the page first to see real preview.',
-      variant: 'destructive',
-    });
-    return;
-  }
-  
-  window.open(`/p/${landingPage.slug}`, '_blank');
-};
-
-// In toolbar, add button:
-<Button
-  variant="ghost"
-  size="icon"
-  className="h-8 w-8"
-  onClick={handleOpenRealPreview}
-  title="Open in new tab"
->
-  <ExternalLink className="h-4 w-4" />
-</Button>
-```
-
-## Implementation: FullscreenPreviewModal.tsx
-
-Header এ same button যোগ:
-
-```typescript
-// In header controls section:
-<Button
-  variant="ghost"
-  size="icon"
-  className="h-8 w-8"
-  onClick={handleOpenRealPreview}
-  title="Open in new tab"
->
-  <ExternalLink className="h-4 w-4" />
-</Button>
-```
-
----
-
-## Expected Result
-
-1. Preview toolbar এ **ExternalLink icon** button থাকবে
-2. Click করলে **new browser tab** এ `/p/{slug}` ওপেন হবে
-3. **Real landing page** দেখাবে - হুবহু live site এর মতো
-4. Published না হলে warning toast দেখাবে
-5. Device simulation এর প্রয়োজন নেই - real browser এ real page!
-
----
-
-## Summary
-
-| Component | New Feature |
-|-----------|-------------|
-| `FullPagePreview.tsx` | ExternalLink button → Opens `/p/{slug}` in new tab |
-| `FullscreenPreviewModal.tsx` | Same button in fullscreen header |
-
-এই solution সবচেয়ে সহজ এবং সবচেয়ে accurate preview দেবে কারণ এটা সত্যিকারের page ওপেন করে!
