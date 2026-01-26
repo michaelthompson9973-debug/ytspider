@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Settings, Eye } from 'lucide-react';
+import { ArrowLeft, Settings, Eye, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSections } from './useSections';
 import { useTheme } from './useTheme';
+import { useCheckoutSettings } from './useCheckoutSettings';
 import { SectionList } from './SectionList';
 import { SectionEditor } from './SectionEditor';
 import { CheckoutEditor } from './CheckoutEditor';
+import { CheckoutSettingsPanel } from './CheckoutSettingsPanel';
 import { ThemePanel } from './ThemePanel';
 import { FullPagePreview } from './FullPagePreview';
-import { MobileNavigation } from './MobileNavigation';
+import { MobileNavigation, MobileTab } from './MobileNavigation';
 import { Section, SectionType, CheckoutConfig } from './types';
 import { cn } from '@/lib/utils';
 
@@ -18,12 +20,12 @@ interface SectionBuilderProps {
   onBack: () => void;
 }
 
-type MobileTab = 'sections' | 'editor' | 'preview' | 'theme';
+type RightPanel = 'preview' | 'theme' | 'checkout';
 
 export function SectionBuilder({ landingPageId, gtmId, onBack }: SectionBuilderProps) {
   const [activeSection, setActiveSection] = useState<Section | null>(null);
   const [previewingSections, setPreviewingSections] = useState<Set<string>>(new Set());
-  const [rightPanel, setRightPanel] = useState<'preview' | 'theme'>('preview');
+  const [rightPanel, setRightPanel] = useState<RightPanel>('preview');
   const [mobileTab, setMobileTab] = useState<MobileTab>('sections');
 
   const {
@@ -39,7 +41,9 @@ export function SectionBuilder({ landingPageId, gtmId, onBack }: SectionBuilderP
   } = useSections(landingPageId);
 
   const { themeConfig, saveTheme, isSaving: isThemeSaving } = useTheme(landingPageId);
-
+  
+  // Checkout settings hook (separate from theme)
+  const { checkoutSettings } = useCheckoutSettings(landingPageId);
   // Sync activeSection with updated sections data
   useEffect(() => {
     if (activeSection && sections.length > 0) {
@@ -126,6 +130,14 @@ export function SectionBuilder({ landingPageId, gtmId, onBack }: SectionBuilderP
             <Settings className="h-4 w-4 mr-1" />
             Theme
           </Button>
+          <Button
+            variant={rightPanel === 'checkout' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setRightPanel('checkout')}
+          >
+            <ShoppingCart className="h-4 w-4 mr-1" />
+            Checkout
+          </Button>
         </div>
       </div>
 
@@ -164,7 +176,7 @@ export function SectionBuilder({ landingPageId, gtmId, onBack }: SectionBuilderP
           )}
         </div>
 
-        {/* Right: Preview or Theme */}
+        {/* Right: Preview, Theme, or Checkout Settings */}
         <div className="col-span-4 border rounded-lg p-4 overflow-hidden">
           {rightPanel === 'theme' ? (
             <ThemePanel
@@ -172,6 +184,8 @@ export function SectionBuilder({ landingPageId, gtmId, onBack }: SectionBuilderP
               onSave={saveTheme}
               isSaving={isThemeSaving}
             />
+          ) : rightPanel === 'checkout' ? (
+            <CheckoutSettingsPanel landingPageId={landingPageId} />
           ) : (
             <FullPagePreview
               sections={visibleSections}
@@ -241,6 +255,13 @@ export function SectionBuilder({ landingPageId, gtmId, onBack }: SectionBuilderP
             onSave={saveTheme}
             isSaving={isThemeSaving}
           />
+        </div>
+
+        <div className={cn(
+          'h-full border rounded-lg p-4 overflow-hidden',
+          mobileTab !== 'checkout' && 'hidden'
+        )}>
+          <CheckoutSettingsPanel landingPageId={landingPageId} />
         </div>
       </div>
 

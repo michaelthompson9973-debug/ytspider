@@ -94,6 +94,47 @@ export type Database = {
           },
         ]
       }
+      landing_page_checkout_settings: {
+        Row: {
+          created_at: string
+          currency: string
+          delivery_amount: number
+          delivery_mode: Database["public"]["Enums"]["delivery_mode"]
+          free_over_amount: number | null
+          id: string
+          landing_page_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          delivery_amount?: number
+          delivery_mode?: Database["public"]["Enums"]["delivery_mode"]
+          free_over_amount?: number | null
+          id?: string
+          landing_page_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          delivery_amount?: number
+          delivery_mode?: Database["public"]["Enums"]["delivery_mode"]
+          free_over_amount?: number | null
+          id?: string
+          landing_page_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "landing_page_checkout_settings_landing_page_id_fkey"
+            columns: ["landing_page_id"]
+            isOneToOne: true
+            referencedRelation: "landing_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       landing_page_sections: {
         Row: {
           config: Json | null
@@ -250,16 +291,22 @@ export type Database = {
       orders: {
         Row: {
           created_at: string
+          currency: string | null
           customer_address: string
           customer_city: string
           customer_name: string
           customer_phone: string
+          delivery_charge: number | null
           event_id: string | null
           id: string
           ip_address: string | null
           landing_page_id: string | null
           product_id: string | null
+          quantity: number
           status: Database["public"]["Enums"]["order_status"]
+          subtotal: number | null
+          total: number | null
+          unit_price: number | null
           updated_at: string
           utm_campaign: string | null
           utm_content: string | null
@@ -269,16 +316,22 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          currency?: string | null
           customer_address: string
           customer_city: string
           customer_name: string
           customer_phone: string
+          delivery_charge?: number | null
           event_id?: string | null
           id?: string
           ip_address?: string | null
           landing_page_id?: string | null
           product_id?: string | null
+          quantity?: number
           status?: Database["public"]["Enums"]["order_status"]
+          subtotal?: number | null
+          total?: number | null
+          unit_price?: number | null
           updated_at?: string
           utm_campaign?: string | null
           utm_content?: string | null
@@ -288,16 +341,22 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          currency?: string | null
           customer_address?: string
           customer_city?: string
           customer_name?: string
           customer_phone?: string
+          delivery_charge?: number | null
           event_id?: string | null
           id?: string
           ip_address?: string | null
           landing_page_id?: string | null
           product_id?: string | null
+          quantity?: number
           status?: Database["public"]["Enums"]["order_status"]
+          subtotal?: number | null
+          total?: number | null
+          unit_price?: number | null
           updated_at?: string
           utm_campaign?: string | null
           utm_content?: string | null
@@ -395,6 +454,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin"
+      delivery_mode: "flat" | "conditional" | "free"
       order_status: "new" | "confirmed" | "shipped" | "cancelled"
     }
     CompositeTypes: {
@@ -524,6 +584,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin"],
+      delivery_mode: ["flat", "conditional", "free"],
       order_status: ["new", "confirmed", "shipped", "cancelled"],
     },
   },

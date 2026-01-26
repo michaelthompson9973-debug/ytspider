@@ -1,7 +1,7 @@
-import { Layers, Code, Eye, Palette } from 'lucide-react';
+import { Layers, Code, Eye, Palette, ShoppingCart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-type MobileTab = 'sections' | 'editor' | 'preview' | 'theme';
+export type MobileTab = 'sections' | 'editor' | 'preview' | 'theme' | 'checkout';
 
 interface MobileNavigationProps {
   activeTab: MobileTab;
@@ -14,6 +14,7 @@ const tabs: { id: MobileTab; label: string; icon: React.ComponentType<{ classNam
   { id: 'editor', label: 'Editor', icon: Code },
   { id: 'preview', label: 'Preview', icon: Eye },
   { id: 'theme', label: 'Theme', icon: Palette },
+  { id: 'checkout', label: 'Checkout', icon: ShoppingCart },
 ];
 
 export function MobileNavigation({ activeTab, onTabChange, hasActiveSection }: MobileNavigationProps) {

@@ -80,3 +80,36 @@ export const buttonStyles = [
 
 // Legacy export for backward compatibility
 export const fontFamilies = availableFonts.map(f => ({ value: f.value, label: f.label }));
+
+// Checkout Settings Types (separate from Theme)
+export type DeliveryMode = 'flat' | 'conditional' | 'free';
+
+export interface CheckoutSettings {
+  id: string;
+  landing_page_id: string;
+  currency: string;
+  delivery_mode: DeliveryMode;
+  delivery_amount: number;
+  free_over_amount: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export const defaultCheckoutSettings: Omit<CheckoutSettings, 'id' | 'landing_page_id' | 'created_at' | 'updated_at'> = {
+  currency: 'BDT',
+  delivery_mode: 'flat',
+  delivery_amount: 60,
+  free_over_amount: null,
+};
+
+export const currencyOptions = [
+  { value: 'BDT', label: '৳ BDT', symbol: '৳' },
+  { value: 'USD', label: '$ USD', symbol: '$' },
+  { value: 'INR', label: '₹ INR', symbol: '₹' },
+];
+
+export const deliveryModeOptions = [
+  { value: 'flat', label: 'Flat Charge', description: 'Fixed delivery fee for all orders' },
+  { value: 'conditional', label: 'Free Above Amount', description: 'Free delivery if order exceeds threshold' },
+  { value: 'free', label: 'Always Free', description: 'No delivery charge' },
+];

@@ -82,13 +82,23 @@ export default function Orders() {
     },
   });
 
+  const formatCurrency = (amount: number | null, currency: string | null) => {
+    if (amount === null || amount === undefined) return '-';
+    const symbol = currency === 'USD' ? '$' : currency === 'INR' ? '₹' : '৳';
+    return `${symbol}${Number(amount).toLocaleString()}`;
+  };
+
   const exportCSV = () => {
     if (!orders || orders.length === 0) {
       toast({ title: 'No orders to export', variant: 'destructive' });
       return;
     }
 
-    const headers = ['ID', 'Customer', 'Phone', 'Address', 'City', 'Product', 'Page', 'Status', 'UTM Source', 'UTM Medium', 'UTM Campaign', 'Created'];
+    const headers = [
+      'ID', 'Customer', 'Phone', 'Address', 'City', 'Product', 'Page',
+      'Qty', 'Unit Price', 'Subtotal', 'Delivery', 'Total', 'Currency',
+      'Status', 'UTM Source', 'UTM Medium', 'UTM Campaign', 'Created'
+    ];
     const rows = orders.map(o => [
       o.id,
       o.customer_name,
@@ -97,6 +107,12 @@ export default function Orders() {
       o.customer_city,
       o.products?.name ?? '',
       o.landing_pages?.slug ?? '',
+      o.quantity ?? 1,
+      o.unit_price ?? '',
+      o.subtotal ?? '',
+      o.delivery_charge ?? '',
+      o.total ?? '',
+      o.currency ?? 'BDT',
       o.status,
       o.utm_source ?? '',
       o.utm_medium ?? '',
@@ -177,8 +193,10 @@ export default function Orders() {
                     <th className="px-4 py-3 text-left font-medium whitespace-nowrap">Phone</th>
                     <th className="px-4 py-3 text-left font-medium whitespace-nowrap">City</th>
                     <th className="px-4 py-3 text-left font-medium whitespace-nowrap">Product</th>
-                    <th className="px-4 py-3 text-left font-medium whitespace-nowrap">Page</th>
-                    <th className="px-4 py-3 text-left font-medium whitespace-nowrap">UTM</th>
+                    <th className="px-4 py-3 text-right font-medium whitespace-nowrap">Qty</th>
+                    <th className="px-4 py-3 text-right font-medium whitespace-nowrap">Subtotal</th>
+                    <th className="px-4 py-3 text-right font-medium whitespace-nowrap">Delivery</th>
+                    <th className="px-4 py-3 text-right font-medium whitespace-nowrap">Total</th>
                     <th className="px-4 py-3 text-left font-medium whitespace-nowrap">Date</th>
                     <th className="px-4 py-3 text-left font-medium whitespace-nowrap">Status</th>
                   </tr>
@@ -186,13 +204,13 @@ export default function Orders() {
                 <tbody>
                   {isLoading ? (
                     <tr>
-                      <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
+                      <td colSpan={10} className="px-4 py-8 text-center text-muted-foreground">
                         Loading...
                       </td>
                     </tr>
                   ) : orders?.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
+                      <td colSpan={10} className="px-4 py-8 text-center text-muted-foreground">
                         No orders found
                       </td>
                     </tr>
@@ -203,11 +221,15 @@ export default function Orders() {
                         <td className="px-4 py-3 whitespace-nowrap">{order.customer_phone}</td>
                         <td className="px-4 py-3 whitespace-nowrap">{order.customer_city}</td>
                         <td className="px-4 py-3 whitespace-nowrap">{order.products?.name ?? '-'}</td>
-                        <td className="px-4 py-3 whitespace-nowrap">/{order.landing_pages?.slug ?? '-'}</td>
-                        <td className="px-4 py-3 whitespace-nowrap text-xs">
-                          {order.utm_source && <span className="block">src: {order.utm_source}</span>}
-                          {order.utm_medium && <span className="block">med: {order.utm_medium}</span>}
-                          {order.utm_campaign && <span className="block">cmp: {order.utm_campaign}</span>}
+                        <td className="px-4 py-3 text-right whitespace-nowrap">{order.quantity ?? 1}</td>
+                        <td className="px-4 py-3 text-right whitespace-nowrap">
+                          {formatCurrency(order.subtotal, order.currency)}
+                        </td>
+                        <td className="px-4 py-3 text-right whitespace-nowrap">
+                          {formatCurrency(order.delivery_charge, order.currency)}
+                        </td>
+                        <td className="px-4 py-3 text-right whitespace-nowrap font-semibold">
+                          {formatCurrency(order.total, order.currency)}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap text-xs">
                           {format(new Date(order.created_at), 'MMM dd, HH:mm')}
