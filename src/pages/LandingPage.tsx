@@ -40,19 +40,26 @@ export default function LandingPage() {
   const [orderSubmitted, setOrderSubmitted] = useState(false);
   const [orderCustomerInfo, setOrderCustomerInfo] = useState<{ name: string; phone: string } | null>(null);
 
+  // Check for preview mode
+  const isPreviewMode = searchParams.get('preview') === 'true';
+
   const { data: page, isLoading, error } = useQuery({
-    queryKey: ['landing-page', slug],
+    queryKey: ['landing-page', slug, isPreviewMode],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('landing_pages')
         .select(`
           *,
           products (id, name, price, description, images)
         `)
-        .eq('slug', slug)
-        .eq('published', true)
-        .maybeSingle();
+        .eq('slug', slug);
+      
+      // Only check published status if NOT in preview mode
+      if (!isPreviewMode) {
+        query = query.eq('published', true);
+      }
 
+      const { data, error } = await query.maybeSingle();
       if (error) throw error;
       return data;
     },
@@ -310,6 +317,12 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen">
+      {/* Preview mode banner for unpublished pages */}
+      {isPreviewMode && !page.published && (
+        <div className="bg-warning text-warning-foreground text-center py-2 text-sm font-medium">
+          প্রিভিউ মোড - এই পেজটি এখনো পাবলিশ করা হয়নি
+        </div>
+      )}
       {renderSections()}
     </div>
   );

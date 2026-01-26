@@ -133,16 +133,8 @@ export const FullPagePreview = forwardRef<HTMLDivElement, FullPagePreviewProps>(
         return;
       }
       
-      if (!landingPage.published) {
-        toast({
-          title: 'Page Not Published',
-          description: 'Please publish the page first to see real preview.',
-          variant: 'destructive',
-        });
-        return;
-      }
-      
-      window.open(`/p/${landingPage.slug}`, '_blank');
+      // Always open with preview=true (works for both published & unpublished)
+      window.open(`/p/${landingPage.slug}?preview=true`, '_blank');
     };
 
     if (sections.length === 0) {
