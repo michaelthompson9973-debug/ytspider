@@ -119,10 +119,10 @@ export function SectionItem({
                   onTogglePreview();
                 }}
               >
-                {showPreview ? (
-                  <EyeOff className="h-3 w-3" />
-                ) : (
+              {showPreview ? (
                   <Eye className="h-3 w-3" />
+                ) : (
+                  <EyeOff className="h-3 w-3" />
                 )}
               </Button>
             </TooltipTrigger>
