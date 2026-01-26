@@ -3,12 +3,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { Save, ShoppingCart, Eye, Settings, Plus } from 'lucide-react';
+import { Save, ShoppingCart, Eye, Settings, Plus, Maximize2 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Section, CheckoutConfig, defaultCheckoutConfig, defaultCheckoutFields, ThemeConfig, defaultThemeConfig, CheckoutField } from './types';
 import { generateCheckoutPreviewHTML, generatePreviewHTML } from './themeUtils';
 import { FieldEditor } from './FieldEditor';
+import { FullscreenPreviewModal } from './FullscreenPreviewModal';
 import { useCheckoutSettings } from './useCheckoutSettings';
 
 interface CheckoutEditorProps {
@@ -25,6 +26,8 @@ export const CheckoutEditor = forwardRef<HTMLDivElement, CheckoutEditorProps>(
     const [config, setConfig] = useState<CheckoutConfig>(defaultCheckoutConfig);
     const [isDirty, setIsDirty] = useState(false);
     const [viewMode, setViewMode] = useState<'preview' | 'settings'>('preview');
+    const [fullscreenOpen, setFullscreenOpen] = useState(false);
+    const [fullscreenSections, setFullscreenSections] = useState<Section[]>([]);
     const iframeRef = useRef<HTMLIFrameElement>(null);
 
     // Fetch linked product
@@ -163,25 +166,52 @@ export const CheckoutEditor = forwardRef<HTMLDivElement, CheckoutEditorProps>(
         </div>
 
         {/* View Mode Toggle */}
-        <div className="flex items-center gap-1 mb-2">
-          <Button
-            variant={viewMode === 'preview' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => setViewMode('preview')}
-            className="h-7 px-2 text-xs"
-          >
-            <Eye className="h-3.5 w-3.5 mr-1" />
-            Preview
-          </Button>
-          <Button
-            variant={viewMode === 'settings' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => setViewMode('settings')}
-            className="h-7 px-2 text-xs"
-          >
-            <Settings className="h-3.5 w-3.5 mr-1" />
-            Settings
-          </Button>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-1">
+            <Button
+              variant={viewMode === 'preview' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('preview')}
+              className="h-7 px-2 text-xs"
+            >
+              <Eye className="h-3.5 w-3.5 mr-1" />
+              Preview
+            </Button>
+            <Button
+              variant={viewMode === 'settings' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('settings')}
+              className="h-7 px-2 text-xs"
+            >
+              <Settings className="h-3.5 w-3.5 mr-1" />
+              Settings
+            </Button>
+          </div>
+          {viewMode === 'preview' && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                // Create a fake section array with checkout section for fullscreen preview
+                const checkoutSection: Section = {
+                  id: section.id,
+                  landing_page_id: landingPageId,
+                  name: name,
+                  type: 'checkout',
+                  html: '',
+                  sort_order: 0,
+                  created_at: '',
+                  config: config,
+                };
+                setFullscreenSections([checkoutSection]);
+                setFullscreenOpen(true);
+              }}
+              className="h-7 px-2"
+              title="Expand to fullscreen"
+            >
+              <Maximize2 className="h-3.5 w-3.5" />
+            </Button>
+          )}
         </div>
 
         {/* Content Area */}
@@ -320,6 +350,15 @@ export const CheckoutEditor = forwardRef<HTMLDivElement, CheckoutEditorProps>(
             </Button>
           </div>
         )}
+
+        {/* Fullscreen Preview Modal */}
+        <FullscreenPreviewModal
+          open={fullscreenOpen}
+          onOpenChange={setFullscreenOpen}
+          sections={fullscreenSections}
+          themeConfig={themeConfig}
+          landingPageId={landingPageId}
+        />
       </div>
     );
   }

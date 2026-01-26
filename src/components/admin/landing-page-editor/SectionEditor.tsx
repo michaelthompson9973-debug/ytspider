@@ -2,9 +2,10 @@ import { useState, useEffect, forwardRef, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Save, FileCode, Eye, Code } from 'lucide-react';
+import { Save, FileCode, Eye, Code, Maximize2 } from 'lucide-react';
 import { Section, ThemeConfig, defaultThemeConfig } from './types';
 import { AiEnhanceButton } from './AiEnhanceButton';
+import { FullscreenCodeModal } from './FullscreenCodeModal';
 import { generatePreviewHTML } from './themeUtils';
 
 interface SectionEditorProps {
@@ -20,6 +21,7 @@ export const SectionEditor = forwardRef<HTMLDivElement, SectionEditorProps>(
     const [html, setHtml] = useState('');
     const [isDirty, setIsDirty] = useState(false);
     const [viewMode, setViewMode] = useState<'preview' | 'code'>('preview');
+    const [codeFullscreenOpen, setCodeFullscreenOpen] = useState(false);
     const iframeRef = useRef<HTMLIFrameElement>(null);
 
     useEffect(() => {
@@ -103,14 +105,25 @@ export const SectionEditor = forwardRef<HTMLDivElement, SectionEditorProps>(
             </Button>
           </div>
           {viewMode === 'code' && (
-            <AiEnhanceButton
-              html={html}
-              onEnhanced={(enhancedHtml) => {
-                setHtml(enhancedHtml);
-                setIsDirty(true);
-              }}
-              disabled={isSaving}
-            />
+            <div className="flex items-center gap-1">
+              <AiEnhanceButton
+                html={html}
+                onEnhanced={(enhancedHtml) => {
+                  setHtml(enhancedHtml);
+                  setIsDirty(true);
+                }}
+                disabled={isSaving}
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setCodeFullscreenOpen(true)}
+                className="h-7 px-2"
+                title="Expand to fullscreen"
+              >
+                <Maximize2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
           )}
         </div>
 
@@ -154,6 +167,18 @@ export const SectionEditor = forwardRef<HTMLDivElement, SectionEditorProps>(
             </Button>
           </div>
         )}
+
+        {/* Fullscreen Code Modal */}
+        <FullscreenCodeModal
+          open={codeFullscreenOpen}
+          onOpenChange={setCodeFullscreenOpen}
+          html={html}
+          onHtmlChange={(newHtml) => {
+            setHtml(newHtml);
+            setIsDirty(true);
+          }}
+          sectionName={name}
+        />
       </div>
     );
   }
