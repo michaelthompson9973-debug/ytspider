@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { DeleteConfirmDialog } from '@/components/admin/landing-page-editor/DeleteConfirmDialog';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -62,6 +63,8 @@ export default function LandingPages() {
   const [form, setForm] = useState<PageForm>(defaultForm);
   const [builderPageId, setBuilderPageId] = useState<string | null>(null);
   const [builderGtmId, setBuilderGtmId] = useState<string | undefined>();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deletingPageId, setDeletingPageId] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { user } = useAuth();
@@ -335,7 +338,10 @@ export default function LandingPages() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => deleteMutation.mutate(page.id)}
+                            onClick={() => {
+                              setDeletingPageId(page.id);
+                              setDeleteDialogOpen(true);
+                            }}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -414,6 +420,20 @@ export default function LandingPages() {
             </form>
           </DialogContent>
         </Dialog>
+
+        <DeleteConfirmDialog
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          onConfirm={() => {
+            if (deletingPageId) {
+              deleteMutation.mutate(deletingPageId);
+            }
+            setDeleteDialogOpen(false);
+            setDeletingPageId(null);
+          }}
+          title="Delete Landing Page"
+          description="Are you sure you want to delete this landing page? All sections and settings will be permanently removed. This action cannot be undone."
+        />
       </div>
     </AdminLayout>
   );
