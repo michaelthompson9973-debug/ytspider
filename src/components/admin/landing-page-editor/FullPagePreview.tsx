@@ -1,12 +1,11 @@
 import { useRef, useState, forwardRef } from 'react';
-import { Monitor, Smartphone, Copy, Check, Layers, RefreshCw, Maximize2, ExternalLink } from 'lucide-react';
+import { Monitor, Smartphone, Copy, Check, Layers, RefreshCw, Maximize2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Section, ThemeConfig, CheckoutConfig, defaultCheckoutConfig, defaultCheckoutFields } from './types';
 import { generateFullHTML, generatePreviewHTML, generateCheckoutPreviewHTML } from './themeUtils';
-import { FullscreenPreviewModal } from './FullscreenPreviewModal';
 import { cn } from '@/lib/utils';
 
 interface FullPagePreviewProps {
@@ -23,7 +22,6 @@ export const FullPagePreview = forwardRef<HTMLDivElement, FullPagePreviewProps>(
     const [copied, setCopied] = useState(false);
     const [viewMode, setViewMode] = useState<'preview' | 'code'>(showCodeView ? 'code' : 'preview');
     const [refreshKey, setRefreshKey] = useState(0);
-    const [fullscreenOpen, setFullscreenOpen] = useState(false);
     const iframeRef = useRef<HTMLIFrameElement>(null);
 
     const { toast } = useToast();
@@ -201,19 +199,10 @@ export const FullPagePreview = forwardRef<HTMLDivElement, FullPagePreviewProps>(
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8"
-                  onClick={() => setFullscreenOpen(true)}
-                  title="Expand to fullscreen"
-                >
-                  <Maximize2 className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
                   onClick={handleOpenRealPreview}
                   title={landingPage?.slug ? `/p/${landingPage.slug}?preview=true` : 'Preview link'}
                 >
-                  <ExternalLink className="h-4 w-4" />
+                  <Maximize2 className="h-4 w-4" />
                 </Button>
               </>
             )}
@@ -262,15 +251,6 @@ export const FullPagePreview = forwardRef<HTMLDivElement, FullPagePreviewProps>(
           )}
         </div>
 
-        {/* Fullscreen Preview Modal */}
-        <FullscreenPreviewModal
-          open={fullscreenOpen}
-          onOpenChange={setFullscreenOpen}
-          sections={sections}
-          themeConfig={themeConfig}
-          landingPageId={landingPageId}
-          gtmId={gtmId}
-        />
       </div>
     );
   }
