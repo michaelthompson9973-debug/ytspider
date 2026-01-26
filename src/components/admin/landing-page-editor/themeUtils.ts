@@ -1,4 +1,4 @@
-import { ThemeConfig, availableFonts, defaultThemeConfig } from './types';
+import { ThemeConfig, availableFonts, defaultThemeConfig, CheckoutConfig, defaultCheckoutConfig } from './types';
 
 /**
  * Get Google Fonts import URLs for the theme fonts
@@ -206,4 +206,74 @@ export function migrateThemeConfig(oldConfig: Partial<ThemeConfig>): ThemeConfig
     borderRadius: oldConfig.borderRadius ?? defaultThemeConfig.borderRadius,
     containerWidth: oldConfig.containerWidth ?? defaultThemeConfig.containerWidth,
   };
+}
+
+/**
+ * Generate checkout form preview HTML for admin preview
+ */
+export function generateCheckoutPreviewHTML(
+  config: CheckoutConfig = defaultCheckoutConfig,
+  themeConfig: ThemeConfig = defaultThemeConfig
+): string {
+  const buttonRadius = themeConfig.buttonStyle === 'pill' 
+    ? '9999px' 
+    : themeConfig.buttonStyle === 'square' 
+    ? '0' 
+    : themeConfig.borderRadius;
+
+  return `
+    <section class="py-12 px-4" style="background-color: #f9fafb;" id="checkout">
+      <div class="container max-w-md mx-auto">
+        <div style="border-radius: ${themeConfig.borderRadius}; background: white; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 1.5rem;">
+          <h2 style="font-family: var(--font-heading); color: ${themeConfig.primaryColor}; font-size: 1.5rem; font-weight: 600; text-align: center; margin-bottom: 1rem;">
+            ${config.title || 'অর্ডার করুন'}
+          </h2>
+          
+          <!-- Product placeholder -->
+          <div style="margin-bottom: 1.5rem; padding: 1rem; border-radius: ${themeConfig.borderRadius}; background: #f9fafb; border: 1px solid #e5e7eb;">
+            <div style="width: 100%; height: 120px; background: #e5e7eb; border-radius: ${themeConfig.borderRadius}; margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: center; color: #9ca3af; font-family: var(--font-body);">
+              Product Image
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-family: var(--font-body); color: #374151;">Product Name</span>
+              <span style="font-family: var(--font-digit); color: ${themeConfig.primaryColor}; font-weight: 700;">৳XXX</span>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 1rem; margin-top: 0.75rem;">
+              <button style="width: 2rem; height: 2rem; border-radius: ${buttonRadius}; border: 1px solid #d1d5db; background: white; cursor: pointer;">−</button>
+              <span style="font-family: var(--font-digit); font-weight: 500; min-width: 2rem; text-align: center;">1</span>
+              <button style="width: 2rem; height: 2rem; border-radius: ${buttonRadius}; border: 1px solid #d1d5db; background: white; cursor: pointer;">+</button>
+            </div>
+          </div>
+          
+          <!-- Price breakdown -->
+          <div style="margin-bottom: 1rem; padding: 0.75rem; background: #f9fafb; border-radius: ${themeConfig.borderRadius}; font-family: var(--font-body); font-size: 0.875rem;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+              <span>সাবটোটাল:</span>
+              <span style="font-family: var(--font-digit);">৳XXX</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+              <span>ডেলিভারি:</span>
+              <span style="font-family: var(--font-digit);">৳60</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-weight: 600; padding-top: 0.5rem; border-top: 1px solid #e5e7eb;">
+              <span>সর্বমোট:</span>
+              <span style="font-family: var(--font-digit); color: ${themeConfig.primaryColor};">৳XXX</span>
+            </div>
+          </div>
+          
+          <!-- Form fields preview -->
+          <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1rem;">
+            <input style="width: 100%; border-radius: ${themeConfig.borderRadius}; border: 1px solid #d1d5db; padding: 0.625rem 0.75rem; font-family: var(--font-body); background: #f9fafb;" placeholder="আপনার নাম" disabled />
+            <input style="width: 100%; border-radius: ${themeConfig.borderRadius}; border: 1px solid #d1d5db; padding: 0.625rem 0.75rem; font-family: var(--font-body); background: #f9fafb;" placeholder="মোবাইল নম্বর" disabled />
+            <input style="width: 100%; border-radius: ${themeConfig.borderRadius}; border: 1px solid #d1d5db; padding: 0.625rem 0.75rem; font-family: var(--font-body); background: #f9fafb;" placeholder="ডেলিভারি ঠিকানা" disabled />
+            <input style="width: 100%; border-radius: ${themeConfig.borderRadius}; border: 1px solid #d1d5db; padding: 0.625rem 0.75rem; font-family: var(--font-body); background: #f9fafb;" placeholder="শহর/জেলা" disabled />
+          </div>
+          
+          <button style="width: 100%; background: ${themeConfig.primaryColor}; color: white; padding: 0.875rem; border-radius: ${buttonRadius}; font-family: var(--font-button); font-weight: 600; border: none; cursor: pointer;">
+            ${config.ctaText || 'অর্ডার সম্পন্ন করুন'}
+          </button>
+        </div>
+      </div>
+    </section>
+  `.trim();
 }

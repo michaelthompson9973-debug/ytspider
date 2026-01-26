@@ -164,12 +164,14 @@ export function SectionBuilder({ landingPageId, gtmId, onBack }: SectionBuilderP
           {activeSection?.type === 'checkout' ? (
             <CheckoutEditor
               section={activeSection}
+              themeConfig={themeConfig}
               onSave={(data) => updateSection({ id: data.id, name: data.name, config: data.config })}
               isSaving={isUpdating}
             />
           ) : (
             <SectionEditor
               section={activeSection}
+              themeConfig={themeConfig}
               onSave={updateSection}
               isSaving={isUpdating}
             />
@@ -223,12 +225,14 @@ export function SectionBuilder({ landingPageId, gtmId, onBack }: SectionBuilderP
           {activeSection?.type === 'checkout' ? (
             <CheckoutEditor
               section={activeSection}
+              themeConfig={themeConfig}
               onSave={(data) => updateSection({ id: data.id, name: data.name, config: data.config })}
               isSaving={isUpdating}
             />
           ) : (
             <SectionEditor
               section={activeSection}
+              themeConfig={themeConfig}
               onSave={updateSection}
               isSaving={isUpdating}
             />

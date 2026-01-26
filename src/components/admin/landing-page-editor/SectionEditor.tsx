@@ -1,22 +1,26 @@
-import { useState, useEffect, forwardRef } from 'react';
+import { useState, useEffect, forwardRef, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Save, FileCode } from 'lucide-react';
-import { Section } from './types';
+import { Save, FileCode, Eye, Code } from 'lucide-react';
+import { Section, ThemeConfig, defaultThemeConfig } from './types';
 import { AiEnhanceButton } from './AiEnhanceButton';
+import { generatePreviewHTML } from './themeUtils';
 
 interface SectionEditorProps {
   section: Section | null;
+  themeConfig?: ThemeConfig;
   onSave: (data: { id: string; name: string; html: string }) => void;
   isSaving: boolean;
 }
 
 export const SectionEditor = forwardRef<HTMLDivElement, SectionEditorProps>(
-  function SectionEditor({ section, onSave, isSaving }, ref) {
+  function SectionEditor({ section, themeConfig = defaultThemeConfig, onSave, isSaving }, ref) {
     const [name, setName] = useState('');
     const [html, setHtml] = useState('');
     const [isDirty, setIsDirty] = useState(false);
+    const [viewMode, setViewMode] = useState<'preview' | 'code'>('preview');
+    const iframeRef = useRef<HTMLIFrameElement>(null);
 
     useEffect(() => {
       if (section) {
@@ -31,6 +35,9 @@ export const SectionEditor = forwardRef<HTMLDivElement, SectionEditorProps>(
       onSave({ id: section.id, name, html });
       setIsDirty(false);
     };
+
+    // Generate preview HTML for this single section
+    const previewHtml = generatePreviewHTML(html, themeConfig);
 
     if (!section) {
       return (
@@ -73,10 +80,29 @@ export const SectionEditor = forwardRef<HTMLDivElement, SectionEditorProps>(
           </Button>
         </div>
 
-        {/* Editor */}
-        <div className="flex-1 flex flex-col min-h-0">
-          <div className="flex items-center justify-between mb-2">
-            <Label className="text-xs text-muted-foreground">HTML Content</Label>
+        {/* View Mode Toggle & AI Button */}
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-1">
+            <Button
+              variant={viewMode === 'preview' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('preview')}
+              className="h-7 px-2 text-xs"
+            >
+              <Eye className="h-3.5 w-3.5 mr-1" />
+              Preview
+            </Button>
+            <Button
+              variant={viewMode === 'code' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('code')}
+              className="h-7 px-2 text-xs"
+            >
+              <Code className="h-3.5 w-3.5 mr-1" />
+              HTML
+            </Button>
+          </div>
+          {viewMode === 'code' && (
             <AiEnhanceButton
               html={html}
               onEnhanced={(enhancedHtml) => {
@@ -85,17 +111,33 @@ export const SectionEditor = forwardRef<HTMLDivElement, SectionEditorProps>(
               }}
               disabled={isSaving}
             />
-          </div>
-          <textarea
-            className="flex-1 w-full font-mono text-sm p-4 border rounded-md bg-muted/50 resize-none focus:outline-none focus:ring-2 focus:ring-ring"
-            value={html}
-            onChange={(e) => {
-              setHtml(e.target.value);
-              setIsDirty(true);
-            }}
-            placeholder="<section>Your HTML content here...</section>"
-            spellCheck={false}
-          />
+          )}
+        </div>
+
+        {/* Content Area */}
+        <div className="flex-1 min-h-0">
+          {viewMode === 'preview' ? (
+            <div className="h-full border rounded-md bg-background overflow-hidden">
+              <iframe
+                ref={iframeRef}
+                srcDoc={previewHtml}
+                className="w-full h-full border-0"
+                sandbox="allow-scripts"
+                title="Section Preview"
+              />
+            </div>
+          ) : (
+            <textarea
+              className="flex-1 w-full h-full font-mono text-sm p-4 border rounded-md bg-muted/50 resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+              value={html}
+              onChange={(e) => {
+                setHtml(e.target.value);
+                setIsDirty(true);
+              }}
+              placeholder="<section>Your HTML content here...</section>"
+              spellCheck={false}
+            />
+          )}
         </div>
 
         {/* Mobile Sticky Save Button */}
