@@ -211,24 +211,38 @@ export function FullscreenPreviewModal({
           </div>
         </div>
         
-        {/* Preview area with device simulation */}
-        <div className="flex-1 min-h-0 overflow-auto bg-muted/30 flex items-start justify-center p-4">
-          <div
-            className={cn(
-              'transition-all duration-300 bg-white overflow-hidden',
-              isMobileDevice && 'shadow-2xl rounded-[2rem] border-[8px] border-border'
-            )}
-            style={getContainerStyle()}
-          >
+        {/* Preview area - conditional layout based on device */}
+        <div className={cn(
+          'flex-1 min-h-0 overflow-auto',
+          isMobileDevice 
+            ? 'bg-muted/30 flex items-start justify-center p-4' 
+            : '' // Desktop: no extra styles, iframe fills space
+        )}>
+          {isMobileDevice ? (
+            // Mobile/tablet with device frame
+            <div
+              className="transition-all duration-300 bg-white overflow-hidden shadow-2xl rounded-[2rem] border-[8px] border-border"
+              style={getContainerStyle()}
+            >
+              <iframe
+                key={refreshKey}
+                srcDoc={previewHtml}
+                className="w-full h-full border-0"
+                sandbox="allow-scripts"
+                title="Landing Page Preview"
+                style={{ borderRadius: '1.5rem' }}
+              />
+            </div>
+          ) : (
+            // Desktop: full width/height iframe without frame
             <iframe
               key={refreshKey}
               srcDoc={previewHtml}
-              className="w-full h-full border-0"
+              className="w-full h-full border-0 bg-white"
               sandbox="allow-scripts"
               title="Landing Page Preview"
-              style={isMobileDevice ? { borderRadius: '1.5rem' } : undefined}
             />
-          </div>
+          )}
         </div>
         
         {/* Footer with device info */}
