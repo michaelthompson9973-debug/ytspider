@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Monitor, Smartphone, RefreshCw, X, ChevronDown } from 'lucide-react';
+import { Monitor, Smartphone, RefreshCw, X, ChevronDown, ExternalLink } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -47,9 +48,24 @@ export function FullscreenPreviewModal({
 }: FullscreenPreviewModalProps) {
   const [selectedDevice, setSelectedDevice] = useState<string>('Desktop');
   const [refreshKey, setRefreshKey] = useState(0);
+  const { toast } = useToast();
 
   const currentDevice = devicePresets.find(d => d.name === selectedDevice) || devicePresets[0];
   const isMobileDevice = currentDevice.width !== 'full';
+
+  // Fetch landing page details for slug
+  const { data: landingPage } = useQuery({
+    queryKey: ['landing-page-details-fullscreen', landingPageId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('landing_pages')
+        .select('slug, published')
+        .eq('id', landingPageId)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!landingPageId && open,
+  });
 
   // Fetch linked product for checkout preview
   const { data: linkedProduct } = useQuery({
@@ -122,6 +138,27 @@ export function FullscreenPreviewModal({
 
   const handleRefresh = () => {
     setRefreshKey(prev => prev + 1);
+  };
+
+  const handleOpenRealPreview = () => {
+    if (!landingPage?.slug) {
+      toast({ 
+        title: 'Slug not found', 
+        variant: 'destructive' 
+      });
+      return;
+    }
+    
+    if (!landingPage.published) {
+      toast({
+        title: 'Page Not Published',
+        description: 'Please publish the page first to see real preview.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    window.open(`/p/${landingPage.slug}`, '_blank');
   };
 
   // Calculate container dimensions
@@ -199,6 +236,15 @@ export function FullscreenPreviewModal({
               title="Refresh preview"
             >
               <RefreshCw className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={handleOpenRealPreview}
+              title="Open in new tab"
+            >
+              <ExternalLink className="h-4 w-4" />
             </Button>
             <Button
               variant="ghost"
