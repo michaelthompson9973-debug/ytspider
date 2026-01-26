@@ -1,12 +1,32 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Section } from './types';
+import { Section, SectionType, CheckoutConfig } from './types';
 import { useToast } from '@/hooks/use-toast';
+import { Json } from '@/integrations/supabase/types';
 
 interface UpdateSectionResult {
   id: string;
   name: string;
   html: string;
+  config?: CheckoutConfig | null;
+}
+
+// Helper to transform DB response to Section type
+function transformSection(data: {
+  id: string;
+  landing_page_id: string;
+  name: string;
+  html: string;
+  sort_order: number;
+  created_at: string;
+  type: string;
+  config: Json;
+}): Section {
+  return {
+    ...data,
+    type: (data.type === 'checkout' ? 'checkout' : 'html') as SectionType,
+    config: data.config as unknown as CheckoutConfig | null,
+  };
 }
 
 export function useSections(landingPageId: string | null) {
@@ -23,27 +43,29 @@ export function useSections(landingPageId: string | null) {
         .eq('landing_page_id', landingPageId)
         .order('sort_order', { ascending: true });
       if (error) throw error;
-      return data as Section[];
+      return (data ?? []).map(transformSection);
     },
     enabled: !!landingPageId,
   });
 
   const addSectionMutation = useMutation({
-    mutationFn: async ({ name, html }: { name: string; html: string }) => {
+    mutationFn: async ({ name, html, type, config }: { name: string; html: string; type: SectionType; config: unknown }) => {
       if (!landingPageId) throw new Error('No landing page selected');
       const maxOrder = sections.length > 0 ? Math.max(...sections.map(s => s.sort_order)) : -1;
       const { data, error } = await supabase
         .from('landing_page_sections')
-        .insert({
+        .insert([{
           landing_page_id: landingPageId,
           name,
           html,
+          type,
+          config: config as Json,
           sort_order: maxOrder + 1,
-        })
+        }])
         .select()
         .single();
       if (error) throw error;
-      return data as Section;
+      return transformSection(data);
     },
     onSuccess: (newSection) => {
       queryClient.invalidateQueries({ queryKey: ['landing-page-sections', landingPageId] });
@@ -56,13 +78,17 @@ export function useSections(landingPageId: string | null) {
   });
 
   const updateSectionMutation = useMutation({
-    mutationFn: async ({ id, name, html }: { id: string; name: string; html: string }): Promise<UpdateSectionResult> => {
+    mutationFn: async ({ id, name, html, config }: { id: string; name: string; html?: string; config?: CheckoutConfig | null }): Promise<UpdateSectionResult> => {
+      const updateData: { name: string; html?: string; config?: Json } = { name };
+      if (html !== undefined) updateData.html = html;
+      if (config !== undefined) updateData.config = config as unknown as Json;
+      
       const { error } = await supabase
         .from('landing_page_sections')
-        .update({ name, html })
+        .update(updateData)
         .eq('id', id);
       if (error) throw error;
-      return { id, name, html };
+      return { id, name, html: html ?? '', config };
     },
     onSuccess: (updatedData) => {
       // Update the cache immediately for better UX
@@ -72,7 +98,7 @@ export function useSections(landingPageId: string | null) {
           if (!oldData) return oldData;
           return oldData.map((section) =>
             section.id === updatedData.id
-              ? { ...section, name: updatedData.name, html: updatedData.html }
+              ? { ...section, name: updatedData.name, html: updatedData.html || section.html, config: updatedData.config ?? section.config }
               : section
           );
         }
@@ -116,16 +142,18 @@ export function useSections(landingPageId: string | null) {
       const maxOrder = sections.length > 0 ? Math.max(...sections.map(s => s.sort_order)) : -1;
       const { data, error } = await supabase
         .from('landing_page_sections')
-        .insert({
+        .insert([{
           landing_page_id: landingPageId,
           name: `${section.name} (copy)`,
           html: section.html,
+          type: section.type,
+          config: section.config as unknown as Json,
           sort_order: maxOrder + 1,
-        })
+        }])
         .select()
         .single();
       if (error) throw error;
-      return data as Section;
+      return transformSection(data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['landing-page-sections', landingPageId] });

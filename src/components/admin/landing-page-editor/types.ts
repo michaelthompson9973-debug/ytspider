@@ -1,3 +1,17 @@
+export type SectionType = 'html' | 'checkout';
+
+export interface CheckoutConfig {
+  title: string;
+  ctaText: string;
+  enabled: boolean;
+}
+
+export const defaultCheckoutConfig: CheckoutConfig = {
+  title: 'অর্ডার করুন',
+  ctaText: 'অর্ডার সম্পন্ন করুন',
+  enabled: true,
+};
+
 export interface Section {
   id: string;
   landing_page_id: string;
@@ -5,6 +19,8 @@ export interface Section {
   html: string;
   sort_order: number;
   created_at: string;
+  type: SectionType;
+  config: CheckoutConfig | null;
 }
 
 export interface ThemeConfig {

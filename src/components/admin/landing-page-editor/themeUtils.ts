@@ -92,6 +92,11 @@ button, .btn, [class*="button"] {
 input, textarea, select {
   border-radius: var(--theme-radius);
 }
+
+/* Theme Utilities */
+.rounded-theme {
+  border-radius: var(--theme-radius);
+}
 `.trim();
 }
 

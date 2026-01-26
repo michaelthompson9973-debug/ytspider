@@ -2,27 +2,17 @@ import { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { z } from 'zod';
-import { ThemeConfig, defaultThemeConfig } from '@/components/admin/landing-page-editor/types';
+import { ThemeConfig, defaultThemeConfig, CheckoutConfig } from '@/components/admin/landing-page-editor/types';
 import { generateThemeCSS, getGoogleFontsImports } from '@/components/admin/landing-page-editor/themeUtils';
+import { CheckoutSection } from '@/components/landing/CheckoutSection';
 
 declare global {
   interface Window {
     dataLayer: Record<string, unknown>[];
   }
 }
-
-const orderSchema = z.object({
-  customer_name: z.string().min(2, 'Name is required').max(100),
-  customer_phone: z.string().min(6, 'Phone is required').max(20),
-  customer_address: z.string().min(5, 'Address is required').max(500),
-  customer_city: z.string().min(2, 'City is required').max(100),
-});
 
 // GTM Event helper
 const pushDataLayer = (event: string, data?: Record<string, unknown>) => {
@@ -35,18 +25,20 @@ const pushDataLayer = (event: string, data?: Record<string, unknown>) => {
   }
 };
 
+interface SectionData {
+  id: string;
+  html: string;
+  type: string;
+  config: unknown;
+  sort_order: number;
+}
+
 export default function LandingPage() {
   const { slug } = useParams<{ slug: string }>();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const [orderSubmitted, setOrderSubmitted] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [form, setForm] = useState({
-    customer_name: '',
-    customer_phone: '',
-    customer_address: '',
-    customer_city: '',
-  });
+  const [orderCustomerInfo, setOrderCustomerInfo] = useState<{ name: string; phone: string } | null>(null);
 
   const { data: page, isLoading, error } = useQuery({
     queryKey: ['landing-page', slug],
@@ -67,17 +59,17 @@ export default function LandingPage() {
   });
 
   // Fetch sections for the landing page
-  const { data: sections = [] } = useQuery({
+  const { data: sections = [] } = useQuery<SectionData[]>({
     queryKey: ['landing-page-sections', page?.id],
     queryFn: async () => {
       if (!page?.id) return [];
       const { data, error } = await supabase
         .from('landing_page_sections')
-        .select('*')
+        .select('id, html, type, config, sort_order')
         .eq('landing_page_id', page.id)
         .order('sort_order', { ascending: true });
       if (error) throw error;
-      return data;
+      return data as SectionData[];
     },
     enabled: !!page?.id,
   });
@@ -220,95 +212,11 @@ export default function LandingPage() {
     };
   }, [themeConfig]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const validation = orderSchema.safeParse(form);
-    if (!validation.success) {
-      toast({
-        title: 'Validation Error',
-        description: validation.error.errors[0].message,
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setSubmitting(true);
-
-    try {
-      const eventId = `evt_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-      
-      // Fire lead event before submitting
-      pushDataLayer('lead', {
-        event_id: eventId,
-        customer_city: form.customer_city,
-      });
-
-      const { data: orderData, error } = await supabase.from('orders').insert({
-        product_id: page?.product_id,
-        landing_page_id: page?.id,
-        customer_name: form.customer_name,
-        customer_phone: form.customer_phone,
-        customer_address: form.customer_address,
-        customer_city: form.customer_city,
-        utm_source: searchParams.get('utm_source'),
-        utm_medium: searchParams.get('utm_medium'),
-        utm_campaign: searchParams.get('utm_campaign'),
-        utm_term: searchParams.get('utm_term'),
-        utm_content: searchParams.get('utm_content'),
-        event_id: eventId,
-      }).select('id').single();
-
-      if (error) throw error;
-
-      // Push purchase event for GTM
-      pushDataLayer('purchase', {
-        transaction_id: eventId,
-        value: page?.products?.price,
-        currency: 'USD',
-        items: [{
-          item_id: page?.products?.id,
-          item_name: page?.products?.name,
-          price: page?.products?.price,
-          quantity: 1,
-        }],
-      });
-
-      // Call server-side tracking
-      try {
-        await supabase.functions.invoke('track-conversion', {
-          body: {
-            eventId,
-            orderId: orderData?.id,
-            productName: page?.products?.name,
-            productPrice: page?.products?.price,
-            customerCity: form.customer_city,
-            landingPageSlug: slug,
-          },
-        });
-      } catch (trackError) {
-        console.error('Tracking error:', trackError);
-      }
-
-      // Trigger webhooks for new order
-      try {
-        await supabase.functions.invoke('trigger-order-webhooks', {
-          body: { orderId: orderData?.id },
-        });
-      } catch (webhookError) {
-        console.error('Webhook error:', webhookError);
-      }
-
-      setOrderSubmitted(true);
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'An error occurred';
-      toast({
-        title: 'Order Failed',
-        description: message,
-        variant: 'destructive',
-      });
-    } finally {
-      setSubmitting(false);
+  // Handle order success from CheckoutSection
+  const handleOrderSuccess = (orderId: string, customerName?: string, customerPhone?: string) => {
+    setOrderSubmitted(true);
+    if (customerName && customerPhone) {
+      setOrderCustomerInfo({ name: customerName, phone: customerPhone });
     }
   };
 
@@ -331,7 +239,11 @@ export default function LandingPage() {
     );
   }
 
-  if (orderSubmitted) {
+  // Check if there's a checkout section in sections
+  const hasCheckoutSection = sections.some(s => s.type === 'checkout');
+
+  if (orderSubmitted && !hasCheckoutSection) {
+    // Only show this if order was submitted from legacy form (no checkout section)
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted p-4">
         <Card className="w-full max-w-md text-center">
@@ -342,83 +254,62 @@ export default function LandingPage() {
             <p className="text-muted-foreground mb-4">
               Your order has been received. We'll contact you shortly.
             </p>
-            <p className="font-medium">{form.customer_name}</p>
-            <p className="text-sm text-muted-foreground">{form.customer_phone}</p>
+            {orderCustomerInfo && (
+              <>
+                <p className="font-medium">{orderCustomerInfo.name}</p>
+                <p className="text-sm text-muted-foreground">{orderCustomerInfo.phone}</p>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
     );
   }
 
-  // Determine content to render: sections (new system) or html_content (legacy)
-  const htmlContent = sections.length > 0
-    ? sections.map((s) => s.html).join('\n')
-    : page.html_content;
+  // Render sections
+  const renderSections = () => {
+    if (sections.length === 0) {
+      // Legacy: render html_content if no sections
+      return (
+        <div className="landing-content" dangerouslySetInnerHTML={{ __html: page.html_content }} />
+      );
+    }
+
+    return sections.map((section) => {
+      if (section.type === 'checkout') {
+        const checkoutConfig = section.config as CheckoutConfig;
+        if (!checkoutConfig?.enabled) return null;
+        
+        return (
+          <CheckoutSection
+            key={section.id}
+            config={checkoutConfig}
+            product={page.products ? {
+              id: page.products.id,
+              name: page.products.name,
+              price: Number(page.products.price),
+            } : null}
+            landingPageId={page.id}
+            landingPageSlug={slug || ''}
+            onOrderSuccess={handleOrderSuccess}
+          />
+        );
+      }
+
+      // HTML section
+      return (
+        <div
+          key={section.id}
+          className="landing-content"
+          dangerouslySetInnerHTML={{ __html: section.html }}
+        />
+      );
+    });
+  };
 
   return (
     <div className="min-h-screen">
-      {/* Render sections or legacy HTML content */}
-      <div className="landing-content" dangerouslySetInnerHTML={{ __html: htmlContent }} />
-
-      {/* Order Form */}
-      <section className="py-12 px-4 bg-muted" id="order">
-        <div className="max-w-md mx-auto">
-          <Card>
-            <CardHeader>
-              <CardTitle>Order Now</CardTitle>
-              {page.products && (
-                <p className="text-lg font-bold text-primary">
-                  {page.products.name} - ${Number(page.products.price).toFixed(2)}
-                </p>
-              )}
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input
-                    id="name"
-                    value={form.customer_name}
-                    onChange={(e) => setForm({ ...form, customer_name: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    value={form.customer_phone}
-                    onChange={(e) => setForm({ ...form, customer_phone: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="address">Delivery Address</Label>
-                  <Input
-                    id="address"
-                    value={form.customer_address}
-                    onChange={(e) => setForm({ ...form, customer_address: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="city">City</Label>
-                  <Input
-                    id="city"
-                    value={form.customer_city}
-                    onChange={(e) => setForm({ ...form, customer_city: e.target.value })}
-                    required
-                  />
-                </div>
-                <Button type="submit" className="w-full" size="lg" disabled={submitting}>
-                  {submitting ? 'Processing...' : 'Complete Order'}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
-      </section>
+      {renderSections()}
     </div>
   );
 }
