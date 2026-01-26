@@ -65,6 +65,20 @@ export function useSections(landingPageId: string | null) {
         .select()
         .single();
       if (error) throw error;
+
+      // Auto-create checkout settings when adding checkout section
+      if (type === 'checkout') {
+        await supabase
+          .from('landing_page_checkout_settings')
+          .upsert({
+            landing_page_id: landingPageId,
+            currency: 'BDT',
+            delivery_mode: 'flat',
+            delivery_amount: 60,
+            free_over_amount: null,
+          }, { onConflict: 'landing_page_id' });
+      }
+
       return transformSection(data);
     },
     onSuccess: (newSection) => {

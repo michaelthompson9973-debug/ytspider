@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -26,7 +26,8 @@ interface LinkedProduct {
   images: string[] | null;
 }
 
-export function CheckoutSettingsPanel({ landingPageId }: CheckoutSettingsPanelProps) {
+export const CheckoutSettingsPanel = React.forwardRef<HTMLDivElement, CheckoutSettingsPanelProps>(
+  function CheckoutSettingsPanel({ landingPageId }, ref) {
   const { checkoutSettings, isLoading, saveSettings, isSaving } = useCheckoutSettings(landingPageId);
   
   // Fetch linked product for this landing page
@@ -294,4 +295,6 @@ export function CheckoutSettingsPanel({ landingPageId }: CheckoutSettingsPanelPr
       </div>
     </div>
   );
-}
+});
+
+CheckoutSettingsPanel.displayName = 'CheckoutSettingsPanel';
