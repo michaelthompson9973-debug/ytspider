@@ -3,7 +3,7 @@ import { Monitor, Smartphone, RefreshCw, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
-  DialogContent,
+  FullscreenDialogContent,
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useQuery } from '@tanstack/react-query';
@@ -107,9 +107,9 @@ export function FullscreenPreviewModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[100vw] w-screen h-screen max-h-screen p-0 gap-0 rounded-none border-0">
+      <FullscreenDialogContent aria-describedby={undefined}>
         {/* Header with controls */}
-        <div className="flex items-center justify-between px-4 py-3 border-b bg-background">
+        <div className="flex items-center justify-between px-4 py-3 border-b bg-background shrink-0">
           <DialogTitle className="text-base font-semibold">Landing Page Preview</DialogTitle>
           <div className="flex items-center gap-2">
             <Button
@@ -149,7 +149,7 @@ export function FullscreenPreviewModal({
         </div>
         
         {/* Full height iframe */}
-        <div className="flex-1 overflow-hidden bg-muted/30">
+        <div className="flex-1 min-h-0 overflow-hidden bg-muted/30">
           <div
             className={cn(
               'h-full mx-auto transition-all duration-300',
@@ -165,7 +165,7 @@ export function FullscreenPreviewModal({
             />
           </div>
         </div>
-      </DialogContent>
+      </FullscreenDialogContent>
     </Dialog>
   );
 }
