@@ -1,132 +1,183 @@
 
-# Desktop Preview Simulation Fix Plan
+# Preview Click এ Unique Real Preview Link তৈরির Plan
 
-## সমস্যা বিশ্লেষণ
+## বর্তমান সিস্টেম
 
-Screenshots দেখে সমস্যাটি চিহ্নিত হয়েছে:
+বর্তমানে preview button click করলে:
+1. `FullscreenPreviewModal` ওপেন হয় (iframe with srcDoc)
+2. এটি static HTML generate করে iframe এ show করে
+3. এটা real landing page `/p/{slug}` থেকে আলাদা behave করে
 
-1. **Real Page (Image 1)**: Full-width content, সমস্ত screen জুড়ে
-2. **Desktop Preview (Image 2)**: Content centered এবং সংকীর্ণ, দুপাশে ফাঁকা grey space
+## নতুন সমাধান
 
-**দুটি সমস্যা রয়েছে:**
+**Preview button এ click করলে সরাসরি real landing page `/p/{slug}` নতুন tab এ ওপেন হবে।**
 
-### সমস্যা ১: Preview Container Layout
-বর্তমানে preview area তে `flex items-start justify-center p-4` ব্যবহার করা হচ্ছে যা Desktop mode এও content কে centered রাখছে। Desktop mode এ iframe সরাসরি পুরো preview area জুড়ে থাকা উচিত।
+এটি সত্যিকারের page দেখাবে কারণ:
+- Real React components render হবে (`CheckoutSection.tsx`)
+- সব fonts, theme, styles properly load হবে
+- Real device এ যেমন দেখাবে হুবহু তেমন দেখাবে
 
-### সমস্যা ২: FullPagePreview vs FullscreenPreviewModal Consistency
-`FullPagePreview.tsx` (inline preview) এবং `FullscreenPreviewModal.tsx` (fullscreen) দুটোতে একই সমস্যা থাকতে পারে।
+### Implementation Details
 
-## সমাধান
+**File: `FullPagePreview.tsx`**
 
-### File: `FullscreenPreviewModal.tsx`
-
-**পরিবর্তন:**
-- Desktop mode এ `p-4` padding এবং `items-start justify-center` সরিয়ে দেওয়া
-- iframe কে সরাসরি full width/height দেওয়া
-- শুধুমাত্র mobile/tablet mode এ device frame এবং centered layout রাখা
+নতুন "Open Preview" button যোগ করা হবে যা:
+1. Landing page এর slug fetch করবে
+2. নতুন tab এ `/p/{slug}` route ওপেন করবে
 
 ```typescript
-// Preview area - Different layout for desktop vs mobile
-<div className={cn(
-  'flex-1 min-h-0 overflow-auto',
-  isMobileDevice 
-    ? 'bg-muted/30 flex items-start justify-center p-4' 
-    : 'bg-white' // Desktop: no padding, no centering
-)}>
-  {isMobileDevice ? (
-    // Mobile device frame
-    <div
-      className="shadow-2xl rounded-[2rem] border-[8px] border-border overflow-hidden"
-      style={getContainerStyle()}
-    >
-      <iframe ... style={{ borderRadius: '1.5rem' }} />
-    </div>
-  ) : (
-    // Desktop: full width iframe
-    <iframe ... className="w-full h-full border-0" />
-  )}
-</div>
+// Fetch landing page slug
+const { data: landingPage } = useQuery({
+  queryKey: ['landing-page-slug', landingPageId],
+  queryFn: async () => {
+    const { data } = await supabase
+      .from('landing_pages')
+      .select('slug, published')
+      .eq('id', landingPageId)
+      .maybeSingle();
+    return data;
+  },
+  enabled: !!landingPageId,
+});
+
+// Open real preview in new tab
+const handleOpenRealPreview = () => {
+  if (!landingPage?.slug) {
+    toast({ 
+      title: 'Error', 
+      description: 'Page slug not found', 
+      variant: 'destructive' 
+    });
+    return;
+  }
+  
+  // Note: For unpublished pages, we need a preview token system
+  // Or we can show warning that page needs to be published first
+  window.open(`/p/${landingPage.slug}`, '_blank');
+};
 ```
 
-### Preview Area Layout Changes
+### Preview Token System (Optional Enhancement)
 
-**Desktop Mode:**
-```text
-┌─────────────────────────────────────────────────────────────┐
-│  [Header Controls]                                          │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  ████████████████████████████████████████████████████████   │
-│  ████████  FULL WIDTH IFRAME (no frame)  ████████████████   │
-│  ████████████████████████████████████████████████████████   │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
-```
+Unpublished pages preview করার জন্য preview token system:
 
-**Mobile Mode:**
-```text
-┌─────────────────────────────────────────────────────────────┐
-│  [Header Controls]                                          │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│        ┌──────────────────┐                                 │
-│        │  (device frame)  │                                 │
-│        │   ┌──────────┐   │                                 │
-│        │   │  iframe  │   │                                 │
-│        │   └──────────┘   │                                 │
-│        └──────────────────┘                                 │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
-```
+1. **Database**: `landing_page_preview_tokens` table
+   - `id`, `landing_page_id`, `token`, `expires_at`, `created_at`
 
-## পরিবর্তিত Files
+2. **Route**: `/p/{slug}?preview_token={token}`
+   - Token validate করে unpublished page ও দেখাবে
+
+3. **Edge Function**: `generate-preview-token`
+   - 24 hour validity সহ unique token generate করবে
+
+### সহজ Solution (Recommended First)
+
+প্রথমে সহজ solution implement করি:
+- Published pages এর জন্য সরাসরি `/p/{slug}` ওপেন করা
+- Unpublished pages এর জন্য warning দেখানো যে "Please publish first to preview"
+
+---
+
+## File Changes
 
 | File | Changes |
 |------|---------|
-| `FullscreenPreviewModal.tsx` | Desktop mode এ full-width layout, mobile mode এ device frame সহ centered layout |
+| `FullPagePreview.tsx` | "Open in New Tab" button যোগ + slug fetch + warning for unpublished |
+| `FullscreenPreviewModal.tsx` | Same "Open in New Tab" button header এ যোগ |
 
-## Implementation Details
+---
+
+## Implementation: FullPagePreview.tsx
 
 ```typescript
-// FullscreenPreviewModal.tsx preview area
+import { ExternalLink } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
-{/* Preview area - conditional layout based on device */}
-<div className={cn(
-  'flex-1 min-h-0 overflow-auto',
-  isMobileDevice 
-    ? 'bg-muted/30 flex items-center justify-center p-4' 
-    : '' // Desktop: no extra styles, iframe fills space
-)}>
-  {isMobileDevice ? (
-    // Mobile/tablet with device frame
-    <div
-      className="transition-all duration-300 bg-white overflow-hidden shadow-2xl rounded-[2rem] border-[8px] border-border"
-      style={getContainerStyle()}
-    >
-      <iframe
-        key={refreshKey}
-        srcDoc={previewHtml}
-        className="w-full h-full border-0"
-        sandbox="allow-scripts"
-        title="Landing Page Preview"
-        style={{ borderRadius: '1.5rem' }}
-      />
-    </div>
-  ) : (
-    // Desktop: full width/height iframe without frame
-    <iframe
-      key={refreshKey}
-      srcDoc={previewHtml}
-      className="w-full h-full border-0 bg-white"
-      sandbox="allow-scripts"
-      title="Landing Page Preview"
-    />
-  )}
-</div>
+// Inside component:
+
+// Fetch landing page details for slug
+const { data: landingPage } = useQuery({
+  queryKey: ['landing-page-details', landingPageId],
+  queryFn: async () => {
+    const { data } = await supabase
+      .from('landing_pages')
+      .select('slug, published')
+      .eq('id', landingPageId)
+      .maybeSingle();
+    return data;
+  },
+  enabled: !!landingPageId,
+});
+
+const { toast } = useToast();
+
+const handleOpenRealPreview = () => {
+  if (!landingPage?.slug) {
+    toast({ 
+      title: 'Slug not found', 
+      variant: 'destructive' 
+    });
+    return;
+  }
+  
+  if (!landingPage.published) {
+    toast({
+      title: 'Page Not Published',
+      description: 'Please publish the page first to see real preview.',
+      variant: 'destructive',
+    });
+    return;
+  }
+  
+  window.open(`/p/${landingPage.slug}`, '_blank');
+};
+
+// In toolbar, add button:
+<Button
+  variant="ghost"
+  size="icon"
+  className="h-8 w-8"
+  onClick={handleOpenRealPreview}
+  title="Open in new tab"
+>
+  <ExternalLink className="h-4 w-4" />
+</Button>
 ```
+
+## Implementation: FullscreenPreviewModal.tsx
+
+Header এ same button যোগ:
+
+```typescript
+// In header controls section:
+<Button
+  variant="ghost"
+  size="icon"
+  className="h-8 w-8"
+  onClick={handleOpenRealPreview}
+  title="Open in new tab"
+>
+  <ExternalLink className="h-4 w-4" />
+</Button>
+```
+
+---
 
 ## Expected Result
 
-1. **Desktop mode এ** iframe সম্পূর্ণ preview area জুড়ে থাকবে - real page এর মতো দেখাবে
-2. **Mobile mode এ** device frame সহ centered layout থাকবে - realistic device simulation
-3. Real page এবং preview এর মধ্যে কোন visual difference থাকবে না
+1. Preview toolbar এ **ExternalLink icon** button থাকবে
+2. Click করলে **new browser tab** এ `/p/{slug}` ওপেন হবে
+3. **Real landing page** দেখাবে - হুবহু live site এর মতো
+4. Published না হলে warning toast দেখাবে
+5. Device simulation এর প্রয়োজন নেই - real browser এ real page!
+
+---
+
+## Summary
+
+| Component | New Feature |
+|-----------|-------------|
+| `FullPagePreview.tsx` | ExternalLink button → Opens `/p/{slug}` in new tab |
+| `FullscreenPreviewModal.tsx` | Same button in fullscreen header |
+
+এই solution সবচেয়ে সহজ এবং সবচেয়ে accurate preview দেবে কারণ এটা সত্যিকারের page ওপেন করে!
