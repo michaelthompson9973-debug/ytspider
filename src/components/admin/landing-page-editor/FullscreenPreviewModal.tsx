@@ -234,7 +234,7 @@ export function FullscreenPreviewModal({
               size="icon"
               className="h-8 w-8"
               onClick={handleOpenRealPreview}
-              title="Open in new tab"
+              title={landingPage?.slug ? `/p/${landingPage.slug}?preview=true` : 'Preview link'}
             >
               <ExternalLink className="h-4 w-4" />
             </Button>
