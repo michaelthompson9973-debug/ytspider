@@ -1,8 +1,8 @@
 import { useRef, useState, forwardRef } from 'react';
-import { Monitor, Smartphone, Copy, Check, Layers } from 'lucide-react';
+import { Monitor, Smartphone, Copy, Check, Layers, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Section, ThemeConfig } from './types';
-import { generateFullHTML, generatePreviewHTML } from './themeUtils';
+import { Section, ThemeConfig, CheckoutConfig, defaultCheckoutConfig } from './types';
+import { generateFullHTML, generatePreviewHTML, generateCheckoutPreviewHTML } from './themeUtils';
 import { cn } from '@/lib/utils';
 
 interface FullPagePreviewProps {
@@ -17,11 +17,20 @@ export const FullPagePreview = forwardRef<HTMLDivElement, FullPagePreviewProps>(
     const [device, setDevice] = useState<'desktop' | 'mobile'>('desktop');
     const [copied, setCopied] = useState(false);
     const [viewMode, setViewMode] = useState<'preview' | 'code'>(showCodeView ? 'code' : 'preview');
+    const [refreshKey, setRefreshKey] = useState(0);
     const iframeRef = useRef<HTMLIFrameElement>(null);
 
-    // Sort sections by order
+    // Sort sections by order and generate HTML for each
     const sortedSections = [...sections].sort((a, b) => a.sort_order - b.sort_order);
-    const sectionsHtml = sortedSections.map((s) => s.html).join('\n');
+    
+    // Generate HTML for each section, handling checkout type specially
+    const sectionsHtml = sortedSections.map((s) => {
+      if (s.type === 'checkout') {
+        const checkoutConfig = (s.config as CheckoutConfig) ?? defaultCheckoutConfig;
+        return generateCheckoutPreviewHTML(checkoutConfig, themeConfig);
+      }
+      return s.html;
+    }).join('\n');
 
     // Generate HTML
     const fullHtml = generateFullHTML(sectionsHtml, themeConfig, gtmId);
@@ -31,6 +40,10 @@ export const FullPagePreview = forwardRef<HTMLDivElement, FullPagePreviewProps>(
       await navigator.clipboard.writeText(fullHtml);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    };
+
+    const handleRefresh = () => {
+      setRefreshKey(prev => prev + 1);
     };
 
     if (sections.length === 0) {
@@ -84,6 +97,15 @@ export const FullPagePreview = forwardRef<HTMLDivElement, FullPagePreviewProps>(
                 >
                   <Smartphone className="h-4 w-4" />
                 </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={handleRefresh}
+                  title="Refresh preview"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
               </>
             )}
             {viewMode === 'code' && (
@@ -115,6 +137,7 @@ export const FullPagePreview = forwardRef<HTMLDivElement, FullPagePreviewProps>(
                 )}
               >
                 <iframe
+                  key={refreshKey}
                   ref={iframeRef}
                   srcDoc={previewHtml}
                   className="w-full h-full border-0"
