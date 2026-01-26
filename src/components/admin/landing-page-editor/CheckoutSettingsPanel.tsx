@@ -27,7 +27,7 @@ interface LinkedProduct {
 }
 
 export const CheckoutSettingsPanel = React.forwardRef<HTMLDivElement, CheckoutSettingsPanelProps>(
-  function CheckoutSettingsPanel({ landingPageId }, ref) {
+  ({ landingPageId }, ref) => {
   const { checkoutSettings, isLoading, saveSettings, isSaving } = useCheckoutSettings(landingPageId);
   
   // Fetch linked product for this landing page
