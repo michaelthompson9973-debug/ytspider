@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Loader2, Save, ShoppingCart } from 'lucide-react';
+import { Loader2, Save, ShoppingCart, Package, AlertCircle } from 'lucide-react';
 import { useCheckoutSettings } from './useCheckoutSettings';
 import { DeliveryMode, currencyOptions, deliveryModeOptions } from './types';
 
@@ -17,15 +19,50 @@ interface CheckoutSettingsPanelProps {
   landingPageId: string;
 }
 
+interface LinkedProduct {
+  id: string;
+  name: string;
+  price: number;
+  images: string[] | null;
+}
+
 export function CheckoutSettingsPanel({ landingPageId }: CheckoutSettingsPanelProps) {
   const { checkoutSettings, isLoading, saveSettings, isSaving } = useCheckoutSettings(landingPageId);
   
+  // Fetch linked product for this landing page
+  const { data: linkedProduct, isLoading: isLoadingProduct } = useQuery({
+    queryKey: ['linked-product', landingPageId],
+    queryFn: async () => {
+      // First get the landing page to find product_id
+      const { data: landingPage, error: lpError } = await supabase
+        .from('landing_pages')
+        .select('product_id')
+        .eq('id', landingPageId)
+        .maybeSingle();
+      
+      if (lpError) throw lpError;
+      if (!landingPage?.product_id) return null;
+
+      // Then fetch the product
+      const { data: product, error: productError } = await supabase
+        .from('products')
+        .select('id, name, price, images')
+        .eq('id', landingPage.product_id)
+        .maybeSingle();
+      
+      if (productError) throw productError;
+      return product as LinkedProduct | null;
+    },
+    enabled: !!landingPageId,
+  });
+
   const [currency, setCurrency] = useState(checkoutSettings.currency);
   const [deliveryMode, setDeliveryMode] = useState<DeliveryMode>(checkoutSettings.delivery_mode);
   const [deliveryAmount, setDeliveryAmount] = useState(checkoutSettings.delivery_amount.toString());
   const [freeOverAmount, setFreeOverAmount] = useState(
     checkoutSettings.free_over_amount?.toString() ?? ''
   );
+  const [previewQty, setPreviewQty] = useState(1);
 
   // Sync local state when settings load
   useEffect(() => {
@@ -46,8 +83,9 @@ export function CheckoutSettingsPanel({ landingPageId }: CheckoutSettingsPanelPr
 
   const currencySymbol = currencyOptions.find(c => c.value === currency)?.symbol || '৳';
 
-  // Preview calculation
-  const previewSubtotal = 500;
+  // Preview calculation based on linked product price
+  const productPrice = linkedProduct?.price ? Number(linkedProduct.price) : 0;
+  const previewSubtotal = productPrice * previewQty;
   const previewDelivery = deliveryMode === 'free' 
     ? 0 
     : deliveryMode === 'conditional' && previewSubtotal >= (parseFloat(freeOverAmount) || 0)
@@ -55,7 +93,7 @@ export function CheckoutSettingsPanel({ landingPageId }: CheckoutSettingsPanelPr
       : parseFloat(deliveryAmount) || 0;
   const previewTotal = previewSubtotal + previewDelivery;
 
-  if (isLoading) {
+  if (isLoading || isLoadingProduct) {
     return (
       <div className="h-full flex items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -157,25 +195,101 @@ export function CheckoutSettingsPanel({ landingPageId }: CheckoutSettingsPanelPr
           </div>
         )}
 
+        {/* Linked Product Info */}
+        <div className="space-y-2">
+          <Label className="flex items-center gap-2">
+            <Package className="h-4 w-4" />
+            Linked Product
+          </Label>
+          {linkedProduct ? (
+            <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+              {linkedProduct.images && linkedProduct.images.length > 0 && (
+                <img 
+                  src={linkedProduct.images[0]} 
+                  alt={linkedProduct.name}
+                  className="w-full h-24 object-cover rounded"
+                />
+              )}
+              <div className="flex justify-between items-center">
+                <span className="font-medium text-sm truncate">{linkedProduct.name}</span>
+                <span className="font-digit text-primary">
+                  {currencySymbol}{Number(linkedProduct.price).toLocaleString()}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-lg border border-dashed bg-muted/20 p-4 text-center">
+              <AlertCircle className="h-5 w-5 mx-auto mb-2 text-muted-foreground" />
+              <p className="text-xs text-muted-foreground">
+                No product linked. Link a product from the landing page settings to see pricing preview.
+              </p>
+            </div>
+          )}
+        </div>
+
         {/* Preview */}
         <div className="space-y-2">
-          <Label>Preview (Sample: {currencySymbol}500)</Label>
-          <div className="rounded-lg border bg-muted/30 p-4 space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Subtotal:</span>
-              <span>{currencySymbol}{previewSubtotal.toLocaleString()}</span>
+          <Label>Price Preview</Label>
+          {linkedProduct ? (
+            <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+              {/* Quantity Selector */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Quantity:</span>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() => setPreviewQty(Math.max(1, previewQty - 1))}
+                    disabled={previewQty <= 1}
+                  >
+                    -
+                  </Button>
+                  <span className="font-digit w-6 text-center">{previewQty}</span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() => setPreviewQty(previewQty + 1)}
+                  >
+                    +
+                  </Button>
+                </div>
+              </div>
+
+              <div className="border-t pt-3 space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Unit Price:</span>
+                  <span>{currencySymbol}{productPrice.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Subtotal:</span>
+                  <span>{currencySymbol}{previewSubtotal.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Delivery:</span>
+                  <span className={previewDelivery === 0 ? 'text-green-600' : ''}>
+                    {previewDelivery === 0 ? 'Free!' : `${currencySymbol}${previewDelivery.toLocaleString()}`}
+                  </span>
+                </div>
+                {deliveryMode === 'conditional' && previewSubtotal < (parseFloat(freeOverAmount) || 0) && (
+                  <p className="text-xs text-muted-foreground">
+                    Add {currencySymbol}{((parseFloat(freeOverAmount) || 0) - previewSubtotal).toLocaleString()} more for free delivery
+                  </p>
+                )}
+                <div className="border-t pt-2 flex justify-between font-semibold">
+                  <span>Total:</span>
+                  <span className="text-primary">{currencySymbol}{previewTotal.toLocaleString()}</span>
+                </div>
+              </div>
             </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Delivery:</span>
-              <span className={previewDelivery === 0 ? 'text-green-600' : ''}>
-                {previewDelivery === 0 ? 'Free!' : `${currencySymbol}${previewDelivery.toLocaleString()}`}
-              </span>
+          ) : (
+            <div className="rounded-lg border border-dashed bg-muted/20 p-4 text-center text-xs text-muted-foreground">
+              Link a product to see live price preview
             </div>
-            <div className="border-t pt-2 flex justify-between font-semibold">
-              <span>Total:</span>
-              <span className="text-primary">{currencySymbol}{previewTotal.toLocaleString()}</span>
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
