@@ -96,7 +96,7 @@ function NavGroupCollapsible({ group }: { group: NavGroup }) {
   const hasActiveItem = group.items.some(
     (item) => location.pathname === item.href
   );
-  const [isOpen, setIsOpen] = useState(hasActiveItem);
+  const [isOpen, setIsOpen] = useState(true); // Default open
 
   // Keep group open if it contains the active route
   useEffect(() => {
