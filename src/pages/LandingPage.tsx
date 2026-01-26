@@ -288,6 +288,7 @@ export default function LandingPage() {
               id: page.products.id,
               name: page.products.name,
               price: Number(page.products.price),
+              images: page.products.images || [],
             } : null}
             landingPageId={page.id}
             landingPageSlug={slug || ''}

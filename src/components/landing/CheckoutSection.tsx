@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { useQuery } from '@tanstack/react-query';
 import { CheckoutConfig, DeliveryMode, currencyOptions } from '@/components/admin/landing-page-editor/types';
 import { Minus, Plus } from 'lucide-react';
+import { ProductImageGallery } from './ProductImageGallery';
 
 declare global {
   interface Window {
@@ -24,6 +25,7 @@ interface Product {
   id: string;
   name: string;
   price: number;
+  images?: string[];
 }
 
 interface CheckoutSettings {
@@ -279,6 +281,14 @@ export function CheckoutSection({
 
           {product && (
             <div className="mb-6 p-4 rounded-theme bg-muted/50 border space-y-4">
+              {/* Product Image Gallery */}
+              {product.images && product.images.length > 0 && (
+                <ProductImageGallery 
+                  images={product.images} 
+                  productName={product.name} 
+                />
+              )}
+
               <div className="flex justify-between items-start">
                 <p className="font-body text-lg font-medium">{product.name}</p>
                 <p className="font-digit text-lg text-primary font-bold">
