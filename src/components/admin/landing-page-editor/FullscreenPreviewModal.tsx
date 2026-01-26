@@ -1,16 +1,32 @@
 import { useState } from 'react';
-import { Monitor, Smartphone, RefreshCw, X } from 'lucide-react';
+import { Monitor, Smartphone, RefreshCw, X, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
   FullscreenDialogContent,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Section, ThemeConfig, CheckoutConfig, defaultCheckoutConfig, defaultCheckoutFields } from './types';
 import { generatePreviewHTML, generateCheckoutPreviewHTML } from './themeUtils';
 import { cn } from '@/lib/utils';
+
+// Device presets with realistic dimensions
+const devicePresets = [
+  { name: 'Desktop', width: 'full' as const, height: 'full' as const, userAgent: null },
+  { name: 'iPhone 14 Pro', width: 393, height: 852, userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1' },
+  { name: 'iPhone SE', width: 375, height: 667, userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1' },
+  { name: 'Samsung Galaxy S21', width: 360, height: 800, userAgent: 'Mozilla/5.0 (Linux; Android 12; SM-G991B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.104 Mobile Safari/537.36' },
+  { name: 'iPad', width: 768, height: 1024, userAgent: 'Mozilla/5.0 (iPad; CPU OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1' },
+  { name: 'iPad Pro', width: 1024, height: 1366, userAgent: 'Mozilla/5.0 (iPad; CPU OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1' },
+];
 
 interface FullscreenPreviewModalProps {
   open: boolean;
@@ -29,8 +45,11 @@ export function FullscreenPreviewModal({
   landingPageId,
   gtmId,
 }: FullscreenPreviewModalProps) {
-  const [device, setDevice] = useState<'desktop' | 'mobile'>('desktop');
+  const [selectedDevice, setSelectedDevice] = useState<string>('Desktop');
   const [refreshKey, setRefreshKey] = useState(0);
+
+  const currentDevice = devicePresets.find(d => d.name === selectedDevice) || devicePresets[0];
+  const isMobileDevice = currentDevice.width !== 'full';
 
   // Fetch linked product for checkout preview
   const { data: linkedProduct } = useQuery({
@@ -105,6 +124,19 @@ export function FullscreenPreviewModal({
     setRefreshKey(prev => prev + 1);
   };
 
+  // Calculate container dimensions
+  const getContainerStyle = () => {
+    if (currentDevice.width === 'full') {
+      return { width: '100%', height: '100%' };
+    }
+    return {
+      width: `${currentDevice.width}px`,
+      height: `${currentDevice.height}px`,
+      maxWidth: '100%',
+      maxHeight: '100%',
+    };
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <FullscreenDialogContent aria-describedby={undefined}>
@@ -112,22 +144,53 @@ export function FullscreenPreviewModal({
         <div className="flex items-center justify-between px-4 py-3 border-b bg-background shrink-0">
           <DialogTitle className="text-base font-semibold">Landing Page Preview</DialogTitle>
           <div className="flex items-center gap-2">
+            {/* Device Preset Selector */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2 min-w-[140px] justify-between">
+                  <span className="truncate">{selectedDevice}</span>
+                  <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 bg-background">
+                {devicePresets.map((device) => (
+                  <DropdownMenuItem
+                    key={device.name}
+                    onClick={() => setSelectedDevice(device.name)}
+                    className={cn(
+                      'flex justify-between',
+                      selectedDevice === device.name && 'bg-accent'
+                    )}
+                  >
+                    <span>{device.name}</span>
+                    {device.width !== 'full' && (
+                      <span className="text-xs text-muted-foreground">
+                        {device.width}×{device.height}
+                      </span>
+                    )}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            
+            {/* Quick desktop/mobile toggle */}
             <Button
-              variant={device === 'desktop' ? 'secondary' : 'ghost'}
+              variant={!isMobileDevice ? 'secondary' : 'ghost'}
               size="icon"
               className="h-8 w-8"
-              onClick={() => setDevice('desktop')}
+              onClick={() => setSelectedDevice('Desktop')}
             >
               <Monitor className="h-4 w-4" />
             </Button>
             <Button
-              variant={device === 'mobile' ? 'secondary' : 'ghost'}
+              variant={isMobileDevice ? 'secondary' : 'ghost'}
               size="icon"
               className="h-8 w-8"
-              onClick={() => setDevice('mobile')}
+              onClick={() => setSelectedDevice('iPhone 14 Pro')}
             >
               <Smartphone className="h-4 w-4" />
             </Button>
+            
             <Button
               variant="ghost"
               size="icon"
@@ -148,23 +211,32 @@ export function FullscreenPreviewModal({
           </div>
         </div>
         
-        {/* Full height iframe */}
-        <div className="flex-1 min-h-0 overflow-hidden bg-muted/30">
+        {/* Preview area with device simulation */}
+        <div className="flex-1 min-h-0 overflow-auto bg-muted/30 flex items-start justify-center p-4">
           <div
             className={cn(
-              'h-full mx-auto transition-all duration-300',
-              device === 'mobile' ? 'max-w-[375px] border-x shadow-lg' : 'w-full'
+              'transition-all duration-300 bg-white overflow-hidden',
+              isMobileDevice && 'shadow-2xl rounded-[2rem] border-[8px] border-border'
             )}
+            style={getContainerStyle()}
           >
             <iframe
               key={refreshKey}
               srcDoc={previewHtml}
-              className="w-full h-full border-0 bg-white"
+              className="w-full h-full border-0"
               sandbox="allow-scripts"
-              title="Fullscreen Landing Page Preview"
+              title="Landing Page Preview"
+              style={isMobileDevice ? { borderRadius: '1.5rem' } : undefined}
             />
           </div>
         </div>
+        
+        {/* Footer with device info */}
+        {isMobileDevice && (
+          <div className="shrink-0 px-4 py-2 border-t bg-muted/50 text-center text-xs text-muted-foreground">
+            {currentDevice.name} — {currentDevice.width}×{currentDevice.height}px
+          </div>
+        )}
       </FullscreenDialogContent>
     </Dialog>
   );
