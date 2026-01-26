@@ -1,5 +1,6 @@
 import { useRef, useState, forwardRef } from 'react';
-import { Monitor, Smartphone, Copy, Check, Layers, RefreshCw, Maximize2 } from 'lucide-react';
+import { Monitor, Smartphone, Copy, Check, Layers, RefreshCw, Maximize2, ExternalLink } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -24,6 +25,22 @@ export const FullPagePreview = forwardRef<HTMLDivElement, FullPagePreviewProps>(
     const [refreshKey, setRefreshKey] = useState(0);
     const [fullscreenOpen, setFullscreenOpen] = useState(false);
     const iframeRef = useRef<HTMLIFrameElement>(null);
+
+    const { toast } = useToast();
+
+    // Fetch landing page details for slug
+    const { data: landingPage } = useQuery({
+      queryKey: ['landing-page-details', landingPageId],
+      queryFn: async () => {
+        const { data } = await supabase
+          .from('landing_pages')
+          .select('slug, published')
+          .eq('id', landingPageId)
+          .maybeSingle();
+        return data;
+      },
+      enabled: !!landingPageId,
+    });
 
     // Fetch linked product for checkout preview
     const { data: linkedProduct } = useQuery({
@@ -107,6 +124,27 @@ export const FullPagePreview = forwardRef<HTMLDivElement, FullPagePreviewProps>(
       setRefreshKey(prev => prev + 1);
     };
 
+    const handleOpenRealPreview = () => {
+      if (!landingPage?.slug) {
+        toast({ 
+          title: 'Slug not found', 
+          variant: 'destructive' 
+        });
+        return;
+      }
+      
+      if (!landingPage.published) {
+        toast({
+          title: 'Page Not Published',
+          description: 'Please publish the page first to see real preview.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      window.open(`/p/${landingPage.slug}`, '_blank');
+    };
+
     if (sections.length === 0) {
       return (
         <div ref={ref} className="h-full flex flex-col items-center justify-center text-muted-foreground p-6">
@@ -175,6 +213,15 @@ export const FullPagePreview = forwardRef<HTMLDivElement, FullPagePreviewProps>(
                   title="Expand to fullscreen"
                 >
                   <Maximize2 className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={handleOpenRealPreview}
+                  title="Open in new tab"
+                >
+                  <ExternalLink className="h-4 w-4" />
                 </Button>
               </>
             )}
