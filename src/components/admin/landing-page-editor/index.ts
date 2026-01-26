@@ -7,6 +7,8 @@ export { CheckoutEditor } from './CheckoutEditor';
 export { CheckoutSettingsPanel } from './CheckoutSettingsPanel';
 export { SectionPreview } from './SectionPreview';
 export { FullPagePreview } from './FullPagePreview';
+export { FullscreenPreviewModal } from './FullscreenPreviewModal';
+export { FullscreenCodeModal } from './FullscreenCodeModal';
 export { ThemePanel } from './ThemePanel';
 export { MobileNavigation } from './MobileNavigation';
 export { DeleteConfirmDialog } from './DeleteConfirmDialog';
