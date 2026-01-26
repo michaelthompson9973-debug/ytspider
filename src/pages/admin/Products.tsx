@@ -16,8 +16,9 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, ImageIcon, Film, X } from 'lucide-react';
 import { z } from 'zod';
+import MediaPickerDialog from '@/components/admin/MediaPickerDialog';
 
 const productSchema = z.object({
   name: z.string().min(1, 'Name is required').max(200),
@@ -45,6 +46,8 @@ export default function Products() {
   const [form, setForm] = useState<ProductForm>(defaultForm);
   const [imageInput, setImageInput] = useState('');
   const [videoInput, setVideoInput] = useState('');
+  const [imagePickerOpen, setImagePickerOpen] = useState(false);
+  const [videoPickerOpen, setVideoPickerOpen] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -158,6 +161,14 @@ export default function Products() {
       setForm({ ...form, videos: [...form.videos, videoInput.trim()] });
       setVideoInput('');
     }
+  };
+
+  const handleImageSelect = (urls: string[]) => {
+    setForm({ ...form, images: [...form.images, ...urls] });
+  };
+
+  const handleVideoSelect = (urls: string[]) => {
+    setForm({ ...form, videos: [...form.videos, ...urls] });
   };
 
   return (
@@ -281,53 +292,74 @@ export default function Products() {
               <div className="space-y-2">
                 <Label>Images</Label>
                 <div className="flex gap-2">
+                  <Button type="button" variant="outline" onClick={() => setImagePickerOpen(true)}>
+                    <ImageIcon className="mr-2 h-4 w-4" />
+                    Gallery
+                  </Button>
                   <Input
-                    placeholder="Image URL"
+                    placeholder="Or paste URL"
                     value={imageInput}
                     onChange={(e) => setImageInput(e.target.value)}
+                    className="flex-1"
                   />
                   <Button type="button" variant="outline" onClick={addImage}>Add</Button>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {form.images.map((url, i) => (
-                    <span key={i} className="inline-flex items-center gap-1 rounded bg-muted px-2 py-1 text-xs">
-                      {url.substring(0, 30)}...
-                      <button
-                        type="button"
-                        onClick={() => setForm({ ...form, images: form.images.filter((_, j) => j !== i) })}
-                        className="text-destructive"
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                </div>
+                {form.images.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {form.images.map((url, i) => (
+                      <div key={i} className="relative group w-20 h-20">
+                        <img
+                          src={url}
+                          alt={`Image ${i + 1}`}
+                          className="w-full h-full object-cover rounded border"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setForm({ ...form, images: form.images.filter((_, j) => j !== i) })}
+                          className="absolute -top-1.5 -right-1.5 bg-destructive text-destructive-foreground rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">
                 <Label>Videos</Label>
                 <div className="flex gap-2">
+                  <Button type="button" variant="outline" onClick={() => setVideoPickerOpen(true)}>
+                    <Film className="mr-2 h-4 w-4" />
+                    Gallery
+                  </Button>
                   <Input
-                    placeholder="Video URL"
+                    placeholder="Or paste URL"
                     value={videoInput}
                     onChange={(e) => setVideoInput(e.target.value)}
+                    className="flex-1"
                   />
                   <Button type="button" variant="outline" onClick={addVideo}>Add</Button>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {form.videos.map((url, i) => (
-                    <span key={i} className="inline-flex items-center gap-1 rounded bg-muted px-2 py-1 text-xs">
-                      {url.substring(0, 30)}...
-                      <button
-                        type="button"
-                        onClick={() => setForm({ ...form, videos: form.videos.filter((_, j) => j !== i) })}
-                        className="text-destructive"
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                </div>
+                {form.videos.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {form.videos.map((url, i) => (
+                      <div key={i} className="relative group">
+                        <span className="inline-flex items-center gap-1 rounded bg-muted px-2 py-1.5 text-xs">
+                          <Film className="h-3 w-3" />
+                          {url.length > 30 ? url.substring(0, 30) + '...' : url}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setForm({ ...form, videos: form.videos.filter((_, j) => j !== i) })}
+                          className="absolute -top-1.5 -right-1.5 bg-destructive text-destructive-foreground rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <DialogFooter>
@@ -341,6 +373,22 @@ export default function Products() {
             </form>
           </DialogContent>
         </Dialog>
+
+        <MediaPickerDialog
+          open={imagePickerOpen}
+          onOpenChange={setImagePickerOpen}
+          onSelect={handleImageSelect}
+          multiple={true}
+          accept="image"
+        />
+
+        <MediaPickerDialog
+          open={videoPickerOpen}
+          onOpenChange={setVideoPickerOpen}
+          onSelect={handleVideoSelect}
+          multiple={true}
+          accept="video"
+        />
       </div>
     </AdminLayout>
   );
