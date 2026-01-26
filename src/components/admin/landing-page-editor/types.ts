@@ -1,15 +1,35 @@
 export type SectionType = 'html' | 'checkout';
 
+// Checkout Field Configuration
+export interface CheckoutField {
+  id: string;
+  name: string;           // field name (customer_name, customer_phone, etc.)
+  type: 'text' | 'tel' | 'email' | 'textarea';
+  label: string;          // "আপনার নাম"
+  placeholder: string;    // "সম্পূর্ণ নাম লিখুন"
+  required: boolean;
+  enabled: boolean;
+}
+
+export const defaultCheckoutFields: CheckoutField[] = [
+  { id: 'name', name: 'customer_name', type: 'text', label: 'আপনার নাম', placeholder: 'সম্পূর্ণ নাম লিখুন', required: true, enabled: true },
+  { id: 'phone', name: 'customer_phone', type: 'tel', label: 'মোবাইল নম্বর', placeholder: '01XXXXXXXXX', required: true, enabled: true },
+  { id: 'address', name: 'customer_address', type: 'text', label: 'ডেলিভারি ঠিকানা', placeholder: 'বাড়ি নং, রাস্তা, এলাকা', required: true, enabled: true },
+  { id: 'city', name: 'customer_city', type: 'text', label: 'শহর/জেলা', placeholder: 'ঢাকা', required: true, enabled: true },
+];
+
 export interface CheckoutConfig {
   title: string;
   ctaText: string;
   enabled: boolean;
+  fields: CheckoutField[];  // Dynamic form fields
 }
 
 export const defaultCheckoutConfig: CheckoutConfig = {
   title: 'অর্ডার করুন',
   ctaText: 'অর্ডার সম্পন্ন করুন',
   enabled: true,
+  fields: defaultCheckoutFields,
 };
 
 export interface Section {

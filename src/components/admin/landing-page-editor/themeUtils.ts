@@ -1,4 +1,4 @@
-import { ThemeConfig, availableFonts, defaultThemeConfig, CheckoutConfig, defaultCheckoutConfig } from './types';
+import { ThemeConfig, availableFonts, defaultThemeConfig, CheckoutConfig, defaultCheckoutConfig, CheckoutField, defaultCheckoutFields } from './types';
 
 /**
  * Get Google Fonts import URLs for the theme fonts
@@ -209,17 +209,67 @@ export function migrateThemeConfig(oldConfig: Partial<ThemeConfig>): ThemeConfig
 }
 
 /**
+ * Product data interface for checkout preview
+ */
+export interface ProductPreviewData {
+  name: string;
+  price: number;
+  images?: string[] | null;
+}
+
+export interface CheckoutSettingsPreviewData {
+  currency: string;
+  delivery_mode: string;
+  delivery_amount: number;
+  free_over_amount: number | null;
+}
+
+/**
  * Generate checkout form preview HTML for admin preview
  */
 export function generateCheckoutPreviewHTML(
   config: CheckoutConfig = defaultCheckoutConfig,
-  themeConfig: ThemeConfig = defaultThemeConfig
+  themeConfig: ThemeConfig = defaultThemeConfig,
+  product?: ProductPreviewData | null,
+  checkoutSettings?: CheckoutSettingsPreviewData | null
 ): string {
   const buttonRadius = themeConfig.buttonStyle === 'pill' 
     ? '9999px' 
     : themeConfig.buttonStyle === 'square' 
     ? '0' 
     : themeConfig.borderRadius;
+
+  // Use actual product data or placeholders
+  const productName = product?.name || 'Product Name';
+  const productPrice = product?.price || 0;
+  const productImage = product?.images?.[0] || null;
+  
+  // Checkout settings
+  const deliveryAmount = checkoutSettings?.delivery_amount ?? 60;
+  const currencySymbol = checkoutSettings?.currency === 'USD' ? '$' : checkoutSettings?.currency === 'INR' ? '₹' : '৳';
+  
+  // Calculate totals (assuming quantity = 1 for preview)
+  const subtotal = productPrice;
+  const total = subtotal + deliveryAmount;
+
+  // Get enabled fields
+  const fields = config.fields?.filter(f => f.enabled) || defaultCheckoutFields;
+  
+  // Generate form fields HTML
+  const formFieldsHtml = fields.map(field => `
+    <input 
+      style="width: 100%; border-radius: ${themeConfig.borderRadius}; border: 1px solid #d1d5db; padding: 0.625rem 0.75rem; font-family: var(--font-body); background: #f9fafb;" 
+      placeholder="${field.placeholder}" 
+      disabled 
+    />
+  `).join('\n');
+
+  // Product image HTML
+  const productImageHtml = productImage 
+    ? `<img src="${productImage}" alt="${productName}" style="width: 100%; height: 120px; object-fit: cover; border-radius: ${themeConfig.borderRadius}; margin-bottom: 0.75rem;" />`
+    : `<div style="width: 100%; height: 120px; background: #e5e7eb; border-radius: ${themeConfig.borderRadius}; margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: center; color: #9ca3af; font-family: var(--font-body);">
+        Product Image
+      </div>`;
 
   return `
     <section class="py-12 px-4" style="background-color: #f9fafb;" id="checkout">
@@ -229,14 +279,12 @@ export function generateCheckoutPreviewHTML(
             ${config.title || 'অর্ডার করুন'}
           </h2>
           
-          <!-- Product placeholder -->
+          <!-- Product section -->
           <div style="margin-bottom: 1.5rem; padding: 1rem; border-radius: ${themeConfig.borderRadius}; background: #f9fafb; border: 1px solid #e5e7eb;">
-            <div style="width: 100%; height: 120px; background: #e5e7eb; border-radius: ${themeConfig.borderRadius}; margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: center; color: #9ca3af; font-family: var(--font-body);">
-              Product Image
-            </div>
+            ${productImageHtml}
             <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-family: var(--font-body); color: #374151;">Product Name</span>
-              <span style="font-family: var(--font-digit); color: ${themeConfig.primaryColor}; font-weight: 700;">৳XXX</span>
+              <span style="font-family: var(--font-body); color: #374151; font-weight: 500;">${productName}</span>
+              <span style="font-family: var(--font-digit); color: ${themeConfig.primaryColor}; font-weight: 700;">${currencySymbol}${productPrice.toLocaleString()}</span>
             </div>
             <div style="display: flex; align-items: center; justify-content: center; gap: 1rem; margin-top: 0.75rem;">
               <button style="width: 2rem; height: 2rem; border-radius: ${buttonRadius}; border: 1px solid #d1d5db; background: white; cursor: pointer;">−</button>
@@ -249,24 +297,21 @@ export function generateCheckoutPreviewHTML(
           <div style="margin-bottom: 1rem; padding: 0.75rem; background: #f9fafb; border-radius: ${themeConfig.borderRadius}; font-family: var(--font-body); font-size: 0.875rem;">
             <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
               <span>সাবটোটাল:</span>
-              <span style="font-family: var(--font-digit);">৳XXX</span>
+              <span style="font-family: var(--font-digit);">${currencySymbol}${subtotal.toLocaleString()}</span>
             </div>
             <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
               <span>ডেলিভারি:</span>
-              <span style="font-family: var(--font-digit);">৳60</span>
+              <span style="font-family: var(--font-digit);">${currencySymbol}${deliveryAmount.toLocaleString()}</span>
             </div>
             <div style="display: flex; justify-content: space-between; font-weight: 600; padding-top: 0.5rem; border-top: 1px solid #e5e7eb;">
               <span>সর্বমোট:</span>
-              <span style="font-family: var(--font-digit); color: ${themeConfig.primaryColor};">৳XXX</span>
+              <span style="font-family: var(--font-digit); color: ${themeConfig.primaryColor};">${currencySymbol}${total.toLocaleString()}</span>
             </div>
           </div>
           
           <!-- Form fields preview -->
           <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1rem;">
-            <input style="width: 100%; border-radius: ${themeConfig.borderRadius}; border: 1px solid #d1d5db; padding: 0.625rem 0.75rem; font-family: var(--font-body); background: #f9fafb;" placeholder="আপনার নাম" disabled />
-            <input style="width: 100%; border-radius: ${themeConfig.borderRadius}; border: 1px solid #d1d5db; padding: 0.625rem 0.75rem; font-family: var(--font-body); background: #f9fafb;" placeholder="মোবাইল নম্বর" disabled />
-            <input style="width: 100%; border-radius: ${themeConfig.borderRadius}; border: 1px solid #d1d5db; padding: 0.625rem 0.75rem; font-family: var(--font-body); background: #f9fafb;" placeholder="ডেলিভারি ঠিকানা" disabled />
-            <input style="width: 100%; border-radius: ${themeConfig.borderRadius}; border: 1px solid #d1d5db; padding: 0.625rem 0.75rem; font-family: var(--font-body); background: #f9fafb;" placeholder="শহর/জেলা" disabled />
+            ${formFieldsHtml}
           </div>
           
           <button style="width: 100%; background: ${themeConfig.primaryColor}; color: white; padding: 0.875rem; border-radius: ${buttonRadius}; font-family: var(--font-button); font-weight: 600; border: none; cursor: pointer;">

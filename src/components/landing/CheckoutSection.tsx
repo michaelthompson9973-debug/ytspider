@@ -2,24 +2,10 @@ import { useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { z } from 'zod';
 import { useQuery } from '@tanstack/react-query';
-import { CheckoutConfig, DeliveryMode, currencyOptions } from '@/components/admin/landing-page-editor/types';
+import { CheckoutConfig, DeliveryMode, currencyOptions, defaultCheckoutFields, CheckoutField } from '@/components/admin/landing-page-editor/types';
 import { Minus, Plus } from 'lucide-react';
 import { ProductImageGallery } from './ProductImageGallery';
-
-declare global {
-  interface Window {
-    dataLayer: Record<string, unknown>[];
-  }
-}
-
-const orderSchema = z.object({
-  customer_name: z.string().min(2, 'নাম দিতে হবে').max(100),
-  customer_phone: z.string().min(6, 'ফোন নম্বর দিতে হবে').max(20),
-  customer_address: z.string().min(5, 'ঠিকানা দিতে হবে').max(500),
-  customer_city: z.string().min(2, 'শহরের নাম দিতে হবে').max(100),
-});
 
 interface Product {
   id: string;
@@ -94,11 +80,18 @@ export function CheckoutSection({
   const [submitting, setSubmitting] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [quantity, setQuantity] = useState(1);
-  const [form, setForm] = useState({
-    customer_name: '',
-    customer_phone: '',
-    customer_address: '',
-    customer_city: '',
+  
+  // Get fields from config or use defaults
+  const fields = config.fields?.length > 0 ? config.fields : defaultCheckoutFields;
+  const enabledFields = fields.filter(f => f.enabled);
+  
+  // Initialize form state from enabled fields
+  const [form, setForm] = useState<Record<string, string>>(() => {
+    const initial: Record<string, string> = {};
+    enabledFields.forEach(field => {
+      initial[field.name] = '';
+    });
+    return initial;
   });
 
   // Fetch checkout settings for this landing page
@@ -144,14 +137,18 @@ export function CheckoutSection({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const validation = orderSchema.safeParse(form);
-    if (!validation.success) {
-      toast({
-        title: 'ফর্ম পূরণ করুন',
-        description: validation.error.errors[0].message,
-        variant: 'destructive',
-      });
-      return;
+    // Dynamic validation based on enabled required fields
+    const requiredFields = enabledFields.filter(f => f.required);
+    for (const field of requiredFields) {
+      const value = form[field.name]?.trim();
+      if (!value || value.length < 2) {
+        toast({
+          title: 'ফর্ম পূরণ করুন',
+          description: `${field.label} দিতে হবে`,
+          variant: 'destructive',
+        });
+        return;
+      }
     }
 
     setSubmitting(true);
@@ -168,10 +165,10 @@ export function CheckoutSection({
       const { data: orderData, error } = await supabase.from('orders').insert({
         product_id: product?.id,
         landing_page_id: landingPageId,
-        customer_name: form.customer_name,
-        customer_phone: form.customer_phone,
-        customer_address: form.customer_address,
-        customer_city: form.customer_city,
+        customer_name: form.customer_name || '',
+        customer_phone: form.customer_phone || '',
+        customer_address: form.customer_address || '',
+        customer_city: form.customer_city || '',
         utm_source: searchParams.get('utm_source'),
         utm_medium: searchParams.get('utm_medium'),
         utm_campaign: searchParams.get('utm_campaign'),
@@ -271,6 +268,25 @@ export function CheckoutSection({
     );
   }
 
+  // Helper to render appropriate input based on field type
+  const renderField = (field: CheckoutField) => {
+    const commonProps = {
+      id: `checkout-${field.id}`,
+      value: form[field.name] || '',
+      onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => 
+        setForm({ ...form, [field.name]: e.target.value }),
+      className: "font-body w-full rounded-theme border border-input bg-background px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-primary",
+      placeholder: field.placeholder,
+      required: field.required,
+    };
+
+    if (field.type === 'textarea') {
+      return <textarea {...commonProps} rows={3} />;
+    }
+
+    return <input {...commonProps} type={field.type} />;
+  };
+
   return (
     <section className="py-12 px-4 bg-muted/50" id="checkout">
       <div className="container max-w-md mx-auto">
@@ -345,65 +361,16 @@ export function CheckoutSection({
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <label htmlFor="checkout-name" className="font-body text-sm font-medium block">
-                আপনার নাম
-              </label>
-              <input
-                id="checkout-name"
-                type="text"
-                value={form.customer_name}
-                onChange={(e) => setForm({ ...form, customer_name: e.target.value })}
-                className="font-body w-full rounded-theme border border-input bg-background px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-primary"
-                placeholder="সম্পূর্ণ নাম লিখুন"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="checkout-phone" className="font-body text-sm font-medium block">
-                মোবাইল নম্বর
-              </label>
-              <input
-                id="checkout-phone"
-                type="tel"
-                value={form.customer_phone}
-                onChange={(e) => setForm({ ...form, customer_phone: e.target.value })}
-                className="font-body w-full rounded-theme border border-input bg-background px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-primary"
-                placeholder="01XXXXXXXXX"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="checkout-address" className="font-body text-sm font-medium block">
-                ডেলিভারি ঠিকানা
-              </label>
-              <input
-                id="checkout-address"
-                type="text"
-                value={form.customer_address}
-                onChange={(e) => setForm({ ...form, customer_address: e.target.value })}
-                className="font-body w-full rounded-theme border border-input bg-background px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-primary"
-                placeholder="বাড়ি নং, রাস্তা, এলাকা"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="checkout-city" className="font-body text-sm font-medium block">
-                শহর/জেলা
-              </label>
-              <input
-                id="checkout-city"
-                type="text"
-                value={form.customer_city}
-                onChange={(e) => setForm({ ...form, customer_city: e.target.value })}
-                className="font-body w-full rounded-theme border border-input bg-background px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-primary"
-                placeholder="ঢাকা"
-                required
-              />
-            </div>
+            {/* Dynamic Form Fields */}
+            {enabledFields.map((field) => (
+              <div key={field.id} className="space-y-2">
+                <label htmlFor={`checkout-${field.id}`} className="font-body text-sm font-medium block">
+                  {field.label}
+                  {field.required && <span className="text-destructive ml-1">*</span>}
+                </label>
+                {renderField(field)}
+              </div>
+            ))}
 
             <button
               type="submit"
