@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
-import { CheckoutConfig } from '@/components/admin/landing-page-editor/types';
+import { useQuery } from '@tanstack/react-query';
+import { CheckoutConfig, DeliveryMode, currencyOptions } from '@/components/admin/landing-page-editor/types';
+import { Minus, Plus } from 'lucide-react';
 
 declare global {
   interface Window {
@@ -24,6 +26,13 @@ interface Product {
   price: number;
 }
 
+interface CheckoutSettings {
+  currency: string;
+  delivery_mode: DeliveryMode;
+  delivery_amount: number;
+  free_over_amount: number | null;
+}
+
 interface CheckoutSectionProps {
   config: CheckoutConfig;
   product: Product | null;
@@ -32,12 +41,44 @@ interface CheckoutSectionProps {
   onOrderSuccess?: (orderId: string) => void;
 }
 
+const defaultCheckoutSettings: CheckoutSettings = {
+  currency: 'BDT',
+  delivery_mode: 'flat',
+  delivery_amount: 60,
+  free_over_amount: null,
+};
+
 const pushDataLayer = (event: string, data?: Record<string, unknown>) => {
   if (typeof window !== 'undefined') {
     window.dataLayer = window.dataLayer || [];
     window.dataLayer.push({ event, ...data });
   }
 };
+
+function calculateTotals(
+  quantity: number,
+  unitPrice: number,
+  settings: CheckoutSettings
+): { subtotal: number; delivery: number; total: number } {
+  const subtotal = quantity * unitPrice;
+  let delivery = 0;
+
+  switch (settings.delivery_mode) {
+    case 'free':
+      delivery = 0;
+      break;
+    case 'flat':
+      delivery = settings.delivery_amount;
+      break;
+    case 'conditional':
+      delivery = subtotal >= (settings.free_over_amount || 0)
+        ? 0
+        : settings.delivery_amount;
+      break;
+  }
+
+  return { subtotal, delivery, total: subtotal + delivery };
+}
 
 export function CheckoutSection({
   config,
@@ -50,6 +91,7 @@ export function CheckoutSection({
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
+  const [quantity, setQuantity] = useState(1);
   const [form, setForm] = useState({
     customer_name: '',
     customer_phone: '',
@@ -57,9 +99,45 @@ export function CheckoutSection({
     customer_city: '',
   });
 
+  // Fetch checkout settings for this landing page
+  const { data: checkoutSettingsData } = useQuery({
+    queryKey: ['checkout-settings-public', landingPageId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('landing_page_checkout_settings')
+        .select('*')
+        .eq('landing_page_id', landingPageId)
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) return null;
+
+      return {
+        currency: data.currency,
+        delivery_mode: data.delivery_mode as DeliveryMode,
+        delivery_amount: Number(data.delivery_amount),
+        free_over_amount: data.free_over_amount ? Number(data.free_over_amount) : null,
+      } as CheckoutSettings;
+    },
+    enabled: !!landingPageId,
+  });
+
+  const settings = checkoutSettingsData ?? defaultCheckoutSettings;
+  const currencySymbol = currencyOptions.find(c => c.value === settings.currency)?.symbol || '৳';
+
+  // Calculate totals
+  const unitPrice = product?.price || 0;
+  const { subtotal, delivery, total } = useMemo(
+    () => calculateTotals(quantity, unitPrice, settings),
+    [quantity, unitPrice, settings]
+  );
+
   if (!config.enabled) {
     return null;
   }
+
+  const handleQuantityChange = (delta: number) => {
+    setQuantity((q) => Math.max(1, q + delta));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,20 +176,28 @@ export function CheckoutSection({
         utm_term: searchParams.get('utm_term'),
         utm_content: searchParams.get('utm_content'),
         event_id: eventId,
+        quantity,
+        unit_price: unitPrice,
+        subtotal,
+        delivery_charge: delivery,
+        total,
+        currency: settings.currency,
       }).select('id').single();
 
       if (error) throw error;
 
-      // Push purchase event for GTM
+      // Push purchase event for GTM with new fields
       pushDataLayer('purchase', {
         transaction_id: eventId,
-        value: product?.price,
-        currency: 'BDT',
+        value: total,
+        subtotal,
+        shipping: delivery,
+        currency: settings.currency,
         items: [{
           item_id: product?.id,
           item_name: product?.name,
-          price: product?.price,
-          quantity: 1,
+          price: unitPrice,
+          quantity,
         }],
       });
 
@@ -122,9 +208,14 @@ export function CheckoutSection({
             eventId,
             orderId: orderData?.id,
             productName: product?.name,
-            productPrice: product?.price,
+            productPrice: unitPrice,
             customerCity: form.customer_city,
             landingPageSlug,
+            quantity,
+            subtotal,
+            shipping: delivery,
+            total,
+            currency: settings.currency,
           },
         });
       } catch (trackError) {
@@ -187,11 +278,59 @@ export function CheckoutSection({
           </h2>
 
           {product && (
-            <div className="mb-6 p-4 rounded-theme bg-muted/50 border">
-              <p className="font-body text-lg font-medium">{product.name}</p>
-              <p className="font-digit text-2xl text-primary font-bold">
-                ৳{Number(product.price).toLocaleString('bn-BD')}
-              </p>
+            <div className="mb-6 p-4 rounded-theme bg-muted/50 border space-y-4">
+              <div className="flex justify-between items-start">
+                <p className="font-body text-lg font-medium">{product.name}</p>
+                <p className="font-digit text-lg text-primary font-bold">
+                  {currencySymbol}{Number(unitPrice).toLocaleString('bn-BD')}
+                </p>
+              </div>
+
+              {/* Quantity Selector */}
+              <div className="flex items-center justify-between">
+                <span className="font-body text-sm text-muted-foreground">পরিমাণ:</span>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => handleQuantityChange(-1)}
+                    disabled={quantity <= 1}
+                    className="w-8 h-8 rounded-theme border flex items-center justify-center hover:bg-muted disabled:opacity-50"
+                  >
+                    <Minus className="h-4 w-4" />
+                  </button>
+                  <span className="font-digit text-lg w-8 text-center">{quantity}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleQuantityChange(1)}
+                    className="w-8 h-8 rounded-theme border flex items-center justify-center hover:bg-muted"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Price Breakdown */}
+              <div className="border-t pt-3 space-y-2 text-sm">
+                <div className="flex justify-between font-body">
+                  <span className="text-muted-foreground">সাবটোটাল:</span>
+                  <span className="font-digit">{currencySymbol}{subtotal.toLocaleString('bn-BD')}</span>
+                </div>
+                <div className="flex justify-between font-body">
+                  <span className="text-muted-foreground">ডেলিভারি চার্জ:</span>
+                  <span className={`font-digit ${delivery === 0 ? 'text-green-600' : ''}`}>
+                    {delivery === 0 ? 'ফ্রি!' : `${currencySymbol}${delivery.toLocaleString('bn-BD')}`}
+                  </span>
+                </div>
+                {settings.delivery_mode === 'conditional' && subtotal < (settings.free_over_amount || 0) && (
+                  <p className="text-xs text-muted-foreground">
+                    {currencySymbol}{((settings.free_over_amount || 0) - subtotal).toLocaleString('bn-BD')} আরো অর্ডার করলে ডেলিভারি ফ্রি!
+                  </p>
+                )}
+                <div className="flex justify-between font-body font-semibold text-base border-t pt-2">
+                  <span>সর্বমোট:</span>
+                  <span className="font-digit text-primary">{currencySymbol}{total.toLocaleString('bn-BD')}</span>
+                </div>
+              </div>
             </div>
           )}
 
