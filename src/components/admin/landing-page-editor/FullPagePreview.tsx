@@ -1,24 +1,64 @@
 import { useRef, useState, forwardRef } from 'react';
 import { Monitor, Smartphone, Copy, Check, Layers, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Section, ThemeConfig, CheckoutConfig, defaultCheckoutConfig } from './types';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { Section, ThemeConfig, CheckoutConfig, defaultCheckoutConfig, defaultCheckoutFields } from './types';
 import { generateFullHTML, generatePreviewHTML, generateCheckoutPreviewHTML } from './themeUtils';
 import { cn } from '@/lib/utils';
 
 interface FullPagePreviewProps {
   sections: Section[];
   themeConfig: ThemeConfig;
+  landingPageId: string;
   gtmId?: string;
   showCodeView?: boolean;
 }
 
 export const FullPagePreview = forwardRef<HTMLDivElement, FullPagePreviewProps>(
-  function FullPagePreview({ sections, themeConfig, gtmId, showCodeView = false }, ref) {
+  function FullPagePreview({ sections, themeConfig, landingPageId, gtmId, showCodeView = false }, ref) {
     const [device, setDevice] = useState<'desktop' | 'mobile'>('desktop');
     const [copied, setCopied] = useState(false);
     const [viewMode, setViewMode] = useState<'preview' | 'code'>(showCodeView ? 'code' : 'preview');
     const [refreshKey, setRefreshKey] = useState(0);
     const iframeRef = useRef<HTMLIFrameElement>(null);
+
+    // Fetch linked product for checkout preview
+    const { data: linkedProduct } = useQuery({
+      queryKey: ['linked-product-preview', landingPageId],
+      queryFn: async () => {
+        const { data: lp } = await supabase
+          .from('landing_pages')
+          .select('product_id')
+          .eq('id', landingPageId)
+          .maybeSingle();
+        
+        if (!lp?.product_id) return null;
+        
+        const { data: product } = await supabase
+          .from('products')
+          .select('id, name, price, images')
+          .eq('id', lp.product_id)
+          .maybeSingle();
+        
+        return product;
+      },
+      enabled: !!landingPageId,
+    });
+
+    // Fetch checkout settings
+    const { data: checkoutSettings } = useQuery({
+      queryKey: ['checkout-settings-preview', landingPageId],
+      queryFn: async () => {
+        const { data } = await supabase
+          .from('landing_page_checkout_settings')
+          .select('*')
+          .eq('landing_page_id', landingPageId)
+          .maybeSingle();
+        return data;
+      },
+      enabled: !!landingPageId,
+    });
 
     // Sort sections by order and generate HTML for each
     const sortedSections = [...sections].sort((a, b) => a.sort_order - b.sort_order);
@@ -27,7 +67,26 @@ export const FullPagePreview = forwardRef<HTMLDivElement, FullPagePreviewProps>(
     const sectionsHtml = sortedSections.map((s) => {
       if (s.type === 'checkout') {
         const checkoutConfig = (s.config as CheckoutConfig) ?? defaultCheckoutConfig;
-        return generateCheckoutPreviewHTML(checkoutConfig, themeConfig);
+        // Ensure fields exist
+        const configWithFields = {
+          ...checkoutConfig,
+          fields: checkoutConfig.fields?.length > 0 ? checkoutConfig.fields : defaultCheckoutFields,
+        };
+        return generateCheckoutPreviewHTML(
+          configWithFields, 
+          themeConfig,
+          linkedProduct ? {
+            name: linkedProduct.name,
+            price: linkedProduct.price,
+            images: linkedProduct.images,
+          } : null,
+          checkoutSettings ? {
+            currency: checkoutSettings.currency,
+            delivery_mode: checkoutSettings.delivery_mode,
+            delivery_amount: Number(checkoutSettings.delivery_amount),
+            free_over_amount: checkoutSettings.free_over_amount ? Number(checkoutSettings.free_over_amount) : null,
+          } : null
+        );
       }
       return s.html;
     }).join('\n');

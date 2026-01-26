@@ -165,6 +165,7 @@ export function SectionBuilder({ landingPageId, gtmId, onBack }: SectionBuilderP
             <CheckoutEditor
               section={activeSection}
               themeConfig={themeConfig}
+              landingPageId={landingPageId}
               onSave={(data) => updateSection({ id: data.id, name: data.name, config: data.config })}
               isSaving={isUpdating}
             />
@@ -192,6 +193,7 @@ export function SectionBuilder({ landingPageId, gtmId, onBack }: SectionBuilderP
             <FullPagePreview
               sections={visibleSections}
               themeConfig={themeConfig}
+              landingPageId={landingPageId}
               gtmId={gtmId}
             />
           )}
@@ -226,6 +228,7 @@ export function SectionBuilder({ landingPageId, gtmId, onBack }: SectionBuilderP
             <CheckoutEditor
               section={activeSection}
               themeConfig={themeConfig}
+              landingPageId={landingPageId}
               onSave={(data) => updateSection({ id: data.id, name: data.name, config: data.config })}
               isSaving={isUpdating}
             />
@@ -246,6 +249,7 @@ export function SectionBuilder({ landingPageId, gtmId, onBack }: SectionBuilderP
           <FullPagePreview
             sections={visibleSections}
             themeConfig={themeConfig}
+            landingPageId={landingPageId}
             gtmId={gtmId}
           />
         </div>

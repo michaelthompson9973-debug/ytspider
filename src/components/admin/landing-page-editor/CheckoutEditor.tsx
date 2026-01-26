@@ -3,29 +3,66 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { Save, ShoppingCart, Eye, Settings } from 'lucide-react';
-import { Section, CheckoutConfig, defaultCheckoutConfig, ThemeConfig, defaultThemeConfig } from './types';
+import { Save, ShoppingCart, Eye, Settings, Plus } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { Section, CheckoutConfig, defaultCheckoutConfig, defaultCheckoutFields, ThemeConfig, defaultThemeConfig, CheckoutField } from './types';
 import { generateCheckoutPreviewHTML, generatePreviewHTML } from './themeUtils';
+import { FieldEditor } from './FieldEditor';
+import { useCheckoutSettings } from './useCheckoutSettings';
 
 interface CheckoutEditorProps {
   section: Section | null;
   themeConfig?: ThemeConfig;
+  landingPageId: string;
   onSave: (data: { id: string; name: string; config: CheckoutConfig }) => void;
   isSaving: boolean;
 }
 
 export const CheckoutEditor = forwardRef<HTMLDivElement, CheckoutEditorProps>(
-  function CheckoutEditor({ section, themeConfig = defaultThemeConfig, onSave, isSaving }, ref) {
+  function CheckoutEditor({ section, themeConfig = defaultThemeConfig, landingPageId, onSave, isSaving }, ref) {
     const [name, setName] = useState('');
     const [config, setConfig] = useState<CheckoutConfig>(defaultCheckoutConfig);
     const [isDirty, setIsDirty] = useState(false);
     const [viewMode, setViewMode] = useState<'preview' | 'settings'>('preview');
     const iframeRef = useRef<HTMLIFrameElement>(null);
 
+    // Fetch linked product
+    const { data: linkedProduct } = useQuery({
+      queryKey: ['linked-product', landingPageId],
+      queryFn: async () => {
+        const { data: lp } = await supabase
+          .from('landing_pages')
+          .select('product_id')
+          .eq('id', landingPageId)
+          .maybeSingle();
+        
+        if (!lp?.product_id) return null;
+        
+        const { data: product } = await supabase
+          .from('products')
+          .select('id, name, price, images')
+          .eq('id', lp.product_id)
+          .maybeSingle();
+        
+        return product;
+      },
+      enabled: !!landingPageId,
+    });
+
+    // Get checkout settings
+    const { checkoutSettings } = useCheckoutSettings(landingPageId);
+
     useEffect(() => {
       if (section) {
         setName(section.name);
-        setConfig((section.config as CheckoutConfig) ?? defaultCheckoutConfig);
+        const sectionConfig = section.config as CheckoutConfig;
+        setConfig({
+          ...defaultCheckoutConfig,
+          ...sectionConfig,
+          // Ensure fields array exists
+          fields: sectionConfig?.fields?.length > 0 ? sectionConfig.fields : defaultCheckoutFields,
+        });
         setIsDirty(false);
       }
     }, [section]);
@@ -36,8 +73,52 @@ export const CheckoutEditor = forwardRef<HTMLDivElement, CheckoutEditorProps>(
       setIsDirty(false);
     };
 
-    // Generate preview HTML for checkout section
-    const checkoutHtml = generateCheckoutPreviewHTML(config, themeConfig);
+    const handleFieldChange = (index: number, updatedField: CheckoutField) => {
+      const newFields = [...config.fields];
+      newFields[index] = updatedField;
+      setConfig({ ...config, fields: newFields });
+      setIsDirty(true);
+    };
+
+    const handleAddField = () => {
+      const newField: CheckoutField = {
+        id: `custom_${Date.now()}`,
+        name: `custom_field_${config.fields.length + 1}`,
+        type: 'text',
+        label: 'নতুন ফিল্ড',
+        placeholder: 'এখানে লিখুন',
+        required: false,
+        enabled: true,
+      };
+      setConfig({ ...config, fields: [...config.fields, newField] });
+      setIsDirty(true);
+    };
+
+    const handleRemoveField = (index: number) => {
+      const newFields = config.fields.filter((_, i) => i !== index);
+      setConfig({ ...config, fields: newFields });
+      setIsDirty(true);
+    };
+
+    // Default field IDs that can't be removed
+    const defaultFieldIds = ['name', 'phone', 'address', 'city'];
+
+    // Generate preview HTML for checkout section with actual product data
+    const checkoutHtml = generateCheckoutPreviewHTML(
+      config, 
+      themeConfig,
+      linkedProduct ? {
+        name: linkedProduct.name,
+        price: linkedProduct.price,
+        images: linkedProduct.images,
+      } : null,
+      checkoutSettings ? {
+        currency: checkoutSettings.currency,
+        delivery_mode: checkoutSettings.delivery_mode,
+        delivery_amount: checkoutSettings.delivery_amount,
+        free_over_amount: checkoutSettings.free_over_amount,
+      } : null
+    );
     const previewHtml = generatePreviewHTML(checkoutHtml, themeConfig);
 
     if (!section) {
@@ -116,73 +197,111 @@ export const CheckoutEditor = forwardRef<HTMLDivElement, CheckoutEditorProps>(
               />
             </div>
           ) : (
-            <div className="h-full overflow-y-auto space-y-6 pr-1">
-              <div className="space-y-2">
-                <Label htmlFor="checkout-title" className="text-sm font-medium">
-                  Form Title
-                </Label>
-                <Input
-                  id="checkout-title"
-                  value={config.title}
-                  onChange={(e) => {
-                    setConfig({ ...config, title: e.target.value });
-                    setIsDirty(true);
-                  }}
-                  placeholder="অর্ডার করুন"
-                />
-                <p className="text-xs text-muted-foreground">
-                  This title appears above the order form
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="checkout-cta" className="text-sm font-medium">
-                  Submit Button Text
-                </Label>
-                <Input
-                  id="checkout-cta"
-                  value={config.ctaText}
-                  onChange={(e) => {
-                    setConfig({ ...config, ctaText: e.target.value });
-                    setIsDirty(true);
-                  }}
-                  placeholder="অর্ডার সম্পন্ন করুন"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Text displayed on the order submit button
-                </p>
-              </div>
-
-              <div className="flex items-center justify-between py-3 px-4 rounded-lg border bg-muted/30">
-                <div className="space-y-0.5">
-                  <Label htmlFor="checkout-enabled" className="text-sm font-medium">
-                    Enable Checkout
+            <div className="h-full overflow-y-auto space-y-4 pr-1">
+              {/* Basic Settings */}
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label htmlFor="checkout-title" className="text-sm font-medium">
+                    Form Title
                   </Label>
-                  <p className="text-xs text-muted-foreground">
-                    When disabled, the checkout form won't appear
-                  </p>
+                  <Input
+                    id="checkout-title"
+                    value={config.title}
+                    onChange={(e) => {
+                      setConfig({ ...config, title: e.target.value });
+                      setIsDirty(true);
+                    }}
+                    placeholder="অর্ডার করুন"
+                  />
                 </div>
-                <Switch
-                  id="checkout-enabled"
-                  checked={config.enabled}
-                  onCheckedChange={(checked) => {
-                    setConfig({ ...config, enabled: checked });
-                    setIsDirty(true);
-                  }}
-                />
+
+                <div className="space-y-2">
+                  <Label htmlFor="checkout-cta" className="text-sm font-medium">
+                    Submit Button Text
+                  </Label>
+                  <Input
+                    id="checkout-cta"
+                    value={config.ctaText}
+                    onChange={(e) => {
+                      setConfig({ ...config, ctaText: e.target.value });
+                      setIsDirty(true);
+                    }}
+                    placeholder="অর্ডার সম্পন্ন করুন"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between py-3 px-4 rounded-lg border bg-muted/30">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="checkout-enabled" className="text-sm font-medium">
+                      Enable Checkout
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      When disabled, the checkout form won't appear
+                    </p>
+                  </div>
+                  <Switch
+                    id="checkout-enabled"
+                    checked={config.enabled}
+                    onCheckedChange={(checked) => {
+                      setConfig({ ...config, enabled: checked });
+                      setIsDirty(true);
+                    }}
+                  />
+                </div>
               </div>
 
-              {/* Preview Info */}
-              <div className="p-4 rounded-lg border border-dashed bg-muted/20">
-                <div className="flex items-center gap-2 mb-2">
-                  <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">Checkout Preview</span>
+              {/* Form Fields Section */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium">Form Fields</Label>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleAddField}
+                    className="h-7 text-xs"
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    Add Field
+                  </Button>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  The checkout form will display product info, quantity selector, and order fields 
-                  (name, phone, address, city) with theme-integrated styling.
-                </p>
+
+                <div className="space-y-2">
+                  {config.fields.map((field, index) => (
+                    <FieldEditor
+                      key={field.id}
+                      field={field}
+                      onChange={(updatedField) => handleFieldChange(index, updatedField)}
+                      onRemove={!defaultFieldIds.includes(field.id) ? () => handleRemoveField(index) : undefined}
+                      isDefault={defaultFieldIds.includes(field.id)}
+                    />
+                  ))}
+                </div>
               </div>
+
+              {/* Linked Product Info */}
+              {linkedProduct && (
+                <div className="p-4 rounded-lg border border-dashed bg-muted/20">
+                  <div className="flex items-center gap-2 mb-2">
+                    <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">Linked Product</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {linkedProduct.images?.[0] && (
+                      <img 
+                        src={linkedProduct.images[0]} 
+                        alt={linkedProduct.name}
+                        className="w-12 h-12 rounded object-cover"
+                      />
+                    )}
+                    <div>
+                      <p className="text-sm font-medium">{linkedProduct.name}</p>
+                      <p className="text-sm text-primary font-digit">
+                        ৳{linkedProduct.price.toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
