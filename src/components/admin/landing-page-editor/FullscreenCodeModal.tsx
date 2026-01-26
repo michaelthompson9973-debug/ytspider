@@ -3,7 +3,7 @@ import { Code, Copy, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
-  DialogContent,
+  FullscreenDialogContent,
   DialogTitle,
 } from '@/components/ui/dialog';
 import { AiEnhanceButton } from './AiEnhanceButton';
@@ -57,9 +57,9 @@ export function FullscreenCodeModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[100vw] w-screen h-screen max-h-screen p-0 gap-0 rounded-none border-0 flex flex-col">
+      <FullscreenDialogContent className="bg-zinc-900" aria-describedby={undefined}>
         {/* Header - VS Code style dark theme */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-700 bg-zinc-900 text-white">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-700 bg-zinc-900 text-white shrink-0">
           <div className="flex items-center gap-2">
             <Code className="h-4 w-4 text-zinc-400" />
             <DialogTitle className="text-sm font-medium text-zinc-100">
@@ -102,7 +102,7 @@ export function FullscreenCodeModal({
         </div>
         
         {/* VS Code style editor */}
-        <div className="flex-1 overflow-hidden bg-zinc-900 flex">
+        <div className="flex-1 min-h-0 overflow-hidden bg-zinc-900 flex">
           {/* Line numbers */}
           <div
             ref={lineNumbersRef}
@@ -128,7 +128,7 @@ export function FullscreenCodeModal({
         </div>
         
         {/* Footer with Apply button */}
-        <div className="flex justify-end gap-2 px-4 py-3 border-t border-zinc-700 bg-zinc-800">
+        <div className="flex justify-end gap-2 px-4 py-3 border-t border-zinc-700 bg-zinc-800 shrink-0">
           <Button
             variant="ghost"
             onClick={() => onOpenChange(false)}
@@ -140,7 +140,7 @@ export function FullscreenCodeModal({
             Apply Changes
           </Button>
         </div>
-      </DialogContent>
+      </FullscreenDialogContent>
     </Dialog>
   );
 }
