@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -33,18 +34,24 @@ export function useCheckoutSettings(landingPageId: string | null) {
     enabled: !!landingPageId,
   });
 
-  const checkoutSettings: Omit<CheckoutSettings, 'id' | 'landing_page_id' | 'created_at' | 'updated_at'> = settings 
-    ? {
-        currency: settings.currency,
-        delivery_mode: settings.delivery_mode,
-        delivery_amount: settings.delivery_amount,
-        free_over_amount: settings.free_over_amount,
-        inside_city_label: settings.inside_city_label,
-        inside_city_amount: settings.inside_city_amount,
-        outside_city_label: settings.outside_city_label,
-        outside_city_amount: settings.outside_city_amount,
-      }
-    : defaultCheckoutSettings;
+  // Memoize so consumers (like CheckoutSettingsPanel) don't get a new object every render,
+  // which would reset their local UI state and make dropdown selections “not stick”.
+  const checkoutSettings: Omit<CheckoutSettings, 'id' | 'landing_page_id' | 'created_at' | 'updated_at'> = useMemo(
+    () =>
+      settings
+        ? {
+            currency: settings.currency,
+            delivery_mode: settings.delivery_mode,
+            delivery_amount: settings.delivery_amount,
+            free_over_amount: settings.free_over_amount,
+            inside_city_label: settings.inside_city_label,
+            inside_city_amount: settings.inside_city_amount,
+            outside_city_label: settings.outside_city_label,
+            outside_city_amount: settings.outside_city_amount,
+          }
+        : defaultCheckoutSettings,
+    [settings]
+  );
 
   const saveSettingsMutation = useMutation({
     mutationFn: async (newSettings: Omit<CheckoutSettings, 'id' | 'landing_page_id' | 'created_at' | 'updated_at'>) => {
