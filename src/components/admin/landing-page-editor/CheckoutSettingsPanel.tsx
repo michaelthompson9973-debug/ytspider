@@ -188,15 +188,13 @@ export const CheckoutSettingsPanel = React.forwardRef<HTMLDivElement, CheckoutSe
           <Label>Delivery Mode</Label>
           <Select value={deliveryMode} onValueChange={(v) => setDeliveryMode(v as DeliveryMode)}>
             <SelectTrigger>
-              <SelectValue />
+              <SelectValue placeholder="Select delivery mode" />
             </SelectTrigger>
             <SelectContent>
               {deliveryModeOptions.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  <div>
-                    <div className="font-medium">{option.label}</div>
-                    <div className="text-xs text-muted-foreground">{option.description}</div>
-                  </div>
+                <SelectItem key={option.value} value={option.value} className="py-2">
+                  <span className="font-medium">{option.label}</span>
+                  <span className="text-xs text-muted-foreground ml-2">- {option.description}</span>
                 </SelectItem>
               ))}
             </SelectContent>
