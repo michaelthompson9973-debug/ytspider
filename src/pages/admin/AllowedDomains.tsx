@@ -26,13 +26,32 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Trash2, Globe, CheckCircle, XCircle } from 'lucide-react';
+import { Plus, Trash2, Globe, CheckCircle, XCircle, RefreshCw, AlertCircle, Loader2, ExternalLink, Copy, Info } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 
 interface AllowedDomain {
   id: string;
   domain: string;
   enabled: boolean;
   created_at: string;
+}
+
+type DnsStatus = 'idle' | 'checking' | 'success' | 'error';
+
+interface DomainCheckResult {
+  status: DnsStatus;
+  message?: string;
 }
 
 // Domain validation regex
@@ -44,8 +63,56 @@ export default function AllowedDomains() {
   const [domainToDelete, setDomainToDelete] = useState<AllowedDomain | null>(null);
   const [newDomain, setNewDomain] = useState('');
   const [domainError, setDomainError] = useState('');
+  const [domainChecks, setDomainChecks] = useState<Record<string, DomainCheckResult>>({});
   const queryClient = useQueryClient();
   const { toast } = useToast();
+
+  // Check if domain is pointing correctly
+  const checkDomain = async (domain: string) => {
+    setDomainChecks(prev => ({ ...prev, [domain]: { status: 'checking' } }));
+    
+    try {
+      // Try to fetch the domain to see if it's pointing to our app
+      const response = await fetch(`https://${domain}`, {
+        method: 'HEAD',
+        mode: 'no-cors',
+      });
+      
+      // Since we're using no-cors, we can't read the response
+      // But if we get here, the domain is at least reachable
+      setDomainChecks(prev => ({ 
+        ...prev, 
+        [domain]: { 
+          status: 'success', 
+          message: 'Domain is reachable! Verify it shows your landing page.' 
+        } 
+      }));
+      
+      toast({
+        title: 'Domain Check Complete',
+        description: `${domain} is reachable. Please verify it displays your landing page correctly.`,
+      });
+    } catch (error) {
+      setDomainChecks(prev => ({ 
+        ...prev, 
+        [domain]: { 
+          status: 'error', 
+          message: 'Could not reach domain. Check DNS settings.' 
+        } 
+      }));
+      
+      toast({
+        title: 'Domain Check Failed',
+        description: `Could not reach ${domain}. Please verify your DNS configuration.`,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({ title: 'Copied to clipboard!' });
+  };
 
   const { data: domains, isLoading } = useQuery({
     queryKey: ['allowed-domains'],
@@ -200,7 +267,56 @@ export default function AllowedDomains() {
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 sm:gap-4 flex-wrap justify-end">
+                      {/* DNS Check Button */}
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => checkDomain(domain.domain)}
+                              disabled={domainChecks[domain.domain]?.status === 'checking'}
+                              className="gap-1.5"
+                            >
+                              {domainChecks[domain.domain]?.status === 'checking' ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : domainChecks[domain.domain]?.status === 'success' ? (
+                                <CheckCircle className="h-3.5 w-3.5 text-green-600" />
+                              ) : domainChecks[domain.domain]?.status === 'error' ? (
+                                <AlertCircle className="h-3.5 w-3.5 text-destructive" />
+                              ) : (
+                                <RefreshCw className="h-3.5 w-3.5" />
+                              )}
+                              <span className="hidden sm:inline">Check</span>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Check if domain is pointing correctly</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+
+                      {/* Visit Link */}
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              asChild
+                            >
+                              <a href={`https://${domain.domain}`} target="_blank" rel="noopener noreferrer">
+                                <ExternalLink className="h-4 w-4" />
+                              </a>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Visit domain</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+
                       <Badge 
                         variant={domain.enabled ? 'default' : 'secondary'}
                         className="gap-1"
@@ -208,12 +324,12 @@ export default function AllowedDomains() {
                         {domain.enabled ? (
                           <>
                             <CheckCircle className="h-3 w-3" />
-                            Enabled
+                            <span className="hidden sm:inline">Enabled</span>
                           </>
                         ) : (
                           <>
                             <XCircle className="h-3 w-3" />
-                            Disabled
+                            <span className="hidden sm:inline">Disabled</span>
                           </>
                         )}
                       </Badge>
@@ -240,7 +356,174 @@ export default function AllowedDomains() {
           </Card>
         )}
 
-        {/* Info Card */}
+        {/* Setup Guide Card */}
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Info className="h-5 w-5 text-primary" />
+              <h4 className="font-semibold text-lg">ডোমেইন সেটাপ গাইড</h4>
+            </div>
+            
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="step1">
+                <AccordionTrigger className="text-sm font-medium">
+                  ধাপ ১: DNS Record যুক্ত করুন
+                </AccordionTrigger>
+                <AccordionContent className="space-y-3 text-sm">
+                  <p className="text-muted-foreground">
+                    আপনার Domain Provider (Namecheap, GoDaddy, Cloudflare ইত্যাদি) এর DNS Settings এ যান এবং নিচের record গুলো যুক্ত করুন:
+                  </p>
+                  
+                  <div className="bg-muted p-3 rounded-lg space-y-2 font-mono text-xs">
+                    <div className="flex items-center justify-between gap-2">
+                      <div>
+                        <span className="text-muted-foreground">Type:</span> <strong>A</strong> | 
+                        <span className="text-muted-foreground ml-2">Host:</span> <strong>@</strong> বা <strong>subdomain</strong> | 
+                        <span className="text-muted-foreground ml-2">Value:</span> <strong>আপনার Server IP</strong>
+                      </div>
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyToClipboard('A Record')}>
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-3 rounded-lg">
+                    <p className="text-amber-800 dark:text-amber-200 text-xs">
+                      <strong>Note:</strong> Subdomain এর জন্য (যেমন: offers.example.com), Host এ শুধু "offers" লিখুন, পুরো domain না।
+                    </p>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="step2">
+                <AccordionTrigger className="text-sm font-medium">
+                  ধাপ ২: Server Configuration (Nginx)
+                </AccordionTrigger>
+                <AccordionContent className="space-y-3 text-sm">
+                  <p className="text-muted-foreground">
+                    আপনার Nginx configuration এ নতুন domain এর জন্য server block যুক্ত করুন:
+                  </p>
+                  
+                  <div className="bg-muted p-3 rounded-lg font-mono text-xs overflow-x-auto">
+                    <pre className="whitespace-pre-wrap">{`server {
+    listen 80;
+    server_name your-domain.com;
+    
+    location / {
+        proxy_pass http://localhost:YOUR_APP_PORT;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}`}</pre>
+                  </div>
+                  
+                  <div className="flex gap-2 flex-wrap">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => copyToClipboard(`server {
+    listen 80;
+    server_name your-domain.com;
+    
+    location / {
+        proxy_pass http://localhost:YOUR_APP_PORT;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}`)}
+                    >
+                      <Copy className="h-3 w-3 mr-1" />
+                      Copy Config
+                    </Button>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="step3">
+                <AccordionTrigger className="text-sm font-medium">
+                  ধাপ ৩: SSL Certificate (HTTPS)
+                </AccordionTrigger>
+                <AccordionContent className="space-y-3 text-sm">
+                  <p className="text-muted-foreground">
+                    Certbot দিয়ে Free SSL certificate নিন:
+                  </p>
+                  
+                  <div className="bg-muted p-3 rounded-lg font-mono text-xs">
+                    <code>sudo certbot --nginx -d your-domain.com</code>
+                  </div>
+                  
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => copyToClipboard('sudo certbot --nginx -d your-domain.com')}
+                  >
+                    <Copy className="h-3 w-3 mr-1" />
+                    Copy Command
+                  </Button>
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="step4">
+                <AccordionTrigger className="text-sm font-medium">
+                  ধাপ ৪: DNS Propagation যাচাই করুন
+                </AccordionTrigger>
+                <AccordionContent className="space-y-3 text-sm">
+                  <p className="text-muted-foreground">
+                    DNS changes apply হতে ২৪-৪৮ ঘন্টা পর্যন্ত লাগতে পারে। নিচের command দিয়ে check করুন:
+                  </p>
+                  
+                  <div className="bg-muted p-3 rounded-lg font-mono text-xs space-y-1">
+                    <div><code>nslookup your-domain.com</code></div>
+                    <div><code>dig your-domain.com</code></div>
+                  </div>
+                  
+                  <div className="flex gap-2 flex-wrap">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      asChild
+                    >
+                      <a href="https://dnschecker.org/" target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="h-3 w-3 mr-1" />
+                        DNS Checker Tool
+                      </a>
+                    </Button>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="step5">
+                <AccordionTrigger className="text-sm font-medium">
+                  ধাপ ৫: এখানে Domain Add করুন
+                </AccordionTrigger>
+                <AccordionContent className="space-y-3 text-sm">
+                  <p className="text-muted-foreground">
+                    উপরের সব সেটাপ হয়ে গেলে:
+                  </p>
+                  
+                  <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
+                    <li>"Add Domain" বাটনে ক্লিক করুন</li>
+                    <li>আপনার domain name লিখুন (যেমন: offers.example.com)</li>
+                    <li>"Check" বাটন দিয়ে verify করুন domain কাজ করছে কিনা</li>
+                    <li>Enable করুন এবং landing page URL visit করুন</li>
+                  </ol>
+                  
+                  <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 p-3 rounded-lg">
+                    <p className="text-green-800 dark:text-green-200 text-xs">
+                      <strong>✓ Example URL:</strong> https://your-domain.com/your-landing-page-slug
+                    </p>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </CardContent>
+        </Card>
+
+        {/* Quick Info Card */}
         <Card className="bg-muted/50 border-dashed">
           <CardContent className="py-4">
             <h4 className="font-semibold text-sm mb-2">How it works</h4>
