@@ -28,7 +28,7 @@ interface LinkedProduct {
 
 export const CheckoutSettingsPanel = React.forwardRef<HTMLDivElement, CheckoutSettingsPanelProps>(
   ({ landingPageId }, ref) => {
-  const { checkoutSettings, isLoading, saveSettings, isSaving } = useCheckoutSettings(landingPageId);
+  const { settings, checkoutSettings, isLoading, saveSettings, isSaving } = useCheckoutSettings(landingPageId);
   
   // Fetch linked product for this landing page
   const { data: linkedProduct, isLoading: isLoadingProduct } = useQuery({
@@ -73,18 +73,22 @@ export const CheckoutSettingsPanel = React.forwardRef<HTMLDivElement, CheckoutSe
   const [previewQty, setPreviewQty] = useState(1);
   const [previewZone, setPreviewZone] = useState<'inside' | 'outside'>('inside');
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [hasInitialized, setHasInitialized] = useState(false);
 
-  // Sync local state when settings load
+  // Sync local state only when settings first load from DB (not on every re-render)
   useEffect(() => {
-    setCurrency(checkoutSettings.currency);
-    setDeliveryMode(checkoutSettings.delivery_mode);
-    setDeliveryAmount(checkoutSettings.delivery_amount.toString());
-    setFreeOverAmount(checkoutSettings.free_over_amount?.toString() ?? '');
-    setInsideCityLabel(checkoutSettings.inside_city_label);
-    setInsideCityAmount(checkoutSettings.inside_city_amount.toString());
-    setOutsideCityLabel(checkoutSettings.outside_city_label);
-    setOutsideCityAmount(checkoutSettings.outside_city_amount.toString());
-  }, [checkoutSettings]);
+    if (settings && !hasInitialized) {
+      setCurrency(settings.currency);
+      setDeliveryMode(settings.delivery_mode);
+      setDeliveryAmount(settings.delivery_amount.toString());
+      setFreeOverAmount(settings.free_over_amount?.toString() ?? '');
+      setInsideCityLabel(settings.inside_city_label);
+      setInsideCityAmount(settings.inside_city_amount.toString());
+      setOutsideCityLabel(settings.outside_city_label);
+      setOutsideCityAmount(settings.outside_city_amount.toString());
+      setHasInitialized(true);
+    }
+  }, [settings, hasInitialized]);
 
   const handleSave = () => {
     saveSettings({
