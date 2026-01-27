@@ -7,7 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ThemeConfig, defaultThemeConfig, CheckoutConfig } from '@/components/admin/landing-page-editor/types';
 import { generateThemeCSS, getGoogleFontsImports } from '@/components/admin/landing-page-editor/themeUtils';
 import { CheckoutSection } from '@/components/landing/CheckoutSection';
-
+import { PreviewToolbar, devicePresets } from '@/components/landing/PreviewToolbar';
 declare global {
   interface Window {
     dataLayer: Record<string, unknown>[];
@@ -39,6 +39,7 @@ export default function LandingPage() {
   const { toast } = useToast();
   const [orderSubmitted, setOrderSubmitted] = useState(false);
   const [orderCustomerInfo, setOrderCustomerInfo] = useState<{ name: string; phone: string } | null>(null);
+  const [selectedDevice, setSelectedDevice] = useState('Desktop');
 
   // Check for preview mode
   const isPreviewMode = searchParams.get('preview') === 'true';
@@ -315,15 +316,60 @@ export default function LandingPage() {
     });
   };
 
+  // Get current device dimensions
+  const currentDevice = devicePresets.find(d => d.name === selectedDevice) || devicePresets[0];
+  const isDeviceSimulation = isPreviewMode && currentDevice.width !== 'full';
+
+  // Content wrapper for device simulation
+  const pageContent = (
+    <div className="min-h-screen">
+      {renderSections()}
+    </div>
+  );
+
   return (
     <div className="min-h-screen">
-      {/* Preview mode banner for unpublished pages */}
-      {isPreviewMode && !page.published && (
-        <div className="bg-warning text-warning-foreground text-center py-2 text-sm font-medium">
-          প্রিভিউ মোড - এই পেজটি এখনো পাবলিশ করা হয়নি
+      {/* Preview Toolbar - only in preview mode */}
+      {isPreviewMode && (
+        <PreviewToolbar
+          selectedDevice={selectedDevice}
+          onDeviceChange={setSelectedDevice}
+          isUnpublished={!page.published}
+        />
+      )}
+
+      {/* Device Simulation Container */}
+      {isDeviceSimulation ? (
+        <div className="pt-14 min-h-screen bg-muted/50 flex flex-col items-center justify-start py-8">
+          {/* Device Frame */}
+          <div className="flex flex-col items-center">
+            {/* Device Info */}
+            <div className="mb-3 text-sm text-muted-foreground flex items-center gap-2">
+              <span className="font-medium">{currentDevice.name}</span>
+              <span>•</span>
+              <span>{currentDevice.width}×{currentDevice.height}</span>
+            </div>
+            
+            {/* Device Container */}
+            <div
+              className="bg-background rounded-[2rem] shadow-2xl border-8 border-foreground/20 overflow-hidden"
+              style={{
+                width: typeof currentDevice.width === 'number' ? currentDevice.width : '100%',
+                height: typeof currentDevice.height === 'number' ? currentDevice.height : 'auto',
+                maxHeight: 'calc(100vh - 140px)',
+              }}
+            >
+              <div className="w-full h-full overflow-auto">
+                {pageContent}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className={isPreviewMode ? 'pt-12' : ''}>
+          {pageContent}
         </div>
       )}
-      {renderSections()}
     </div>
   );
 }
