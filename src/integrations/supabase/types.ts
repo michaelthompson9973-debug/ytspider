@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      allowed_domains: {
+        Row: {
+          created_at: string
+          domain: string
+          enabled: boolean
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          domain: string
+          enabled?: boolean
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          domain?: string
+          enabled?: boolean
+          id?: string
+        }
+        Relationships: []
+      }
       api_keys: {
         Row: {
           created_at: string

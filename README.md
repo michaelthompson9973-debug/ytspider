@@ -264,6 +264,91 @@ After setup, verify:
 
 ---
 
+## Multi-Domain Setup (Self-Hosted)
+
+Ytspider supports serving landing pages from multiple custom domains. All domains share the same set of landing pages via slug-based routing.
+
+### How It Works
+
+- **Domain Allowlist**: Only domains added to the allowlist in `/admin/domains` can serve pages
+- **Slug Routing**: URLs like `brand1.com/sale` and `brand2.com/sale` serve the same landing page
+- **No Domain-to-Page Mapping**: Domains don't map to specific pages; slug determines content
+
+### DNS Configuration
+
+Point your domain's A record to your server's IP:
+
+| Type | Name | Value |
+|------|------|-------|
+| A | @ | YOUR_SERVER_IP |
+| A | www | YOUR_SERVER_IP |
+
+For subdomains:
+| Type | Name | Value |
+|------|------|-------|
+| A | offer | YOUR_SERVER_IP |
+
+### Nginx Reverse Proxy
+
+```nginx
+server {
+    listen 80;
+    server_name brand1.com offer.site.com *.myapp.com;
+    
+    # Redirect HTTP to HTTPS (after SSL setup)
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name brand1.com offer.site.com *.myapp.com;
+    
+    # SSL certificates (use Certbot)
+    ssl_certificate /etc/letsencrypt/live/brand1.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/brand1.com/privkey.pem;
+    
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_set_header Host $host;  # CRITICAL: Forward original hostname
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+**Important**: `proxy_set_header Host $host;` is required for domain detection.
+
+### SSL Certificates with Certbot
+
+```bash
+# Install Certbot
+sudo apt install certbot python3-certbot-nginx
+
+# Get certificate for a domain
+sudo certbot --nginx -d brand1.com -d www.brand1.com
+
+# Get wildcard certificate (requires DNS validation)
+sudo certbot certonly --manual --preferred-challenges dns -d "*.myapp.com"
+```
+
+### Adding Domains to Allowlist
+
+1. Go to `/admin/domains` in the admin panel
+2. Click "Add Domain"
+3. Enter the domain (e.g., `brand1.com` or `offer.site.com`)
+4. The domain is enabled by default
+
+### Bypass Domains (Auto-Allowed)
+
+These domains bypass the allowlist check:
+- `localhost`
+- `127.0.0.1`
+- `*.lovable.app`
+- `*.lovableproject.com`
+
+---
+
 ## License
 
 Internal tool - not for public distribution.
