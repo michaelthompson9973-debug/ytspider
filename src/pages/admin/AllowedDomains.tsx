@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Trash2, Globe, CheckCircle, XCircle, RefreshCw, AlertCircle, Loader2, ExternalLink, Copy, Info, Asterisk } from 'lucide-react';
+import { Plus, Trash2, Globe, CheckCircle, XCircle, RefreshCw, AlertCircle, Loader2, ExternalLink, Copy, Info, Asterisk, Zap } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -41,6 +41,7 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { SubdomainSetupHelper } from '@/components/admin/SubdomainSetupHelper';
 
 interface AllowedDomain {
   id: string;
@@ -70,6 +71,8 @@ export default function AllowedDomains() {
   const [isWildcard, setIsWildcard] = useState(false);
   const [domainError, setDomainError] = useState('');
   const [domainChecks, setDomainChecks] = useState<Record<string, DomainCheckResult>>({});
+  const [setupHelperOpen, setSetupHelperOpen] = useState(false);
+  const [selectedDomainForSetup, setSelectedDomainForSetup] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -146,13 +149,20 @@ export default function AllowedDomains() {
         .from('allowed_domains')
         .insert([{ domain: finalDomain, is_wildcard: isWildcard }]);
       if (error) throw error;
+      return finalDomain;
     },
-    onSuccess: () => {
+    onSuccess: (finalDomain, variables) => {
       queryClient.invalidateQueries({ queryKey: ['allowed-domains'] });
       setDialogOpen(false);
       setNewDomain('');
       setIsWildcard(false);
       toast({ title: 'Domain added successfully' });
+      
+      // Auto-show setup helper for non-wildcard domains
+      if (!variables.isWildcard) {
+        setSelectedDomainForSetup(finalDomain);
+        setSetupHelperOpen(true);
+      }
     },
     onError: (error: Error) => {
       if (error.message.includes('duplicate')) {
@@ -303,6 +313,10 @@ export default function AllowedDomains() {
                         onCheck={checkDomain}
                         onToggle={(id, enabled) => toggleMutation.mutate({ id, enabled })}
                         onDelete={handleDeleteClick}
+                        onSetup={(d) => {
+                          setSelectedDomainForSetup(d);
+                          setSetupHelperOpen(true);
+                        }}
                         togglePending={toggleMutation.isPending}
                       />
                     ))}
@@ -332,6 +346,10 @@ export default function AllowedDomains() {
                         onCheck={checkDomain}
                         onToggle={(id, enabled) => toggleMutation.mutate({ id, enabled })}
                         onDelete={handleDeleteClick}
+                        onSetup={(d) => {
+                          setSelectedDomainForSetup(d);
+                          setSetupHelperOpen(true);
+                        }}
                         togglePending={toggleMutation.isPending}
                       />
                     ))}
@@ -673,6 +691,16 @@ export default function AllowedDomains() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Subdomain Setup Helper Dialog */}
+        {selectedDomainForSetup && (
+          <SubdomainSetupHelper
+            domain={selectedDomainForSetup}
+            open={setupHelperOpen}
+            onOpenChange={setSetupHelperOpen}
+            onCheck={checkDomain}
+          />
+        )}
       </div>
     </AdminLayout>
   );
@@ -685,6 +713,7 @@ function DomainRow({
   onCheck, 
   onToggle, 
   onDelete,
+  onSetup,
   togglePending 
 }: { 
   domain: AllowedDomain; 
@@ -692,6 +721,7 @@ function DomainRow({
   onCheck: (domain: string) => void;
   onToggle: (id: string, enabled: boolean) => void;
   onDelete: (domain: AllowedDomain) => void;
+  onSetup: (domain: string) => void;
   togglePending: boolean;
 }) {
   return (
@@ -718,6 +748,28 @@ function DomainRow({
         </div>
       </div>
       <div className="flex items-center gap-2 sm:gap-4 flex-wrap justify-end">
+        {/* Setup Button (for non-wildcard domains) */}
+        {!domain.is_wildcard && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onSetup(domain.domain)}
+                  className="gap-1.5"
+                >
+                  <Zap className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Setup</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Quick setup guide with Vercel CLI & DNS records</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
+
         {/* DNS Check Button */}
         <TooltipProvider>
           <Tooltip>
