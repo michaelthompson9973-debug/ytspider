@@ -14,12 +14,56 @@ const BYPASS_PATTERNS = [
   '.lovable.app',
   '.lovableproject.com',
   '.webcontainer.io',
+  '.vercel.app',
 ];
 
 const shouldBypassCheck = (hostname: string): boolean => {
   return BYPASS_PATTERNS.some(pattern => 
     hostname === pattern.replace(/^\./, '') || hostname.includes(pattern)
   );
+};
+
+// Check if domain is allowed (exact match or wildcard match)
+const checkDomainAllowed = async (hostname: string): Promise<boolean> => {
+  // Step 1: Check exact match
+  const { data: exactMatch, error: exactError } = await supabase
+    .from('allowed_domains')
+    .select('id')
+    .eq('domain', hostname)
+    .eq('enabled', true)
+    .maybeSingle();
+  
+  if (exactError) {
+    console.error('Domain exact match check error:', exactError);
+    return false;
+  }
+  
+  if (exactMatch) return true;
+  
+  // Step 2: Check wildcard match
+  // hostname: shop.onegallerybd.com → wildcard: *.onegallerybd.com
+  const parts = hostname.split('.');
+  if (parts.length >= 2) {
+    const parentDomain = parts.slice(1).join('.'); // onegallerybd.com
+    const wildcardDomain = `*.${parentDomain}`;    // *.onegallerybd.com
+    
+    const { data: wildcardMatch, error: wildcardError } = await supabase
+      .from('allowed_domains')
+      .select('id')
+      .eq('domain', wildcardDomain)
+      .eq('enabled', true)
+      .eq('is_wildcard', true)
+      .maybeSingle();
+    
+    if (wildcardError) {
+      console.error('Domain wildcard check error:', wildcardError);
+      return false;
+    }
+    
+    return !!wildcardMatch;
+  }
+  
+  return false;
 };
 
 export function DomainGuard({ children }: DomainGuardProps) {
@@ -30,22 +74,7 @@ export function DomainGuard({ children }: DomainGuardProps) {
 
   const { data: isAllowed, isLoading, error } = useQuery({
     queryKey: ['domain-check', hostname],
-    queryFn: async () => {
-      // Query allowed_domains table for this hostname
-      const { data, error } = await supabase
-        .from('allowed_domains')
-        .select('id, enabled')
-        .eq('domain', hostname)
-        .eq('enabled', true)
-        .maybeSingle();
-      
-      if (error) {
-        console.error('Domain check error:', error);
-        return false;
-      }
-      
-      return !!data;
-    },
+    queryFn: () => checkDomainAllowed(hostname),
     enabled: !shouldBypass && !!hostname,
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
     retry: 1,
