@@ -1,248 +1,155 @@
 
-# Subdomain Quick Setup Helper Implementation
 
-## Overview
+# Delivery Amount Settings Fix - Label Edit এবং Inside/Outside System
 
-Vercel Free Plan users দের জন্য একটি **Subdomain Quick Setup Helper** যুক্ত করা হবে যা subdomain add করার সময় automatically প্রয়োজনীয় Vercel CLI command এবং DNS record copy করার সুবিধা দেবে।
+## বর্তমান সমস্যা বিশ্লেষণ
 
----
+বর্তমান Zone-Based Delivery Settings এ কিছু UI/UX সমস্যা আছে:
 
-## Features
-
-### 1. Quick Setup Helper Dialog
-নতুন subdomain add করার পর একটি helper modal দেখাবে যেখানে:
-- Auto-generated Vercel CLI command
-- DNS record (A Record / CNAME) copy করার option
-- Step-by-step checklist
-
-### 2. Domain Row Enhancement
-প্রতিটা domain row তে "Setup" button যুক্ত হবে যা helper dialog open করবে।
-
-### 3. Bulk Subdomain Quick Add
-Wildcard domain এর under এ দ্রুত নতুন subdomain add করার shortcut।
+1. **Zone Settings লুকানো থাকে** - শুধুমাত্র "Zone Based" delivery mode সিলেক্ট করলে দেখায়
+2. **Label এবং Amount আলাদা আলাদা** - Inside এবং Outside এর জন্য ৪টা আলাদা input, যা confusing
+3. **Preview sync issue** - Zone settings পরিবর্তন হলে preview তে তাৎক্ষণিক দেখায় না সবসময়
+4. **Save confirmation নেই** - পরিবর্তন করার পর কোন visual feedback নেই
 
 ---
 
-## UI Design
+## প্রস্তাবিত সমাধান
 
-### Quick Setup Helper Dialog
+### 1. Zone Settings UI উন্নতি
+
+Zone settings কে আরও সুন্দর এবং intuitive করা হবে - প্রতিটা zone এর জন্য label এবং amount একসাথে একটা card এ থাকবে:
 
 ```text
-┌─────────────────────────────────────────────────────────────────────┐
-│  ⚡ Quick Setup: shop.onegallerybd.com                      [X]    │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│  ✅ Step 1: Admin Panel এ Domain Added                              │
-│                                                                     │
-│  □ Step 2: Vercel এ Domain Add করুন                                │
-│    ┌─────────────────────────────────────────────────────────────┐ │
-│    │  vercel domains add shop.onegallerybd.com           [Copy] │ │
-│    └─────────────────────────────────────────────────────────────┘ │
-│    অথবা Vercel Dashboard → Settings → Domains → Add               │
-│                                                                     │
-│  □ Step 3: DNS Record সেট করুন                                     │
-│    ┌─────────────────────────────────────────────────────────────┐ │
-│    │  Type: CNAME | Host: shop | Value: cname.vercel-dns.com    │ │
-│    │                                               [Copy All]   │ │
-│    └─────────────────────────────────────────────────────────────┘ │
-│    অথবা A Record:                                                   │
-│    ┌─────────────────────────────────────────────────────────────┐ │
-│    │  Type: A | Host: shop | Value: 76.76.21.21          [Copy] │ │
-│    └─────────────────────────────────────────────────────────────┘ │
-│                                                                     │
-│  □ Step 4: DNS Propagation Check করুন                              │
-│    [🔗 DNSChecker.org]  [🔗 whatsmydns.net]                        │
-│                                                                     │
-│  ───────────────────────────────────────────────────────────────── │
-│  📋 Terminal Commands (copy all):                                   │
-│  ┌─────────────────────────────────────────────────────────────┐  │
-│  │  # Vercel CLI                                               │  │
-│  │  vercel domains add shop.onegallerybd.com                   │  │
-│  │                                                             │  │
-│  │  # DNS Verify                                               │  │
-│  │  nslookup shop.onegallerybd.com                             │  │
-│  │  dig shop.onegallerybd.com +short                           │  │
-│  │                                                     [Copy]  │  │
-│  └─────────────────────────────────────────────────────────────┘  │
-│                                                                     │
-│                                              [Close] [Check Now]   │
-└─────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│  📍 Zone Settings                                               │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │  Zone 1: Inside City                                     │   │
+│  │  ┌────────────────────────────┐ ┌─────────────────────┐ │   │
+│  │  │ Label: ঢাকার মধ্যে________│ │ ৳ 60               │ │   │
+│  │  └────────────────────────────┘ └─────────────────────┘ │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│                                                                 │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │  Zone 2: Outside City                                    │   │
+│  │  ┌────────────────────────────┐ ┌─────────────────────┐ │   │
+│  │  │ Label: ঢাকার বাহিরে_______│ │ ৳ 120              │ │   │
+│  │  └────────────────────────────┘ └─────────────────────┘ │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-### Domain Row with Setup Button
+### 2. Inline Label + Amount Edit
+
+প্রতিটা zone এ label এবং amount পাশাপাশি থাকবে, একটা row তে:
+
+| Component | Description |
+|-----------|-------------|
+| Zone Card | Label + Amount একসাথে একটা card এ |
+| Inline Edit | Click করলেই edit করা যাবে |
+| Real-time Preview | পরিবর্তন করলেই preview তে দেখাবে |
+
+### 3. Save Confirmation Badge
+
+Save করার পর একটা success indicator দেখাবে:
 
 ```text
-┌─────────────────────────────────────────────────────────────────────┐
-│  🌐 shop.onegallerybd.com                                           │
-│     Added 2 days ago                                                │
-│                          [Setup] [Check] [Visit] ✅ Enabled [🗑️]   │
-└─────────────────────────────────────────────────────────────────────┘
+[✓ Saved] - 2 seconds ago
 ```
 
 ---
 
 ## Technical Implementation
 
-### File Changes: `src/pages/admin/AllowedDomains.tsx`
-
-#### 1. New State Variables
+### CheckoutSettingsPanel.tsx পরিবর্তন
 
 ```typescript
-const [setupHelperOpen, setSetupHelperOpen] = useState(false);
-const [selectedDomainForSetup, setSelectedDomainForSetup] = useState<string | null>(null);
+{/* Zone-Based Delivery Settings - Improved UI */}
+{deliveryMode === 'zoned' && (
+  <div className="space-y-3 p-4 rounded-lg border bg-muted/30">
+    <div className="flex items-center gap-2 text-sm font-medium">
+      <MapPin className="h-4 w-4" />
+      Zone Settings
+    </div>
+    
+    {/* Zone 1: Inside City - Combined Label + Amount */}
+    <div className="p-3 rounded-lg border bg-background space-y-3">
+      <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+        <span className="w-5 h-5 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-[10px] font-bold">1</span>
+        Inside City Zone
+      </div>
+      <div className="grid grid-cols-[1fr,auto] gap-2 items-center">
+        <Input
+          value={insideCityLabel}
+          onChange={(e) => setInsideCityLabel(e.target.value)}
+          placeholder="ঢাকার মধ্যে"
+          className="text-sm"
+        />
+        <div className="flex items-center gap-1 bg-muted rounded px-2 py-1.5">
+          <span className="text-xs text-muted-foreground">{currencySymbol}</span>
+          <Input
+            type="number"
+            min="0"
+            value={insideCityAmount}
+            onChange={(e) => setInsideCityAmount(e.target.value)}
+            className="w-20 text-sm h-8 border-0 bg-transparent p-0 text-right font-digit"
+            placeholder="60"
+          />
+        </div>
+      </div>
+    </div>
+    
+    {/* Zone 2: Outside City - Combined Label + Amount */}
+    <div className="p-3 rounded-lg border bg-background space-y-3">
+      <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+        <span className="w-5 h-5 rounded-full bg-orange-100 text-orange-700 flex items-center justify-center text-[10px] font-bold">2</span>
+        Outside City Zone
+      </div>
+      <div className="grid grid-cols-[1fr,auto] gap-2 items-center">
+        <Input
+          value={outsideCityLabel}
+          onChange={(e) => setOutsideCityLabel(e.target.value)}
+          placeholder="ঢাকার বাহিরে"
+          className="text-sm"
+        />
+        <div className="flex items-center gap-1 bg-muted rounded px-2 py-1.5">
+          <span className="text-xs text-muted-foreground">{currencySymbol}</span>
+          <Input
+            type="number"
+            min="0"
+            value={outsideCityAmount}
+            onChange={(e) => setOutsideCityAmount(e.target.value)}
+            className="w-20 text-sm h-8 border-0 bg-transparent p-0 text-right font-digit"
+            placeholder="120"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+)}
 ```
 
-#### 2. Helper Functions
+### Save Success Indicator
 
 ```typescript
-// Extract subdomain and parent from full domain
-const parseDomain = (domain: string) => {
-  const parts = domain.split('.');
-  if (parts.length > 2) {
-    const subdomain = parts[0];
-    const parent = parts.slice(1).join('.');
-    return { subdomain, parent, isSubdomain: true };
-  }
-  return { subdomain: null, parent: domain, isSubdomain: false };
-};
+const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
-// Generate Vercel CLI command
-const getVercelCommand = (domain: string) => `vercel domains add ${domain}`;
-
-// Generate DNS records based on domain type
-const getDnsRecords = (domain: string) => {
-  const { subdomain, parent, isSubdomain } = parseDomain(domain);
-  
-  if (isSubdomain) {
-    return {
-      cname: { type: 'CNAME', host: subdomain, value: 'cname.vercel-dns.com' },
-      aRecord: { type: 'A', host: subdomain, value: '76.76.21.21' }
-    };
-  }
-  return {
-    aRecord: { type: 'A', host: '@', value: '76.76.21.21' },
-    cname: { type: 'CNAME', host: 'www', value: 'cname.vercel-dns.com' }
-  };
-};
-
-// Generate terminal commands for verification
-const getTerminalCommands = (domain: string) => `# Vercel CLI
-vercel domains add ${domain}
-
-# DNS Verify
-nslookup ${domain}
-dig ${domain} +short`;
-```
-
-#### 3. New Component: SubdomainSetupHelper
-
-```typescript
-function SubdomainSetupHelper({ 
-  domain, 
-  open, 
-  onOpenChange,
-  onCheck 
-}: { 
-  domain: string; 
-  open: boolean; 
-  onOpenChange: (open: boolean) => void;
-  onCheck: (domain: string) => void;
-}) {
-  const { toast } = useToast();
-  const { subdomain, parent, isSubdomain } = parseDomain(domain);
-  
-  const copyToClipboard = (text: string, label?: string) => {
-    navigator.clipboard.writeText(text);
-    toast({ title: `${label || 'Copied'} to clipboard!` });
-  };
-
-  // ... render helper dialog with steps
+// In handleSave success:
+onSuccess: () => {
+  setLastSaved(new Date());
+  // ...existing code
 }
+
+// In UI near Save button:
+{lastSaved && (
+  <span className="text-xs text-green-600 flex items-center gap-1">
+    <Check className="h-3 w-3" />
+    Saved
+  </span>
+)}
 ```
-
-#### 4. DomainRow Enhancement
-
-Add "Setup" button to each domain row:
-
-```typescript
-<Button
-  variant="outline"
-  size="sm"
-  onClick={() => {
-    setSelectedDomainForSetup(domain.domain);
-    setSetupHelperOpen(true);
-  }}
-  className="gap-1.5"
->
-  <Zap className="h-3.5 w-3.5" />
-  <span className="hidden sm:inline">Setup</span>
-</Button>
-```
-
-#### 5. Auto-Show Helper After Add
-
-Modify `addMutation.onSuccess`:
-
-```typescript
-onSuccess: (_, variables) => {
-  queryClient.invalidateQueries({ queryKey: ['allowed-domains'] });
-  setDialogOpen(false);
-  
-  // Auto-show setup helper for non-wildcard domains
-  if (!variables.isWildcard) {
-    const finalDomain = variables.domain.toLowerCase();
-    setSelectedDomainForSetup(finalDomain);
-    setSetupHelperOpen(true);
-  }
-  
-  setNewDomain('');
-  setIsWildcard(false);
-  toast({ title: 'Domain added successfully' });
-}
-```
-
----
-
-## New Components Summary
-
-| Component | Purpose |
-|-----------|---------|
-| `SubdomainSetupHelper` | Modal dialog with copy-able Vercel CLI commands, DNS records |
-| `DnsRecordCard` | Reusable component for displaying DNS record with copy button |
-| `TerminalCommandBlock` | Multi-line command block with copy functionality |
-
----
-
-## User Flow
-
-```text
-User adds subdomain "shop.onegallerybd.com"
-         ↓
-Domain saved to database
-         ↓
-Setup Helper Dialog automatically opens
-         ↓
-User sees:
-  - Vercel CLI command (copy)
-  - DNS CNAME/A record (copy)
-  - Terminal commands (copy all)
-         ↓
-User runs commands in terminal
-         ↓
-User clicks "Check Now" to verify
-         ↓
-Success → Domain ready!
-```
-
----
-
-## Benefits
-
-1. **Zero manual typing** - সব command copy করা যাবে
-2. **Step-by-step guidance** - কোন step এ আছেন বুঝতে পারবেন
-3. **Quick verification** - এক click এ DNS check
-4. **Terminal-friendly** - সব commands একসাথে copy করা যাবে
-5. **Auto-popup** - নতুন domain add করলে automatically দেখাবে
 
 ---
 
@@ -250,12 +157,17 @@ Success → Domain ready!
 
 | File | Changes |
 |------|---------|
-| `src/pages/admin/AllowedDomains.tsx` | Add SubdomainSetupHelper component, new states, DomainRow enhancement |
+| `src/components/admin/landing-page-editor/CheckoutSettingsPanel.tsx` | Zone settings UI improvement, inline label+amount edit, save indicator |
 
 ---
 
-## New Icons Used
+## Expected Results
 
-```typescript
-import { Zap, Terminal, ExternalLink, CheckSquare, Square } from 'lucide-react';
-```
+Implementation এর পরে:
+
+1. **Zone Settings সুন্দর দেখাবে** - প্রতিটা zone আলাদা card এ label এবং amount একসাথে
+2. **Label edit সহজ হবে** - Direct inline editing
+3. **Amount edit instant হবে** - Real-time preview update
+4. **Save confirmation দেখাবে** - User কে জানাবে যে settings saved হয়েছে
+5. **Visual hierarchy ভালো হবে** - Zone 1 (Inside) এবং Zone 2 (Outside) clearly distinguishable
+
