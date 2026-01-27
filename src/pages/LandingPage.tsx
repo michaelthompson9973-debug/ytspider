@@ -8,6 +8,7 @@ import { ThemeConfig, defaultThemeConfig, CheckoutConfig } from '@/components/ad
 import { generateThemeCSS, getGoogleFontsImports } from '@/components/admin/landing-page-editor/themeUtils';
 import { CheckoutSection } from '@/components/landing/CheckoutSection';
 import { PreviewToolbar, devicePresets } from '@/components/landing/PreviewToolbar';
+import { DomainGuard } from '@/components/landing/DomainGuard';
 declare global {
   interface Window {
     dataLayer: Record<string, unknown>[];
@@ -328,48 +329,50 @@ export default function LandingPage() {
   );
 
   return (
-    <div className="min-h-screen">
-      {/* Preview Toolbar - only in preview mode */}
-      {isPreviewMode && (
-        <PreviewToolbar
-          selectedDevice={selectedDevice}
-          onDeviceChange={setSelectedDevice}
-          isUnpublished={!page.published}
-        />
-      )}
+    <DomainGuard>
+      <div className="min-h-screen">
+        {/* Preview Toolbar - only in preview mode */}
+        {isPreviewMode && (
+          <PreviewToolbar
+            selectedDevice={selectedDevice}
+            onDeviceChange={setSelectedDevice}
+            isUnpublished={!page.published}
+          />
+        )}
 
-      {/* Device Simulation Container */}
-      {isDeviceSimulation ? (
-        <div className="pt-14 min-h-screen bg-muted/50 flex flex-col items-center justify-start py-8">
-          {/* Device Frame */}
-          <div className="flex flex-col items-center">
-            {/* Device Info */}
-            <div className="mb-3 text-sm text-muted-foreground flex items-center gap-2">
-              <span className="font-medium">{currentDevice.name}</span>
-              <span>•</span>
-              <span>{currentDevice.width}×{currentDevice.height}</span>
-            </div>
-            
-            {/* Device Container */}
-            <div
-              className="bg-background rounded-[2rem] shadow-2xl border-8 border-foreground/20 overflow-hidden"
-              style={{
-                width: typeof currentDevice.width === 'number' ? currentDevice.width : '100%',
-                height: typeof currentDevice.height === 'number' ? currentDevice.height : 'auto',
-                maxHeight: 'calc(100vh - 140px)',
-              }}
-            >
-              <div className="w-full h-full overflow-auto">
-                {pageContent}
+        {/* Device Simulation Container */}
+        {isDeviceSimulation ? (
+          <div className="pt-14 min-h-screen bg-muted/50 flex flex-col items-center justify-start py-8">
+            {/* Device Frame */}
+            <div className="flex flex-col items-center">
+              {/* Device Info */}
+              <div className="mb-3 text-sm text-muted-foreground flex items-center gap-2">
+                <span className="font-medium">{currentDevice.name}</span>
+                <span>•</span>
+                <span>{currentDevice.width}×{currentDevice.height}</span>
+              </div>
+              
+              {/* Device Container */}
+              <div
+                className="bg-background rounded-[2rem] shadow-2xl border-8 border-foreground/20 overflow-hidden"
+                style={{
+                  width: typeof currentDevice.width === 'number' ? currentDevice.width : '100%',
+                  height: typeof currentDevice.height === 'number' ? currentDevice.height : 'auto',
+                  maxHeight: 'calc(100vh - 140px)',
+                }}
+              >
+                <div className="w-full h-full overflow-auto">
+                  {pageContent}
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      ) : (
-        <div className={isPreviewMode ? 'pt-12' : ''}>
-          {pageContent}
-        </div>
-      )}
-    </div>
+        ) : (
+          <div className={isPreviewMode ? 'pt-12' : ''}>
+            {pageContent}
+          </div>
+        )}
+      </div>
+    </DomainGuard>
   );
 }

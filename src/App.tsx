@@ -13,7 +13,7 @@ import Orders from "./pages/admin/Orders";
 import Media from "./pages/admin/Media";
 import Tracking from "./pages/admin/Tracking";
 import Webhooks from "./pages/admin/Webhooks";
-import Domains from "./pages/admin/Domains";
+import AllowedDomains from "./pages/admin/AllowedDomains";
 import ApiSettings from "./pages/admin/ApiSettings";
 import LandingPage from "./pages/LandingPage";
 import NotFound from "./pages/NotFound";
@@ -37,7 +37,7 @@ const App = () => (
             <Route path="/admin/media" element={<ProtectedRoute requireAdmin><Media /></ProtectedRoute>} />
             <Route path="/admin/tracking" element={<ProtectedRoute requireAdmin><Tracking /></ProtectedRoute>} />
             <Route path="/admin/webhooks" element={<ProtectedRoute requireAdmin><Webhooks /></ProtectedRoute>} />
-            <Route path="/admin/domains" element={<ProtectedRoute requireAdmin><Domains /></ProtectedRoute>} />
+            <Route path="/admin/domains" element={<ProtectedRoute requireAdmin><AllowedDomains /></ProtectedRoute>} />
             <Route path="/admin/api" element={<ProtectedRoute requireAdmin><ApiSettings /></ProtectedRoute>} />
             <Route path="/p/:slug" element={<LandingPage />} />
             <Route path="*" element={<NotFound />} />

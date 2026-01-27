@@ -81,7 +81,7 @@ const navGroups: NavGroup[] = [
   {
     label: 'Settings',
     items: [
-      { href: '/admin/domains', label: 'Domains', icon: Globe },
+      { href: '/admin/domains', label: 'Allowed Domains', icon: Globe },
       { href: '/admin/webhooks', label: 'Webhooks', icon: Bell },
       { href: '/admin/api', label: 'API', icon: Key },
     ],
