@@ -20,18 +20,21 @@ export type Database = {
           domain: string
           enabled: boolean
           id: string
+          is_wildcard: boolean
         }
         Insert: {
           created_at?: string
           domain: string
           enabled?: boolean
           id?: string
+          is_wildcard?: boolean
         }
         Update: {
           created_at?: string
           domain?: string
           enabled?: boolean
           id?: string
+          is_wildcard?: boolean
         }
         Relationships: []
       }

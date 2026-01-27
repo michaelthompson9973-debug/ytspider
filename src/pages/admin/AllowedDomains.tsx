@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -26,7 +27,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Trash2, Globe, CheckCircle, XCircle, RefreshCw, AlertCircle, Loader2, ExternalLink, Copy, Info } from 'lucide-react';
+import { Plus, Trash2, Globe, CheckCircle, XCircle, RefreshCw, AlertCircle, Loader2, ExternalLink, Copy, Info, Asterisk } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -39,12 +40,14 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface AllowedDomain {
   id: string;
   domain: string;
   enabled: boolean;
   created_at: string;
+  is_wildcard: boolean;
 }
 
 type DnsStatus = 'idle' | 'checking' | 'success' | 'error';
@@ -54,14 +57,17 @@ interface DomainCheckResult {
   message?: string;
 }
 
-// Domain validation regex
+// Domain validation regex (regular domain)
 const domainRegex = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*\.[a-z]{2,}$/i;
+// Wildcard domain regex (*.example.com)
+const wildcardDomainRegex = /^\*\.[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*\.[a-z]{2,}$/i;
 
 export default function AllowedDomains() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [domainToDelete, setDomainToDelete] = useState<AllowedDomain | null>(null);
   const [newDomain, setNewDomain] = useState('');
+  const [isWildcard, setIsWildcard] = useState(false);
   const [domainError, setDomainError] = useState('');
   const [domainChecks, setDomainChecks] = useState<Record<string, DomainCheckResult>>({});
   const queryClient = useQueryClient();
@@ -69,17 +75,23 @@ export default function AllowedDomains() {
 
   // Check if domain is pointing correctly
   const checkDomain = async (domain: string) => {
+    // Skip check for wildcard domains
+    if (domain.startsWith('*.')) {
+      toast({
+        title: 'Wildcard Domain',
+        description: 'Wildcard domains cannot be directly checked. Test with a specific subdomain.',
+      });
+      return;
+    }
+    
     setDomainChecks(prev => ({ ...prev, [domain]: { status: 'checking' } }));
     
     try {
-      // Try to fetch the domain to see if it's pointing to our app
       const response = await fetch(`https://${domain}`, {
         method: 'HEAD',
         mode: 'no-cors',
       });
       
-      // Since we're using no-cors, we can't read the response
-      // But if we get here, the domain is at least reachable
       setDomainChecks(prev => ({ 
         ...prev, 
         [domain]: { 
@@ -120,6 +132,7 @@ export default function AllowedDomains() {
       const { data, error } = await supabase
         .from('allowed_domains')
         .select('*')
+        .order('is_wildcard', { ascending: false })
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data as AllowedDomain[];
@@ -127,16 +140,18 @@ export default function AllowedDomains() {
   });
 
   const addMutation = useMutation({
-    mutationFn: async (domain: string) => {
+    mutationFn: async ({ domain, isWildcard }: { domain: string; isWildcard: boolean }) => {
+      const finalDomain = isWildcard ? `*.${domain.toLowerCase()}` : domain.toLowerCase();
       const { error } = await supabase
         .from('allowed_domains')
-        .insert([{ domain: domain.toLowerCase() }]);
+        .insert([{ domain: finalDomain, is_wildcard: isWildcard }]);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['allowed-domains'] });
       setDialogOpen(false);
       setNewDomain('');
+      setIsWildcard(false);
       toast({ title: 'Domain added successfully' });
     },
     onError: (error: Error) => {
@@ -189,23 +204,34 @@ export default function AllowedDomains() {
     },
   });
 
-  const validateDomain = (domain: string): boolean => {
+  const validateDomain = (domain: string, wildcard: boolean): boolean => {
     if (!domain.trim()) {
       setDomainError('Domain is required');
       return false;
     }
-    if (!domainRegex.test(domain)) {
-      setDomainError('Invalid domain format (e.g., example.com or sub.example.com)');
-      return false;
+    
+    // For wildcard, user enters base domain (e.g., example.com), we prepend *.
+    // For specific, user enters full domain (e.g., sub.example.com)
+    if (wildcard) {
+      if (!domainRegex.test(domain)) {
+        setDomainError('Invalid domain format (e.g., example.com)');
+        return false;
+      }
+    } else {
+      if (!domainRegex.test(domain)) {
+        setDomainError('Invalid domain format (e.g., example.com or sub.example.com)');
+        return false;
+      }
     }
+    
     setDomainError('');
     return true;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (validateDomain(newDomain)) {
-      addMutation.mutate(newDomain);
+    if (validateDomain(newDomain, isWildcard)) {
+      addMutation.mutate({ domain: newDomain, isWildcard });
     }
   };
 
@@ -219,6 +245,10 @@ export default function AllowedDomains() {
       deleteMutation.mutate(domainToDelete.id);
     }
   };
+
+  // Separate wildcard and specific domains
+  const wildcardDomains = domains?.filter(d => d.is_wildcard) || [];
+  const specificDomains = domains?.filter(d => !d.is_wildcard) || [];
 
   return (
     <AdminLayout>
@@ -250,110 +280,66 @@ export default function AllowedDomains() {
             </CardContent>
           </Card>
         ) : (
-          <Card>
-            <CardContent className="p-0">
-              <div className="divide-y">
-                {domains.map((domain) => (
-                  <div
-                    key={domain.id}
-                    className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <Globe className="h-5 w-5 text-muted-foreground" />
-                      <div>
-                        <span className="font-mono text-sm font-medium">{domain.domain}</span>
-                        <p className="text-xs text-muted-foreground">
-                          Added {new Date(domain.created_at).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 sm:gap-4 flex-wrap justify-end">
-                      {/* DNS Check Button */}
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => checkDomain(domain.domain)}
-                              disabled={domainChecks[domain.domain]?.status === 'checking'}
-                              className="gap-1.5"
-                            >
-                              {domainChecks[domain.domain]?.status === 'checking' ? (
-                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                              ) : domainChecks[domain.domain]?.status === 'success' ? (
-                                <CheckCircle className="h-3.5 w-3.5 text-green-600" />
-                              ) : domainChecks[domain.domain]?.status === 'error' ? (
-                                <AlertCircle className="h-3.5 w-3.5 text-destructive" />
-                              ) : (
-                                <RefreshCw className="h-3.5 w-3.5" />
-                              )}
-                              <span className="hidden sm:inline">Check</span>
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Check if domain is pointing correctly</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-
-                      {/* Visit Link */}
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              asChild
-                            >
-                              <a href={`https://${domain.domain}`} target="_blank" rel="noopener noreferrer">
-                                <ExternalLink className="h-4 w-4" />
-                              </a>
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Visit domain</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-
-                      <Badge 
-                        variant={domain.enabled ? 'default' : 'secondary'}
-                        className="gap-1"
-                      >
-                        {domain.enabled ? (
-                          <>
-                            <CheckCircle className="h-3 w-3" />
-                            <span className="hidden sm:inline">Enabled</span>
-                          </>
-                        ) : (
-                          <>
-                            <XCircle className="h-3 w-3" />
-                            <span className="hidden sm:inline">Disabled</span>
-                          </>
-                        )}
+          <div className="space-y-4">
+            {/* Wildcard Domains Section */}
+            {wildcardDomains.length > 0 && (
+              <Card>
+                <CardContent className="p-0">
+                  <div className="p-4 border-b bg-muted/30">
+                    <div className="flex items-center gap-2">
+                      <Asterisk className="h-4 w-4 text-primary" />
+                      <span className="font-medium text-sm">Wildcard Domains</span>
+                      <Badge variant="secondary" className="text-xs">
+                        All subdomains allowed
                       </Badge>
-                      <Switch
-                        checked={domain.enabled}
-                        onCheckedChange={(checked) => 
-                          toggleMutation.mutate({ id: domain.id, enabled: checked })
-                        }
-                        disabled={toggleMutation.isPending}
-                      />
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDeleteClick(domain)}
-                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
                     </div>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                  <div className="divide-y">
+                    {wildcardDomains.map((domain) => (
+                      <DomainRow 
+                        key={domain.id} 
+                        domain={domain} 
+                        domainChecks={domainChecks}
+                        onCheck={checkDomain}
+                        onToggle={(id, enabled) => toggleMutation.mutate({ id, enabled })}
+                        onDelete={handleDeleteClick}
+                        togglePending={toggleMutation.isPending}
+                      />
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Specific Domains Section */}
+            {specificDomains.length > 0 && (
+              <Card>
+                <CardContent className="p-0">
+                  {wildcardDomains.length > 0 && (
+                    <div className="p-4 border-b bg-muted/30">
+                      <div className="flex items-center gap-2">
+                        <Globe className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium text-sm">Specific Domains</span>
+                      </div>
+                    </div>
+                  )}
+                  <div className="divide-y">
+                    {specificDomains.map((domain) => (
+                      <DomainRow 
+                        key={domain.id} 
+                        domain={domain} 
+                        domainChecks={domainChecks}
+                        onCheck={checkDomain}
+                        onToggle={(id, enabled) => toggleMutation.mutate({ id, enabled })}
+                        onDelete={handleDeleteClick}
+                        togglePending={toggleMutation.isPending}
+                      />
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         )}
 
         {/* Setup Guide Card */}
@@ -364,162 +350,215 @@ export default function AllowedDomains() {
               <h4 className="font-semibold text-lg">ডোমেইন সেটাপ গাইড</h4>
             </div>
             
-            <Accordion type="single" collapsible className="w-full">
-              <AccordionItem value="step1">
-                <AccordionTrigger className="text-sm font-medium">
-                  ধাপ ১: DNS Record যুক্ত করুন
-                </AccordionTrigger>
-                <AccordionContent className="space-y-3 text-sm">
-                  <p className="text-muted-foreground">
-                    আপনার Domain Provider (Namecheap, GoDaddy, Cloudflare ইত্যাদি) এর DNS Settings এ যান এবং নিচের record গুলো যুক্ত করুন:
-                  </p>
-                  
-                  <div className="bg-muted p-3 rounded-lg space-y-2 font-mono text-xs">
-                    <div className="flex items-center justify-between gap-2">
-                      <div>
-                        <span className="text-muted-foreground">Type:</span> <strong>A</strong> | 
-                        <span className="text-muted-foreground ml-2">Host:</span> <strong>@</strong> বা <strong>subdomain</strong> | 
-                        <span className="text-muted-foreground ml-2">Value:</span> <strong>আপনার Server IP</strong>
+            <Tabs defaultValue="vercel" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-4">
+                <TabsTrigger value="vercel">Vercel Hosting</TabsTrigger>
+                <TabsTrigger value="vps">VPS / Self-Hosted</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="vercel" className="space-y-4">
+                <Accordion type="single" collapsible className="w-full">
+                  <AccordionItem value="vercel-step1">
+                    <AccordionTrigger className="text-sm font-medium">
+                      ধাপ ১: Vercel এ Domain Add করুন
+                    </AccordionTrigger>
+                    <AccordionContent className="space-y-3 text-sm">
+                      <ol className="list-decimal list-inside space-y-2 text-muted-foreground">
+                        <li>Vercel Dashboard → আপনার Project → Settings → Domains</li>
+                        <li>"Add" বাটনে ক্লিক করুন</li>
+                        <li>আপনার domain লিখুন (যেমন: <code className="bg-muted px-1 rounded">example.com</code>)</li>
+                        <li>Wildcard এর জন্য: <code className="bg-muted px-1 rounded">*.example.com</code></li>
+                      </ol>
+                      
+                      <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-3 rounded-lg">
+                        <p className="text-amber-800 dark:text-amber-200 text-xs">
+                          <strong>⚠️ Note:</strong> Wildcard domains (*.example.com) শুধু Vercel Pro plan এ available।
+                        </p>
                       </div>
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyToClipboard('A Record')}>
-                        <Copy className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-3 rounded-lg">
-                    <p className="text-amber-800 dark:text-amber-200 text-xs">
-                      <strong>Note:</strong> Subdomain এর জন্য (যেমন: offers.example.com), Host এ শুধু "offers" লিখুন, পুরো domain না।
-                    </p>
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
+                    </AccordionContent>
+                  </AccordionItem>
 
-              <AccordionItem value="step2">
-                <AccordionTrigger className="text-sm font-medium">
-                  ধাপ ২: Server Configuration (Nginx)
-                </AccordionTrigger>
-                <AccordionContent className="space-y-3 text-sm">
-                  <p className="text-muted-foreground">
-                    আপনার Nginx configuration এ নতুন domain এর জন্য server block যুক্ত করুন:
-                  </p>
-                  
-                  <div className="bg-muted p-3 rounded-lg font-mono text-xs overflow-x-auto">
-                    <pre className="whitespace-pre-wrap">{`server {
+                  <AccordionItem value="vercel-step2">
+                    <AccordionTrigger className="text-sm font-medium">
+                      ধাপ ২: DNS Records সেট করুন
+                    </AccordionTrigger>
+                    <AccordionContent className="space-y-3 text-sm">
+                      <p className="text-muted-foreground">
+                        আপনার Domain Provider (Namecheap, GoDaddy ইত্যাদি) এর DNS Settings এ যান:
+                      </p>
+                      
+                      <div className="space-y-3">
+                        <div className="bg-muted p-3 rounded-lg space-y-2">
+                          <p className="font-medium text-xs">Root Domain (example.com):</p>
+                          <div className="flex items-center justify-between gap-2 font-mono text-xs">
+                            <div>Type: <strong>A</strong> | Host: <strong>@</strong> | Value: <strong>76.76.21.21</strong></div>
+                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyToClipboard('76.76.21.21')}>
+                              <Copy className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                        
+                        <div className="bg-muted p-3 rounded-lg space-y-2">
+                          <p className="font-medium text-xs">WWW Subdomain:</p>
+                          <div className="flex items-center justify-between gap-2 font-mono text-xs">
+                            <div>Type: <strong>CNAME</strong> | Host: <strong>www</strong> | Value: <strong>cname.vercel-dns.com</strong></div>
+                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyToClipboard('cname.vercel-dns.com')}>
+                              <Copy className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                        
+                        <div className="bg-muted p-3 rounded-lg space-y-2">
+                          <p className="font-medium text-xs">Wildcard (সব subdomain):</p>
+                          <div className="flex items-center justify-between gap-2 font-mono text-xs">
+                            <div>Type: <strong>A</strong> | Host: <strong>*</strong> | Value: <strong>76.76.21.21</strong></div>
+                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyToClipboard('76.76.21.21')}>
+                              <Copy className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  <AccordionItem value="vercel-step3">
+                    <AccordionTrigger className="text-sm font-medium">
+                      ধাপ ৩: এখানে Domain Add করুন
+                    </AccordionTrigger>
+                    <AccordionContent className="space-y-3 text-sm">
+                      <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
+                        <li>"Add Domain" বাটনে ক্লিক করুন</li>
+                        <li>আপনার base domain লিখুন (যেমন: example.com)</li>
+                        <li><strong>Wildcard Mode</strong> check করুন সব subdomain allow করতে</li>
+                        <li>অথবা specific subdomain লিখুন</li>
+                      </ol>
+                      
+                      <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 p-3 rounded-lg">
+                        <p className="text-green-800 dark:text-green-200 text-xs">
+                          <strong>✓ SSL/HTTPS:</strong> Vercel automatically SSL certificate সেট করে!
+                        </p>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              </TabsContent>
+              
+              <TabsContent value="vps" className="space-y-4">
+                <Accordion type="single" collapsible className="w-full">
+                  <AccordionItem value="vps-step1">
+                    <AccordionTrigger className="text-sm font-medium">
+                      ধাপ ১: DNS Record যুক্ত করুন
+                    </AccordionTrigger>
+                    <AccordionContent className="space-y-3 text-sm">
+                      <p className="text-muted-foreground">
+                        আপনার Domain Provider এর DNS Settings এ যান এবং নিচের record যুক্ত করুন:
+                      </p>
+                      
+                      <div className="bg-muted p-3 rounded-lg space-y-2 font-mono text-xs">
+                        <div className="flex items-center justify-between gap-2">
+                          <div>
+                            <span className="text-muted-foreground">Type:</span> <strong>A</strong> | 
+                            <span className="text-muted-foreground ml-2">Host:</span> <strong>@</strong> বা <strong>subdomain</strong> | 
+                            <span className="text-muted-foreground ml-2">Value:</span> <strong>আপনার Server IP</strong>
+                          </div>
+                        </div>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  <AccordionItem value="vps-step2">
+                    <AccordionTrigger className="text-sm font-medium">
+                      ধাপ ২: Server Configuration (Nginx)
+                    </AccordionTrigger>
+                    <AccordionContent className="space-y-3 text-sm">
+                      <p className="text-muted-foreground">
+                        আপনার Nginx configuration এ নতুন domain এর জন্য server block যুক্ত করুন:
+                      </p>
+                      
+                      <div className="bg-muted p-3 rounded-lg font-mono text-xs overflow-x-auto">
+                        <pre className="whitespace-pre-wrap">{`server {
     listen 80;
-    server_name your-domain.com;
+    server_name your-domain.com *.your-domain.com;
     
     location / {
         proxy_pass http://localhost:YOUR_APP_PORT;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
     }
 }`}</pre>
-                  </div>
-                  
-                  <div className="flex gap-2 flex-wrap">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => copyToClipboard(`server {
+                      </div>
+                      
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => copyToClipboard(`server {
     listen 80;
-    server_name your-domain.com;
+    server_name your-domain.com *.your-domain.com;
     
     location / {
         proxy_pass http://localhost:YOUR_APP_PORT;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
     }
 }`)}
-                    >
-                      <Copy className="h-3 w-3 mr-1" />
-                      Copy Config
-                    </Button>
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
+                      >
+                        <Copy className="h-3 w-3 mr-1" />
+                        Copy Config
+                      </Button>
+                    </AccordionContent>
+                  </AccordionItem>
 
-              <AccordionItem value="step3">
-                <AccordionTrigger className="text-sm font-medium">
-                  ধাপ ৩: SSL Certificate (HTTPS)
-                </AccordionTrigger>
-                <AccordionContent className="space-y-3 text-sm">
-                  <p className="text-muted-foreground">
-                    Certbot দিয়ে Free SSL certificate নিন:
-                  </p>
-                  
-                  <div className="bg-muted p-3 rounded-lg font-mono text-xs">
-                    <code>sudo certbot --nginx -d your-domain.com</code>
-                  </div>
-                  
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => copyToClipboard('sudo certbot --nginx -d your-domain.com')}
-                  >
-                    <Copy className="h-3 w-3 mr-1" />
-                    Copy Command
-                  </Button>
-                </AccordionContent>
-              </AccordionItem>
+                  <AccordionItem value="vps-step3">
+                    <AccordionTrigger className="text-sm font-medium">
+                      ধাপ ৩: SSL Certificate (HTTPS)
+                    </AccordionTrigger>
+                    <AccordionContent className="space-y-3 text-sm">
+                      <p className="text-muted-foreground">
+                        Certbot দিয়ে Free SSL certificate নিন:
+                      </p>
+                      
+                      <div className="bg-muted p-3 rounded-lg font-mono text-xs space-y-1">
+                        <div><code>sudo certbot --nginx -d your-domain.com</code></div>
+                        <div><code>sudo certbot --nginx -d *.your-domain.com</code></div>
+                      </div>
+                      
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => copyToClipboard('sudo certbot --nginx -d your-domain.com -d *.your-domain.com')}
+                      >
+                        <Copy className="h-3 w-3 mr-1" />
+                        Copy Command
+                      </Button>
+                    </AccordionContent>
+                  </AccordionItem>
 
-              <AccordionItem value="step4">
-                <AccordionTrigger className="text-sm font-medium">
-                  ধাপ ৪: DNS Propagation যাচাই করুন
-                </AccordionTrigger>
-                <AccordionContent className="space-y-3 text-sm">
-                  <p className="text-muted-foreground">
-                    DNS changes apply হতে ২৪-৪৮ ঘন্টা পর্যন্ত লাগতে পারে। নিচের command দিয়ে check করুন:
-                  </p>
-                  
-                  <div className="bg-muted p-3 rounded-lg font-mono text-xs space-y-1">
-                    <div><code>nslookup your-domain.com</code></div>
-                    <div><code>dig your-domain.com</code></div>
-                  </div>
-                  
-                  <div className="flex gap-2 flex-wrap">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      asChild
-                    >
-                      <a href="https://dnschecker.org/" target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="h-3 w-3 mr-1" />
-                        DNS Checker Tool
-                      </a>
-                    </Button>
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-
-              <AccordionItem value="step5">
-                <AccordionTrigger className="text-sm font-medium">
-                  ধাপ ৫: এখানে Domain Add করুন
-                </AccordionTrigger>
-                <AccordionContent className="space-y-3 text-sm">
-                  <p className="text-muted-foreground">
-                    উপরের সব সেটাপ হয়ে গেলে:
-                  </p>
-                  
-                  <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
-                    <li>"Add Domain" বাটনে ক্লিক করুন</li>
-                    <li>আপনার domain name লিখুন (যেমন: offers.example.com)</li>
-                    <li>"Check" বাটন দিয়ে verify করুন domain কাজ করছে কিনা</li>
-                    <li>Enable করুন এবং landing page URL visit করুন</li>
-                  </ol>
-                  
-                  <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 p-3 rounded-lg">
-                    <p className="text-green-800 dark:text-green-200 text-xs">
-                      <strong>✓ Example URL:</strong> https://your-domain.com/your-landing-page-slug
-                    </p>
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
+                  <AccordionItem value="vps-step4">
+                    <AccordionTrigger className="text-sm font-medium">
+                      ধাপ ৪: এখানে Domain Add করুন
+                    </AccordionTrigger>
+                    <AccordionContent className="space-y-3 text-sm">
+                      <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
+                        <li>"Add Domain" বাটনে ক্লিক করুন</li>
+                        <li>Wildcard Mode enable করুন সব subdomain allow করতে</li>
+                        <li>অথবা specific subdomain add করুন</li>
+                      </ol>
+                      
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        asChild
+                      >
+                        <a href="https://dnschecker.org/" target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="h-3 w-3 mr-1" />
+                          DNS Checker Tool
+                        </a>
+                      </Button>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
 
@@ -528,16 +567,23 @@ export default function AllowedDomains() {
           <CardContent className="py-4">
             <h4 className="font-semibold text-sm mb-2">How it works</h4>
             <ul className="text-sm text-muted-foreground space-y-1">
-              <li>• Add domains that should serve your landing pages</li>
+              <li>• <strong>Wildcard (*.example.com)</strong> - সব subdomain automatically allowed</li>
+              <li>• <strong>Specific domain</strong> - শুধু ঐ domain allowed</li>
               <li>• Disabled domains will show "Domain Not Authorized" page</li>
-              <li>• Slug-based routing works on all enabled domains (e.g., domain.com/sale)</li>
-              <li>• Localhost and preview environments are automatically bypassed</li>
+              <li>• Localhost, .lovable.app, .vercel.app automatically bypassed</li>
             </ul>
           </CardContent>
         </Card>
 
         {/* Add Domain Dialog */}
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <Dialog open={dialogOpen} onOpenChange={(open) => {
+          setDialogOpen(open);
+          if (!open) {
+            setNewDomain('');
+            setIsWildcard(false);
+            setDomainError('');
+          }
+        }}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Add Allowed Domain</DialogTitle>
@@ -547,21 +593,40 @@ export default function AllowedDomains() {
                 <Label htmlFor="domain">Domain</Label>
                 <Input
                   id="domain"
-                  placeholder="example.com or sub.example.com"
+                  placeholder={isWildcard ? "example.com" : "example.com or sub.example.com"}
                   value={newDomain}
                   onChange={(e) => {
-                    setNewDomain(e.target.value.toLowerCase());
-                    if (domainError) validateDomain(e.target.value);
+                    setNewDomain(e.target.value.toLowerCase().replace(/^\*\./, ''));
+                    if (domainError) setDomainError('');
                   }}
                   className={domainError ? 'border-destructive' : ''}
                 />
                 {domainError && (
                   <p className="text-xs text-destructive">{domainError}</p>
                 )}
-                <p className="text-xs text-muted-foreground">
-                  Configure your DNS to point this domain to your server
-                </p>
+                {isWildcard && newDomain && (
+                  <p className="text-xs text-muted-foreground">
+                    Will be saved as: <code className="bg-muted px-1 rounded">*.{newDomain}</code>
+                  </p>
+                )}
               </div>
+              
+              <div className="flex items-start space-x-3 p-3 border rounded-lg bg-muted/30">
+                <Checkbox 
+                  id="wildcard" 
+                  checked={isWildcard}
+                  onCheckedChange={(checked) => setIsWildcard(checked === true)}
+                />
+                <div className="space-y-1">
+                  <Label htmlFor="wildcard" className="text-sm font-medium cursor-pointer">
+                    Wildcard Mode
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Enable all subdomains (*.example.com). যেকোনো subdomain automatic allow হবে।
+                  </p>
+                </div>
+              </div>
+              
               <DialogFooter>
                 <Button 
                   type="button" 
@@ -569,6 +634,7 @@ export default function AllowedDomains() {
                   onClick={() => {
                     setDialogOpen(false);
                     setNewDomain('');
+                    setIsWildcard(false);
                     setDomainError('');
                   }}
                 >
@@ -589,7 +655,11 @@ export default function AllowedDomains() {
               <AlertDialogTitle>Delete Domain?</AlertDialogTitle>
               <AlertDialogDescription>
                 Are you sure you want to remove <strong>{domainToDelete?.domain}</strong>? 
-                Landing pages will no longer be accessible on this domain.
+                {domainToDelete?.is_wildcard && (
+                  <span className="block mt-1 text-amber-600">
+                    ⚠️ This will remove access for ALL subdomains under this domain.
+                  </span>
+                )}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -605,5 +675,126 @@ export default function AllowedDomains() {
         </AlertDialog>
       </div>
     </AdminLayout>
+  );
+}
+
+// Extracted DomainRow component for cleaner code
+function DomainRow({ 
+  domain, 
+  domainChecks, 
+  onCheck, 
+  onToggle, 
+  onDelete,
+  togglePending 
+}: { 
+  domain: AllowedDomain; 
+  domainChecks: Record<string, DomainCheckResult>;
+  onCheck: (domain: string) => void;
+  onToggle: (id: string, enabled: boolean) => void;
+  onDelete: (domain: AllowedDomain) => void;
+  togglePending: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
+      <div className="flex items-center gap-3">
+        {domain.is_wildcard ? (
+          <Asterisk className="h-5 w-5 text-primary" />
+        ) : (
+          <Globe className="h-5 w-5 text-muted-foreground" />
+        )}
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-sm font-medium">{domain.domain}</span>
+            {domain.is_wildcard && (
+              <Badge variant="outline" className="text-xs">Wildcard</Badge>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {domain.is_wildcard 
+              ? 'Any subdomain automatically allowed' 
+              : `Added ${new Date(domain.created_at).toLocaleDateString()}`
+            }
+          </p>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 sm:gap-4 flex-wrap justify-end">
+        {/* DNS Check Button */}
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onCheck(domain.domain)}
+                disabled={domainChecks[domain.domain]?.status === 'checking' || domain.is_wildcard}
+                className="gap-1.5"
+              >
+                {domainChecks[domain.domain]?.status === 'checking' ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : domainChecks[domain.domain]?.status === 'success' ? (
+                  <CheckCircle className="h-3.5 w-3.5 text-green-600" />
+                ) : domainChecks[domain.domain]?.status === 'error' ? (
+                  <AlertCircle className="h-3.5 w-3.5 text-destructive" />
+                ) : (
+                  <RefreshCw className="h-3.5 w-3.5" />
+                )}
+                <span className="hidden sm:inline">Check</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{domain.is_wildcard ? 'Wildcard domains cannot be checked directly' : 'Check if domain is pointing correctly'}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+
+        {/* Visit Link */}
+        {!domain.is_wildcard && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" asChild>
+                  <a href={`https://${domain.domain}`} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="h-4 w-4" />
+                  </a>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Visit domain</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
+
+        <Badge 
+          variant={domain.enabled ? 'default' : 'secondary'}
+          className="gap-1"
+        >
+          {domain.enabled ? (
+            <>
+              <CheckCircle className="h-3 w-3" />
+              <span className="hidden sm:inline">Enabled</span>
+            </>
+          ) : (
+            <>
+              <XCircle className="h-3 w-3" />
+              <span className="hidden sm:inline">Disabled</span>
+            </>
+          )}
+        </Badge>
+        <Switch
+          checked={domain.enabled}
+          onCheckedChange={(checked) => onToggle(domain.id, checked)}
+          disabled={togglePending}
+        />
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => onDelete(domain)}
+          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
   );
 }
