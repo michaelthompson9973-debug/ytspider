@@ -123,7 +123,11 @@ export type Database = {
           delivery_mode: Database["public"]["Enums"]["delivery_mode"]
           free_over_amount: number | null
           id: string
+          inside_city_amount: number | null
+          inside_city_label: string | null
           landing_page_id: string
+          outside_city_amount: number | null
+          outside_city_label: string | null
           updated_at: string
         }
         Insert: {
@@ -133,7 +137,11 @@ export type Database = {
           delivery_mode?: Database["public"]["Enums"]["delivery_mode"]
           free_over_amount?: number | null
           id?: string
+          inside_city_amount?: number | null
+          inside_city_label?: string | null
           landing_page_id: string
+          outside_city_amount?: number | null
+          outside_city_label?: string | null
           updated_at?: string
         }
         Update: {
@@ -143,7 +151,11 @@ export type Database = {
           delivery_mode?: Database["public"]["Enums"]["delivery_mode"]
           free_over_amount?: number | null
           id?: string
+          inside_city_amount?: number | null
+          inside_city_label?: string | null
           landing_page_id?: string
+          outside_city_amount?: number | null
+          outside_city_label?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -475,7 +487,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin"
-      delivery_mode: "flat" | "conditional" | "free"
+      delivery_mode: "flat" | "conditional" | "free" | "zoned"
       order_status: "new" | "confirmed" | "shipped" | "cancelled"
     }
     CompositeTypes: {
@@ -605,7 +617,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin"],
-      delivery_mode: ["flat", "conditional", "free"],
+      delivery_mode: ["flat", "conditional", "free", "zoned"],
       order_status: ["new", "confirmed", "shipped", "cancelled"],
     },
   },
