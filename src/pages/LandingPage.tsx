@@ -3,12 +3,12 @@ import { useParams, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
 import { ThemeConfig, defaultThemeConfig, CheckoutConfig } from '@/components/admin/landing-page-editor/types';
 import { generateThemeCSS, getGoogleFontsImports } from '@/components/admin/landing-page-editor/themeUtils';
 import { CheckoutSection } from '@/components/landing/CheckoutSection';
 import { PreviewToolbar, devicePresets } from '@/components/landing/PreviewToolbar';
 import { DomainGuard } from '@/components/landing/DomainGuard';
+
 declare global {
   interface Window {
     dataLayer: Record<string, unknown>[];
@@ -34,10 +34,22 @@ interface SectionData {
   sort_order: number;
 }
 
+interface LandingPageProduct {
+  id: string;
+  product_id: string;
+  sort_order: number;
+  default_quantity: number;
+  products: {
+    id: string;
+    name: string;
+    price: number;
+    images: string[] | null;
+  } | null;
+}
+
 export default function LandingPage() {
   const { slug } = useParams<{ slug: string }>();
   const [searchParams] = useSearchParams();
-  const { toast } = useToast();
   const [orderSubmitted, setOrderSubmitted] = useState(false);
   const [orderCustomerInfo, setOrderCustomerInfo] = useState<{ name: string; phone: string } | null>(null);
   const [selectedDevice, setSelectedDevice] = useState('Desktop');
@@ -50,10 +62,7 @@ export default function LandingPage() {
     queryFn: async () => {
       let query = supabase
         .from('landing_pages')
-        .select(`
-          *,
-          products (id, name, price, description, images)
-        `)
+        .select(`*`)
         .eq('slug', slug);
       
       // Only check published status if NOT in preview mode
@@ -65,6 +74,30 @@ export default function LandingPage() {
       if (error) throw error;
       return data;
     },
+  });
+
+  // Fetch products for the landing page (from junction table)
+  const { data: landingPageProducts = [] } = useQuery<LandingPageProduct[]>({
+    queryKey: ['landing-page-products-public', page?.id],
+    queryFn: async () => {
+      if (!page?.id) return [];
+      
+      const { data, error } = await supabase
+        .from('landing_page_products')
+        .select(`
+          id,
+          product_id,
+          sort_order,
+          default_quantity,
+          products (id, name, price, images)
+        `)
+        .eq('landing_page_id', page.id)
+        .order('sort_order', { ascending: true });
+
+      if (error) throw error;
+      return (data || []) as LandingPageProduct[];
+    },
+    enabled: !!page?.id,
   });
 
   // Fetch sections for the landing page
@@ -100,6 +133,17 @@ export default function LandingPage() {
   });
 
   const themeConfig = (themeData?.config as unknown as ThemeConfig) ?? defaultThemeConfig;
+
+  // Transform landing page products to the format CheckoutSection expects
+  const products = landingPageProducts
+    .filter(lp => lp.products)
+    .map(lp => ({
+      id: lp.products!.id,
+      name: lp.products!.name,
+      price: Number(lp.products!.price),
+      images: lp.products!.images,
+      defaultQuantity: lp.default_quantity,
+    }));
 
   // Inject Google Fonts
   useEffect(() => {
@@ -168,17 +212,17 @@ export default function LandingPage() {
     // Fire page_view event
     pushDataLayer('page_view', {
       page_path: `/p/${slug}`,
-      page_title: page.products?.name || slug,
+      page_title: products[0]?.name || slug,
     });
 
-    // Fire view_content event for product
-    if (page.products) {
+    // Fire view_content event for products
+    if (products.length > 0) {
       pushDataLayer('view_content', {
         content_type: 'product',
-        content_ids: [page.products.id],
-        content_name: page.products.name,
-        value: page.products.price,
-        currency: 'USD',
+        content_ids: products.map(p => p.id),
+        content_name: products.map(p => p.name).join(', '),
+        value: products.reduce((sum, p) => sum + p.price, 0),
+        currency: 'BDT',
       });
     }
 
@@ -186,7 +230,7 @@ export default function LandingPage() {
       script.remove();
       noscript.remove();
     };
-  }, [page?.gtm_id, page?.products, slug]);
+  }, [page?.gtm_id, products, slug]);
 
   // Inject theme styles
   useEffect(() => {
@@ -293,12 +337,7 @@ export default function LandingPage() {
           <CheckoutSection
             key={section.id}
             config={checkoutConfig}
-            product={page.products ? {
-              id: page.products.id,
-              name: page.products.name,
-              price: Number(page.products.price),
-              images: page.products.images || [],
-            } : null}
+            products={products}
             landingPageId={page.id}
             landingPageSlug={slug || ''}
             onOrderSuccess={handleOrderSuccess}
