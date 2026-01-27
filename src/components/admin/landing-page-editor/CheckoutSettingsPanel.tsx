@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Loader2, Save, ShoppingCart, Package, AlertCircle, MapPin } from 'lucide-react';
+import { Loader2, Save, ShoppingCart, Package, AlertCircle, MapPin, Check } from 'lucide-react';
 import { useCheckoutSettings } from './useCheckoutSettings';
 import { DeliveryMode, currencyOptions, deliveryModeOptions, defaultCheckoutSettings } from './types';
 
@@ -72,6 +72,7 @@ export const CheckoutSettingsPanel = React.forwardRef<HTMLDivElement, CheckoutSe
   
   const [previewQty, setPreviewQty] = useState(1);
   const [previewZone, setPreviewZone] = useState<'inside' | 'outside'>('inside');
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
   // Sync local state when settings load
   useEffect(() => {
@@ -96,7 +97,16 @@ export const CheckoutSettingsPanel = React.forwardRef<HTMLDivElement, CheckoutSe
       outside_city_label: outsideCityLabel,
       outside_city_amount: parseFloat(outsideCityAmount) || 0,
     });
+    setLastSaved(new Date());
   };
+
+  // Clear saved indicator after 3 seconds
+  useEffect(() => {
+    if (lastSaved) {
+      const timer = setTimeout(() => setLastSaved(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [lastSaved]);
 
   const currencySymbol = currencyOptions.find(c => c.value === currency)?.symbol || '৳';
 
@@ -137,14 +147,22 @@ export const CheckoutSettingsPanel = React.forwardRef<HTMLDivElement, CheckoutSe
           <ShoppingCart className="h-4 w-4" />
           Checkout Settings
         </h3>
-        <Button size="sm" onClick={handleSave} disabled={isSaving}>
-          {isSaving ? (
-            <Loader2 className="h-4 w-4 animate-spin mr-1" />
-          ) : (
-            <Save className="h-4 w-4 mr-1" />
+        <div className="flex items-center gap-2">
+          {lastSaved && (
+            <span className="text-xs text-green-600 flex items-center gap-1 animate-in fade-in">
+              <Check className="h-3 w-3" />
+              Saved
+            </span>
           )}
-          Save
-        </Button>
+          <Button size="sm" onClick={handleSave} disabled={isSaving}>
+            {isSaving ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-1" />
+            ) : (
+              <Save className="h-4 w-4 mr-1" />
+            )}
+            Save
+          </Button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto space-y-6 pr-1">
@@ -224,59 +242,65 @@ export const CheckoutSettingsPanel = React.forwardRef<HTMLDivElement, CheckoutSe
           </div>
         )}
 
-        {/* Zone-Based Delivery Settings */}
+        {/* Zone-Based Delivery Settings - Improved UI */}
         {deliveryMode === 'zoned' && (
-          <div className="space-y-4 p-4 rounded-lg border bg-muted/30">
+          <div className="space-y-3 p-4 rounded-lg border bg-muted/30">
             <div className="flex items-center gap-2 text-sm font-medium">
               <MapPin className="h-4 w-4" />
               Zone Settings
             </div>
             
-            {/* Inside City */}
-            <div className="space-y-2">
-              <Label className="text-xs">Inside City Label</Label>
-              <Input
-                value={insideCityLabel}
-                onChange={(e) => setInsideCityLabel(e.target.value)}
-                placeholder="ঢাকার মধ্যে"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs">Inside City Amount</Label>
-              <div className="flex items-center gap-2">
-                <span className="text-muted-foreground w-6">{currencySymbol}</span>
+            {/* Zone 1: Inside City - Combined Label + Amount */}
+            <div className="p-3 rounded-lg border bg-background space-y-2">
+              <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                <span className="w-5 h-5 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-[10px] font-bold">1</span>
+                Inside City Zone
+              </div>
+              <div className="grid grid-cols-[1fr,auto] gap-2 items-center">
                 <Input
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={insideCityAmount}
-                  onChange={(e) => setInsideCityAmount(e.target.value)}
-                  placeholder="60"
+                  value={insideCityLabel}
+                  onChange={(e) => setInsideCityLabel(e.target.value)}
+                  placeholder="ঢাকার মধ্যে"
+                  className="text-sm"
                 />
+                <div className="flex items-center gap-1 bg-muted rounded-md px-2 py-1.5 border">
+                  <span className="text-xs text-muted-foreground">{currencySymbol}</span>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={insideCityAmount}
+                    onChange={(e) => setInsideCityAmount(e.target.value)}
+                    className="w-16 text-sm h-7 border-0 bg-transparent p-0 text-right font-digit focus-visible:ring-0"
+                    placeholder="60"
+                  />
+                </div>
               </div>
             </div>
             
-            {/* Outside City */}
-            <div className="space-y-2">
-              <Label className="text-xs">Outside City Label</Label>
-              <Input
-                value={outsideCityLabel}
-                onChange={(e) => setOutsideCityLabel(e.target.value)}
-                placeholder="ঢাকার বাহিরে"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs">Outside City Amount</Label>
-              <div className="flex items-center gap-2">
-                <span className="text-muted-foreground w-6">{currencySymbol}</span>
+            {/* Zone 2: Outside City - Combined Label + Amount */}
+            <div className="p-3 rounded-lg border bg-background space-y-2">
+              <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                <span className="w-5 h-5 rounded-full bg-orange-100 text-orange-700 flex items-center justify-center text-[10px] font-bold">2</span>
+                Outside City Zone
+              </div>
+              <div className="grid grid-cols-[1fr,auto] gap-2 items-center">
                 <Input
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={outsideCityAmount}
-                  onChange={(e) => setOutsideCityAmount(e.target.value)}
-                  placeholder="120"
+                  value={outsideCityLabel}
+                  onChange={(e) => setOutsideCityLabel(e.target.value)}
+                  placeholder="ঢাকার বাহিরে"
+                  className="text-sm"
                 />
+                <div className="flex items-center gap-1 bg-muted rounded-md px-2 py-1.5 border">
+                  <span className="text-xs text-muted-foreground">{currencySymbol}</span>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={outsideCityAmount}
+                    onChange={(e) => setOutsideCityAmount(e.target.value)}
+                    className="w-16 text-sm h-7 border-0 bg-transparent p-0 text-right font-digit focus-visible:ring-0"
+                    placeholder="120"
+                  />
+                </div>
               </div>
             </div>
           </div>
