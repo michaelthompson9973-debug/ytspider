@@ -11,9 +11,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Loader2, Save, ShoppingCart, Package, AlertCircle } from 'lucide-react';
+import { Loader2, Save, ShoppingCart, Package, AlertCircle, MapPin } from 'lucide-react';
 import { useCheckoutSettings } from './useCheckoutSettings';
-import { DeliveryMode, currencyOptions, deliveryModeOptions } from './types';
+import { DeliveryMode, currencyOptions, deliveryModeOptions, defaultCheckoutSettings } from './types';
 
 interface CheckoutSettingsPanelProps {
   landingPageId: string;
@@ -63,7 +63,15 @@ export const CheckoutSettingsPanel = React.forwardRef<HTMLDivElement, CheckoutSe
   const [freeOverAmount, setFreeOverAmount] = useState(
     checkoutSettings.free_over_amount?.toString() ?? ''
   );
+  
+  // Zone-based delivery state
+  const [insideCityLabel, setInsideCityLabel] = useState(checkoutSettings.inside_city_label);
+  const [insideCityAmount, setInsideCityAmount] = useState(checkoutSettings.inside_city_amount.toString());
+  const [outsideCityLabel, setOutsideCityLabel] = useState(checkoutSettings.outside_city_label);
+  const [outsideCityAmount, setOutsideCityAmount] = useState(checkoutSettings.outside_city_amount.toString());
+  
   const [previewQty, setPreviewQty] = useState(1);
+  const [previewZone, setPreviewZone] = useState<'inside' | 'outside'>('inside');
 
   // Sync local state when settings load
   useEffect(() => {
@@ -71,6 +79,10 @@ export const CheckoutSettingsPanel = React.forwardRef<HTMLDivElement, CheckoutSe
     setDeliveryMode(checkoutSettings.delivery_mode);
     setDeliveryAmount(checkoutSettings.delivery_amount.toString());
     setFreeOverAmount(checkoutSettings.free_over_amount?.toString() ?? '');
+    setInsideCityLabel(checkoutSettings.inside_city_label);
+    setInsideCityAmount(checkoutSettings.inside_city_amount.toString());
+    setOutsideCityLabel(checkoutSettings.outside_city_label);
+    setOutsideCityAmount(checkoutSettings.outside_city_amount.toString());
   }, [checkoutSettings]);
 
   const handleSave = () => {
@@ -79,6 +91,10 @@ export const CheckoutSettingsPanel = React.forwardRef<HTMLDivElement, CheckoutSe
       delivery_mode: deliveryMode,
       delivery_amount: parseFloat(deliveryAmount) || 0,
       free_over_amount: deliveryMode === 'conditional' ? (parseFloat(freeOverAmount) || null) : null,
+      inside_city_label: insideCityLabel,
+      inside_city_amount: parseFloat(insideCityAmount) || 0,
+      outside_city_label: outsideCityLabel,
+      outside_city_amount: parseFloat(outsideCityAmount) || 0,
     });
   };
 
@@ -87,11 +103,23 @@ export const CheckoutSettingsPanel = React.forwardRef<HTMLDivElement, CheckoutSe
   // Preview calculation based on linked product price
   const productPrice = linkedProduct?.price ? Number(linkedProduct.price) : 0;
   const previewSubtotal = productPrice * previewQty;
-  const previewDelivery = deliveryMode === 'free' 
-    ? 0 
-    : deliveryMode === 'conditional' && previewSubtotal >= (parseFloat(freeOverAmount) || 0)
-      ? 0
-      : parseFloat(deliveryAmount) || 0;
+  
+  // Calculate delivery based on mode
+  const calculatePreviewDelivery = () => {
+    if (deliveryMode === 'free') return 0;
+    if (deliveryMode === 'flat') return parseFloat(deliveryAmount) || 0;
+    if (deliveryMode === 'conditional') {
+      return previewSubtotal >= (parseFloat(freeOverAmount) || 0) ? 0 : (parseFloat(deliveryAmount) || 0);
+    }
+    if (deliveryMode === 'zoned') {
+      return previewZone === 'outside' 
+        ? (parseFloat(outsideCityAmount) || 0) 
+        : (parseFloat(insideCityAmount) || 0);
+    }
+    return 0;
+  };
+  
+  const previewDelivery = calculatePreviewDelivery();
   const previewTotal = previewSubtotal + previewDelivery;
 
   if (isLoading || isLoadingProduct) {
@@ -157,8 +185,8 @@ export const CheckoutSettingsPanel = React.forwardRef<HTMLDivElement, CheckoutSe
           </Select>
         </div>
 
-        {/* Delivery Amount */}
-        {deliveryMode !== 'free' && (
+        {/* Flat/Conditional Delivery Amount */}
+        {(deliveryMode === 'flat' || deliveryMode === 'conditional') && (
           <div className="space-y-2">
             <Label>Delivery Amount</Label>
             <div className="flex items-center gap-2">
@@ -193,6 +221,64 @@ export const CheckoutSettingsPanel = React.forwardRef<HTMLDivElement, CheckoutSe
             <p className="text-xs text-muted-foreground">
               Orders above this amount get free delivery
             </p>
+          </div>
+        )}
+
+        {/* Zone-Based Delivery Settings */}
+        {deliveryMode === 'zoned' && (
+          <div className="space-y-4 p-4 rounded-lg border bg-muted/30">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <MapPin className="h-4 w-4" />
+              Zone Settings
+            </div>
+            
+            {/* Inside City */}
+            <div className="space-y-2">
+              <Label className="text-xs">Inside City Label</Label>
+              <Input
+                value={insideCityLabel}
+                onChange={(e) => setInsideCityLabel(e.target.value)}
+                placeholder="ঢাকার মধ্যে"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs">Inside City Amount</Label>
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground w-6">{currencySymbol}</span>
+                <Input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={insideCityAmount}
+                  onChange={(e) => setInsideCityAmount(e.target.value)}
+                  placeholder="60"
+                />
+              </div>
+            </div>
+            
+            {/* Outside City */}
+            <div className="space-y-2">
+              <Label className="text-xs">Outside City Label</Label>
+              <Input
+                value={outsideCityLabel}
+                onChange={(e) => setOutsideCityLabel(e.target.value)}
+                placeholder="ঢাকার বাহিরে"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs">Outside City Amount</Label>
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground w-6">{currencySymbol}</span>
+                <Input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={outsideCityAmount}
+                  onChange={(e) => setOutsideCityAmount(e.target.value)}
+                  placeholder="120"
+                />
+              </div>
+            </div>
           </div>
         )}
 
@@ -259,6 +345,33 @@ export const CheckoutSettingsPanel = React.forwardRef<HTMLDivElement, CheckoutSe
                   </Button>
                 </div>
               </div>
+
+              {/* Zone Selection for Preview (only for zoned mode) */}
+              {deliveryMode === 'zoned' && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Zone:</span>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant={previewZone === 'inside' ? 'default' : 'outline'}
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={() => setPreviewZone('inside')}
+                    >
+                      {insideCityLabel}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={previewZone === 'outside' ? 'default' : 'outline'}
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={() => setPreviewZone('outside')}
+                    >
+                      {outsideCityLabel}
+                    </Button>
+                  </div>
+                </div>
+              )}
 
               <div className="border-t pt-3 space-y-2 text-sm">
                 <div className="flex justify-between">

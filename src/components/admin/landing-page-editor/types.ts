@@ -102,7 +102,7 @@ export const buttonStyles = [
 export const fontFamilies = availableFonts.map(f => ({ value: f.value, label: f.label }));
 
 // Checkout Settings Types (separate from Theme)
-export type DeliveryMode = 'flat' | 'conditional' | 'free';
+export type DeliveryMode = 'flat' | 'conditional' | 'free' | 'zoned';
 
 export interface CheckoutSettings {
   id: string;
@@ -111,6 +111,11 @@ export interface CheckoutSettings {
   delivery_mode: DeliveryMode;
   delivery_amount: number;
   free_over_amount: number | null;
+  // Zone-based delivery fields
+  inside_city_label: string;
+  inside_city_amount: number;
+  outside_city_label: string;
+  outside_city_amount: number;
   created_at: string;
   updated_at: string;
 }
@@ -120,6 +125,10 @@ export const defaultCheckoutSettings: Omit<CheckoutSettings, 'id' | 'landing_pag
   delivery_mode: 'flat',
   delivery_amount: 60,
   free_over_amount: null,
+  inside_city_label: 'ঢাকার মধ্যে',
+  inside_city_amount: 60,
+  outside_city_label: 'ঢাকার বাহিরে',
+  outside_city_amount: 120,
 };
 
 export const currencyOptions = [
@@ -132,4 +141,5 @@ export const deliveryModeOptions = [
   { value: 'flat', label: 'Flat Charge', description: 'Fixed delivery fee for all orders' },
   { value: 'conditional', label: 'Free Above Amount', description: 'Free delivery if order exceeds threshold' },
   { value: 'free', label: 'Always Free', description: 'No delivery charge' },
+  { value: 'zoned', label: 'Zone Based', description: 'Different charges for inside/outside city' },
 ];

@@ -24,6 +24,10 @@ export function useCheckoutSettings(landingPageId: string | null) {
         delivery_mode: data.delivery_mode as DeliveryMode,
         delivery_amount: Number(data.delivery_amount),
         free_over_amount: data.free_over_amount ? Number(data.free_over_amount) : null,
+        inside_city_label: data.inside_city_label ?? defaultCheckoutSettings.inside_city_label,
+        inside_city_amount: Number(data.inside_city_amount ?? defaultCheckoutSettings.inside_city_amount),
+        outside_city_label: data.outside_city_label ?? defaultCheckoutSettings.outside_city_label,
+        outside_city_amount: Number(data.outside_city_amount ?? defaultCheckoutSettings.outside_city_amount),
       } as CheckoutSettings;
     },
     enabled: !!landingPageId,
@@ -35,6 +39,10 @@ export function useCheckoutSettings(landingPageId: string | null) {
         delivery_mode: settings.delivery_mode,
         delivery_amount: settings.delivery_amount,
         free_over_amount: settings.free_over_amount,
+        inside_city_label: settings.inside_city_label,
+        inside_city_amount: settings.inside_city_amount,
+        outside_city_label: settings.outside_city_label,
+        outside_city_amount: settings.outside_city_amount,
       }
     : defaultCheckoutSettings;
 
@@ -48,15 +56,21 @@ export function useCheckoutSettings(landingPageId: string | null) {
         .eq('landing_page_id', landingPageId)
         .maybeSingle();
 
+      const settingsData = {
+        currency: newSettings.currency,
+        delivery_mode: newSettings.delivery_mode,
+        delivery_amount: newSettings.delivery_amount,
+        free_over_amount: newSettings.free_over_amount,
+        inside_city_label: newSettings.inside_city_label,
+        inside_city_amount: newSettings.inside_city_amount,
+        outside_city_label: newSettings.outside_city_label,
+        outside_city_amount: newSettings.outside_city_amount,
+      };
+
       if (existing) {
         const { error } = await supabase
           .from('landing_page_checkout_settings')
-          .update({
-            currency: newSettings.currency,
-            delivery_mode: newSettings.delivery_mode,
-            delivery_amount: newSettings.delivery_amount,
-            free_over_amount: newSettings.free_over_amount,
-          })
+          .update(settingsData)
           .eq('landing_page_id', landingPageId);
         if (error) throw error;
       } else {
@@ -64,10 +78,7 @@ export function useCheckoutSettings(landingPageId: string | null) {
           .from('landing_page_checkout_settings')
           .insert({
             landing_page_id: landingPageId,
-            currency: newSettings.currency,
-            delivery_mode: newSettings.delivery_mode,
-            delivery_amount: newSettings.delivery_amount,
-            free_over_amount: newSettings.free_over_amount,
+            ...settingsData,
           });
         if (error) throw error;
       }

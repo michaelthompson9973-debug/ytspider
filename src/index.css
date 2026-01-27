@@ -2,17 +2,33 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Import Google Fonts for admin panel */
-@import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&family=Anek+Bangla:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap');
-
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* 
+ * Font families are loaded via index.html with preload hints for optimal performance.
+ * Fonts: Hind Siliguri, Anek Bangla, Inter, Poppins
+ * Using font-display: swap via Google Fonts URL parameter for instant text rendering.
+ */
 
 /* Global smooth scrolling */
 @layer base {
   html {
     scroll-behavior: smooth;
+  }
+  
+  /* Typography utility classes for theme fonts */
+  .font-heading {
+    font-family: 'Hind Siliguri', sans-serif;
+  }
+  
+  .font-body {
+    font-family: 'Anek Bangla', sans-serif;
+  }
+  
+  .font-button {
+    font-family: 'Inter', sans-serif;
+  }
+  
+  .font-digit {
+    font-family: 'Poppins', sans-serif;
   }
 }
 
