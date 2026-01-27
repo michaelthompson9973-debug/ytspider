@@ -10,6 +10,7 @@ export { FullPagePreview } from './FullPagePreview';
 export { FullscreenPreviewModal } from './FullscreenPreviewModal';
 export { FullscreenCodeModal } from './FullscreenCodeModal';
 export { ThemePanel } from './ThemePanel';
+export { ProductsPanel } from './ProductsPanel';
 export { MobileNavigation } from './MobileNavigation';
 export { DeleteConfirmDialog } from './DeleteConfirmDialog';
 export { AiEnhanceButton } from './AiEnhanceButton';
@@ -18,6 +19,7 @@ export { AiEnhanceButton } from './AiEnhanceButton';
 export { useSections } from './useSections';
 export { useTheme } from './useTheme';
 export { useCheckoutSettings } from './useCheckoutSettings';
+export { useProducts } from './useProducts';
 
 // Types and utilities
 export * from './types';

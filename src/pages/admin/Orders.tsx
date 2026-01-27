@@ -12,16 +12,32 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Download, Search } from 'lucide-react';
+import { Download, Search, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 
 type OrderStatus = 'new' | 'confirmed' | 'shipped' | 'cancelled';
+
+interface OrderItem {
+  id: string;
+  product_id: string | null;
+  product_name: string;
+  quantity: number;
+  unit_price: number;
+  subtotal: number;
+}
 
 export default function Orders() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [productFilter, setProductFilter] = useState<string>('all');
   const [search, setSearch] = useState('');
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -51,6 +67,22 @@ export default function Orders() {
       if (error) throw error;
       return data;
     },
+  });
+
+  // Fetch order items for the selected order
+  const { data: orderItems = [] } = useQuery<OrderItem[]>({
+    queryKey: ['order-items', selectedOrderId],
+    queryFn: async () => {
+      if (!selectedOrderId) return [];
+      const { data, error } = await supabase
+        .from('order_items')
+        .select('*')
+        .eq('order_id', selectedOrderId)
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      return data as OrderItem[];
+    },
+    enabled: !!selectedOrderId,
   });
 
   const { data: products } = useQuery({
@@ -137,6 +169,9 @@ export default function Orders() {
     cancelled: 'bg-red-100 text-red-800',
   };
 
+  // Get the selected order for the dialog
+  const selectedOrder = orders?.find(o => o.id === selectedOrderId);
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -192,25 +227,23 @@ export default function Orders() {
                     <th className="px-4 py-3 text-left font-medium whitespace-nowrap">Customer</th>
                     <th className="px-4 py-3 text-left font-medium whitespace-nowrap">Phone</th>
                     <th className="px-4 py-3 text-left font-medium whitespace-nowrap">City</th>
-                    <th className="px-4 py-3 text-left font-medium whitespace-nowrap">Product</th>
-                    <th className="px-4 py-3 text-right font-medium whitespace-nowrap">Qty</th>
-                    <th className="px-4 py-3 text-right font-medium whitespace-nowrap">Subtotal</th>
-                    <th className="px-4 py-3 text-right font-medium whitespace-nowrap">Delivery</th>
+                    <th className="px-4 py-3 text-left font-medium whitespace-nowrap">Products</th>
                     <th className="px-4 py-3 text-right font-medium whitespace-nowrap">Total</th>
                     <th className="px-4 py-3 text-left font-medium whitespace-nowrap">Date</th>
                     <th className="px-4 py-3 text-left font-medium whitespace-nowrap">Status</th>
+                    <th className="px-4 py-3 text-center font-medium whitespace-nowrap">Details</th>
                   </tr>
                 </thead>
                 <tbody>
                   {isLoading ? (
                     <tr>
-                      <td colSpan={10} className="px-4 py-8 text-center text-muted-foreground">
+                      <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
                         Loading...
                       </td>
                     </tr>
                   ) : orders?.length === 0 ? (
                     <tr>
-                      <td colSpan={10} className="px-4 py-8 text-center text-muted-foreground">
+                      <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
                         No orders found
                       </td>
                     </tr>
@@ -220,13 +253,10 @@ export default function Orders() {
                         <td className="px-4 py-3 font-medium whitespace-nowrap">{order.customer_name}</td>
                         <td className="px-4 py-3 whitespace-nowrap">{order.customer_phone}</td>
                         <td className="px-4 py-3 whitespace-nowrap">{order.customer_city}</td>
-                        <td className="px-4 py-3 whitespace-nowrap">{order.products?.name ?? '-'}</td>
-                        <td className="px-4 py-3 text-right whitespace-nowrap">{order.quantity ?? 1}</td>
-                        <td className="px-4 py-3 text-right whitespace-nowrap">
-                          {formatCurrency(order.subtotal, order.currency)}
-                        </td>
-                        <td className="px-4 py-3 text-right whitespace-nowrap">
-                          {formatCurrency(order.delivery_charge, order.currency)}
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <span className="text-xs text-muted-foreground">
+                            {order.quantity ?? 1} item{(order.quantity ?? 1) !== 1 ? 's' : ''}
+                          </span>
                         </td>
                         <td className="px-4 py-3 text-right whitespace-nowrap font-semibold">
                           {formatCurrency(order.total, order.currency)}
@@ -252,6 +282,16 @@ export default function Orders() {
                             </SelectContent>
                           </Select>
                         </td>
+                        <td className="px-4 py-3 text-center">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => setSelectedOrderId(order.id)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </td>
                       </tr>
                     ))
                   )}
@@ -260,6 +300,95 @@ export default function Orders() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Order Details Dialog */}
+        <Dialog open={!!selectedOrderId} onOpenChange={(open) => !open && setSelectedOrderId(null)}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Order Details</DialogTitle>
+            </DialogHeader>
+            
+            {selectedOrder && (
+              <div className="space-y-4">
+                {/* Customer Info */}
+                <div className="space-y-2">
+                  <h4 className="font-semibold text-sm">Customer</h4>
+                  <div className="text-sm space-y-1">
+                    <p><span className="text-muted-foreground">Name:</span> {selectedOrder.customer_name}</p>
+                    <p><span className="text-muted-foreground">Phone:</span> {selectedOrder.customer_phone}</p>
+                    <p><span className="text-muted-foreground">Address:</span> {selectedOrder.customer_address}</p>
+                    <p><span className="text-muted-foreground">City:</span> {selectedOrder.customer_city}</p>
+                  </div>
+                </div>
+
+                {/* Order Items */}
+                <div className="space-y-2">
+                  <h4 className="font-semibold text-sm">Products</h4>
+                  {orderItems.length > 0 ? (
+                    <div className="border rounded-lg overflow-hidden">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="bg-muted/50 border-b">
+                            <th className="px-3 py-2 text-left font-medium">Product</th>
+                            <th className="px-3 py-2 text-right font-medium">Price</th>
+                            <th className="px-3 py-2 text-right font-medium">Qty</th>
+                            <th className="px-3 py-2 text-right font-medium">Subtotal</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {orderItems.map((item) => (
+                            <tr key={item.id} className="border-b last:border-b-0">
+                              <td className="px-3 py-2">{item.product_name}</td>
+                              <td className="px-3 py-2 text-right">
+                                {formatCurrency(item.unit_price, selectedOrder.currency)}
+                              </td>
+                              <td className="px-3 py-2 text-right">{item.quantity}</td>
+                              <td className="px-3 py-2 text-right font-medium">
+                                {formatCurrency(item.subtotal, selectedOrder.currency)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      {selectedOrder.products?.name || 'Legacy order - no item details'}
+                    </p>
+                  )}
+                </div>
+
+                {/* Order Summary */}
+                <div className="space-y-2 border-t pt-3">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Subtotal:</span>
+                    <span>{formatCurrency(selectedOrder.subtotal, selectedOrder.currency)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Delivery:</span>
+                    <span>{formatCurrency(selectedOrder.delivery_charge, selectedOrder.currency)}</span>
+                  </div>
+                  <div className="flex justify-between font-semibold">
+                    <span>Total:</span>
+                    <span>{formatCurrency(selectedOrder.total, selectedOrder.currency)}</span>
+                  </div>
+                </div>
+
+                {/* UTM Info */}
+                {(selectedOrder.utm_source || selectedOrder.utm_medium || selectedOrder.utm_campaign) && (
+                  <div className="space-y-2 border-t pt-3">
+                    <h4 className="font-semibold text-sm">UTM Parameters</h4>
+                    <div className="text-xs text-muted-foreground space-y-1">
+                      {selectedOrder.utm_source && <p>Source: {selectedOrder.utm_source}</p>}
+                      {selectedOrder.utm_medium && <p>Medium: {selectedOrder.utm_medium}</p>}
+                      {selectedOrder.utm_campaign && <p>Campaign: {selectedOrder.utm_campaign}</p>}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </AdminLayout>
   );

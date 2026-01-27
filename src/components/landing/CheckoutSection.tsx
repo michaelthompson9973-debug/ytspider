@@ -4,14 +4,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery } from '@tanstack/react-query';
 import { CheckoutConfig, DeliveryMode, currencyOptions, defaultCheckoutFields, CheckoutField, defaultCheckoutSettings } from '@/components/admin/landing-page-editor/types';
-import { Minus, Plus } from 'lucide-react';
-import { ProductImageGallery } from './ProductImageGallery';
+import { ProductList, CartItem } from './ProductList';
 
 interface Product {
   id: string;
   name: string;
   price: number;
-  images?: string[];
+  images?: string[] | null;
+  defaultQuantity?: number;
 }
 
 interface CheckoutSettings {
@@ -27,7 +27,7 @@ interface CheckoutSettings {
 
 interface CheckoutSectionProps {
   config: CheckoutConfig;
-  product: Product | null;
+  products: Product[];
   landingPageId: string;
   landingPageSlug: string;
   onOrderSuccess?: (orderId: string) => void;
@@ -52,31 +52,33 @@ const pushDataLayer = (event: string, data?: Record<string, unknown>) => {
 };
 
 function calculateTotals(
-  quantity: number,
-  unitPrice: number,
+  cart: CartItem[],
   settings: CheckoutSettings,
   selectedZone?: 'inside' | 'outside'
 ): { subtotal: number; delivery: number; total: number } {
-  const subtotal = quantity * unitPrice;
+  const subtotal = cart.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
   let delivery = 0;
 
-  switch (settings.delivery_mode) {
-    case 'free':
-      delivery = 0;
-      break;
-    case 'flat':
-      delivery = settings.delivery_amount;
-      break;
-    case 'conditional':
-      delivery = subtotal >= (settings.free_over_amount || 0)
-        ? 0
-        : settings.delivery_amount;
-      break;
-    case 'zoned':
-      delivery = selectedZone === 'outside'
-        ? settings.outside_city_amount
-        : settings.inside_city_amount;
-      break;
+  // Only charge delivery if there are items in cart
+  if (subtotal > 0) {
+    switch (settings.delivery_mode) {
+      case 'free':
+        delivery = 0;
+        break;
+      case 'flat':
+        delivery = settings.delivery_amount;
+        break;
+      case 'conditional':
+        delivery = subtotal >= (settings.free_over_amount || 0)
+          ? 0
+          : settings.delivery_amount;
+        break;
+      case 'zoned':
+        delivery = selectedZone === 'outside'
+          ? settings.outside_city_amount
+          : settings.inside_city_amount;
+        break;
+    }
   }
 
   return { subtotal, delivery, total: subtotal + delivery };
@@ -84,7 +86,7 @@ function calculateTotals(
 
 export function CheckoutSection({
   config,
-  product,
+  products,
   landingPageId,
   landingPageSlug,
   onOrderSuccess,
@@ -93,9 +95,19 @@ export function CheckoutSection({
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
-  const [quantity, setQuantity] = useState(1);
   const [selectedZone, setSelectedZone] = useState<'inside' | 'outside'>('inside');
   
+  // Initialize cart from products with default quantities
+  const [cart, setCart] = useState<CartItem[]>(() =>
+    products.map(p => ({
+      productId: p.id,
+      productName: p.name,
+      unitPrice: p.price,
+      quantity: p.defaultQuantity ?? 1,
+      images: p.images,
+    }))
+  );
+
   // Get fields from config or use defaults
   const fields = config.fields?.length > 0 ? config.fields : defaultCheckoutFields;
   const enabledFields = fields.filter(f => f.enabled);
@@ -138,23 +150,41 @@ export function CheckoutSection({
   const settings = checkoutSettingsData ?? defaultSettings;
   const currencySymbol = currencyOptions.find(c => c.value === settings.currency)?.symbol || '৳';
 
-  // Calculate totals
-  const unitPrice = product?.price || 0;
+  // Calculate totals from cart
   const { subtotal, delivery, total } = useMemo(
-    () => calculateTotals(quantity, unitPrice, settings, selectedZone),
-    [quantity, unitPrice, settings, selectedZone]
+    () => calculateTotals(cart, settings, selectedZone),
+    [cart, settings, selectedZone]
   );
+
+  // Check if cart has any items
+  const hasItems = cart.some(item => item.quantity > 0);
 
   if (!config.enabled) {
     return null;
   }
 
-  const handleQuantityChange = (delta: number) => {
-    setQuantity((q) => Math.max(1, q + delta));
+  const handleQuantityChange = (productId: string, newQuantity: number) => {
+    setCart(prev =>
+      prev.map(item =>
+        item.productId === productId
+          ? { ...item, quantity: Math.max(0, newQuantity) }
+          : item
+      )
+    );
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate cart has items
+    if (!hasItems) {
+      toast({
+        title: 'কার্ট খালি',
+        description: 'অন্তত একটি প্রোডাক্ট নির্বাচন করুন',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     // Dynamic validation based on enabled required fields
     const requiredFields = enabledFields.filter(f => f.required);
@@ -181,8 +211,8 @@ export function CheckoutSection({
         customer_city: form.customer_city,
       });
 
+      // Insert main order
       const { data: orderData, error } = await supabase.from('orders').insert({
-        product_id: product?.id,
         landing_page_id: landingPageId,
         customer_name: form.customer_name || '',
         customer_phone: form.customer_phone || '',
@@ -194,8 +224,7 @@ export function CheckoutSection({
         utm_term: searchParams.get('utm_term'),
         utm_content: searchParams.get('utm_content'),
         event_id: eventId,
-        quantity,
-        unit_price: unitPrice,
+        quantity: cart.reduce((sum, item) => sum + item.quantity, 0),
         subtotal,
         delivery_charge: delivery,
         total,
@@ -204,19 +233,43 @@ export function CheckoutSection({
 
       if (error) throw error;
 
-      // Push purchase event for GTM with new fields
+      // Insert order items for each product with quantity > 0
+      const orderItems = cart
+        .filter(item => item.quantity > 0)
+        .map(item => ({
+          order_id: orderData.id,
+          product_id: item.productId,
+          product_name: item.productName,
+          quantity: item.quantity,
+          unit_price: item.unitPrice,
+          subtotal: item.unitPrice * item.quantity,
+        }));
+
+      if (orderItems.length > 0) {
+        const { error: itemsError } = await supabase
+          .from('order_items')
+          .insert(orderItems);
+
+        if (itemsError) {
+          console.error('Error inserting order items:', itemsError);
+        }
+      }
+
+      // Push purchase event for GTM with all items
       pushDataLayer('purchase', {
         transaction_id: eventId,
         value: total,
         subtotal,
         shipping: delivery,
         currency: settings.currency,
-        items: [{
-          item_id: product?.id,
-          item_name: product?.name,
-          price: unitPrice,
-          quantity,
-        }],
+        items: cart
+          .filter(item => item.quantity > 0)
+          .map(item => ({
+            item_id: item.productId,
+            item_name: item.productName,
+            price: item.unitPrice,
+            quantity: item.quantity,
+          })),
       });
 
       // Call server-side tracking
@@ -225,11 +278,10 @@ export function CheckoutSection({
           body: {
             eventId,
             orderId: orderData?.id,
-            productName: product?.name,
-            productPrice: unitPrice,
+            productName: cart.filter(i => i.quantity > 0).map(i => i.productName).join(', '),
             customerCity: form.customer_city,
             landingPageSlug,
-            quantity,
+            quantity: cart.reduce((sum, item) => sum + item.quantity, 0),
             subtotal,
             shipping: delivery,
             total,
@@ -314,126 +366,93 @@ export function CheckoutSection({
             {config.title}
           </h2>
 
-          {/* 2-Column Grid: Product Info (Left) + Form (Right) on desktop */}
+          {/* 2-Column Grid: Product List (Left) + Form (Right) on desktop */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Left Column: Product Info, Gallery, Quantity, Price Summary */}
-            {product && (
-              <div className="p-4 rounded-theme bg-muted/50 border space-y-4">
-                {/* Product Image Gallery */}
-                {product.images && product.images.length > 0 && (
-                  <ProductImageGallery 
-                    images={product.images} 
-                    productName={product.name} 
-                  />
-                )}
+            {/* Left Column: Product List and Price Summary */}
+            <div className="p-4 rounded-theme bg-muted/50 border space-y-4">
+              {/* Product List */}
+              <ProductList
+                items={cart}
+                currencySymbol={currencySymbol}
+                onQuantityChange={handleQuantityChange}
+              />
 
-                <div className="flex justify-between items-start">
-                  <p className="font-body text-lg font-medium">{product.name}</p>
-                  <p className="font-digit text-lg text-primary font-bold">
-                    {currencySymbol}{Number(unitPrice).toLocaleString('bn-BD')}
+              {/* Zone Selection for Zoned Delivery */}
+              {settings.delivery_mode === 'zoned' && (
+                <div className="space-y-2">
+                  <span className="font-body text-sm text-muted-foreground block">ডেলিভারি এলাকা:</span>
+                  <div className="flex flex-col gap-2">
+                    <label 
+                      className={`flex items-center justify-between p-3 rounded-theme border cursor-pointer transition-colors ${
+                        selectedZone === 'inside' 
+                          ? 'border-primary bg-primary/5' 
+                          : 'border-input hover:border-primary/50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="radio"
+                          name="delivery-zone"
+                          value="inside"
+                          checked={selectedZone === 'inside'}
+                          onChange={() => setSelectedZone('inside')}
+                          className="w-4 h-4 text-primary"
+                        />
+                        <span className="font-body">{settings.inside_city_label}</span>
+                      </div>
+                      <span className="font-digit text-primary font-medium">
+                        {currencySymbol}{settings.inside_city_amount.toLocaleString('bn-BD')}
+                      </span>
+                    </label>
+                    <label 
+                      className={`flex items-center justify-between p-3 rounded-theme border cursor-pointer transition-colors ${
+                        selectedZone === 'outside' 
+                          ? 'border-primary bg-primary/5' 
+                          : 'border-input hover:border-primary/50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="radio"
+                          name="delivery-zone"
+                          value="outside"
+                          checked={selectedZone === 'outside'}
+                          onChange={() => setSelectedZone('outside')}
+                          className="w-4 h-4 text-primary"
+                        />
+                        <span className="font-body">{settings.outside_city_label}</span>
+                      </div>
+                      <span className="font-digit text-primary font-medium">
+                        {currencySymbol}{settings.outside_city_amount.toLocaleString('bn-BD')}
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              {/* Price Breakdown */}
+              <div className="border-t pt-3 space-y-2 text-sm">
+                <div className="flex justify-between font-body">
+                  <span className="text-muted-foreground">সাবটোটাল:</span>
+                  <span className="font-digit">{currencySymbol}{subtotal.toLocaleString('bn-BD')}</span>
+                </div>
+                <div className="flex justify-between font-body">
+                  <span className="text-muted-foreground">ডেলিভারি চার্জ:</span>
+                  <span className={`font-digit ${delivery === 0 ? 'text-green-600' : ''}`}>
+                    {delivery === 0 ? 'ফ্রি!' : `${currencySymbol}${delivery.toLocaleString('bn-BD')}`}
+                  </span>
+                </div>
+                {settings.delivery_mode === 'conditional' && subtotal < (settings.free_over_amount || 0) && subtotal > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    {currencySymbol}{((settings.free_over_amount || 0) - subtotal).toLocaleString('bn-BD')} আরো অর্ডার করলে ডেলিভারি ফ্রি!
                   </p>
-                </div>
-
-                {/* Quantity Selector */}
-                <div className="flex items-center justify-between">
-                  <span className="font-body text-sm text-muted-foreground">পরিমাণ:</span>
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => handleQuantityChange(-1)}
-                      disabled={quantity <= 1}
-                      className="w-8 h-8 rounded-theme border flex items-center justify-center hover:bg-muted disabled:opacity-50"
-                    >
-                      <Minus className="h-4 w-4" />
-                    </button>
-                    <span className="font-digit text-lg w-8 text-center">{quantity}</span>
-                    <button
-                      type="button"
-                      onClick={() => handleQuantityChange(1)}
-                      className="w-8 h-8 rounded-theme border flex items-center justify-center hover:bg-muted"
-                    >
-                      <Plus className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Zone Selection for Zoned Delivery */}
-                {settings.delivery_mode === 'zoned' && (
-                  <div className="space-y-2">
-                    <span className="font-body text-sm text-muted-foreground block">ডেলিভারি এলাকা:</span>
-                    <div className="flex flex-col gap-2">
-                      <label 
-                        className={`flex items-center justify-between p-3 rounded-theme border cursor-pointer transition-colors ${
-                          selectedZone === 'inside' 
-                            ? 'border-primary bg-primary/5' 
-                            : 'border-input hover:border-primary/50'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <input
-                            type="radio"
-                            name="delivery-zone"
-                            value="inside"
-                            checked={selectedZone === 'inside'}
-                            onChange={() => setSelectedZone('inside')}
-                            className="w-4 h-4 text-primary"
-                          />
-                          <span className="font-body">{settings.inside_city_label}</span>
-                        </div>
-                        <span className="font-digit text-primary font-medium">
-                          {currencySymbol}{settings.inside_city_amount.toLocaleString('bn-BD')}
-                        </span>
-                      </label>
-                      <label 
-                        className={`flex items-center justify-between p-3 rounded-theme border cursor-pointer transition-colors ${
-                          selectedZone === 'outside' 
-                            ? 'border-primary bg-primary/5' 
-                            : 'border-input hover:border-primary/50'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <input
-                            type="radio"
-                            name="delivery-zone"
-                            value="outside"
-                            checked={selectedZone === 'outside'}
-                            onChange={() => setSelectedZone('outside')}
-                            className="w-4 h-4 text-primary"
-                          />
-                          <span className="font-body">{settings.outside_city_label}</span>
-                        </div>
-                        <span className="font-digit text-primary font-medium">
-                          {currencySymbol}{settings.outside_city_amount.toLocaleString('bn-BD')}
-                        </span>
-                      </label>
-                    </div>
-                  </div>
                 )}
-
-                {/* Price Breakdown */}
-                <div className="border-t pt-3 space-y-2 text-sm">
-                  <div className="flex justify-between font-body">
-                    <span className="text-muted-foreground">সাবটোটাল:</span>
-                    <span className="font-digit">{currencySymbol}{subtotal.toLocaleString('bn-BD')}</span>
-                  </div>
-                  <div className="flex justify-between font-body">
-                    <span className="text-muted-foreground">ডেলিভারি চার্জ:</span>
-                    <span className={`font-digit ${delivery === 0 ? 'text-green-600' : ''}`}>
-                      {delivery === 0 ? 'ফ্রি!' : `${currencySymbol}${delivery.toLocaleString('bn-BD')}`}
-                    </span>
-                  </div>
-                  {settings.delivery_mode === 'conditional' && subtotal < (settings.free_over_amount || 0) && (
-                    <p className="text-xs text-muted-foreground">
-                      {currencySymbol}{((settings.free_over_amount || 0) - subtotal).toLocaleString('bn-BD')} আরো অর্ডার করলে ডেলিভারি ফ্রি!
-                    </p>
-                  )}
-                  <div className="flex justify-between font-body font-semibold text-base border-t pt-2">
-                    <span>সর্বমোট:</span>
-                    <span className="font-digit text-primary">{currencySymbol}{total.toLocaleString('bn-BD')}</span>
-                  </div>
+                <div className="flex justify-between font-body font-semibold text-base border-t pt-2">
+                  <span>সর্বমোট:</span>
+                  <span className="font-digit text-primary">{currencySymbol}{total.toLocaleString('bn-BD')}</span>
                 </div>
               </div>
-            )}
+            </div>
 
             {/* Right Column: Form Fields */}
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -450,7 +469,7 @@ export function CheckoutSection({
 
               <button
                 type="submit"
-                disabled={submitting}
+                disabled={submitting || !hasItems}
                 className="font-button w-full rounded-theme bg-primary text-primary-foreground py-3 text-lg font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50"
               >
                 {submitting ? 'প্রসেসিং...' : config.ctaText}

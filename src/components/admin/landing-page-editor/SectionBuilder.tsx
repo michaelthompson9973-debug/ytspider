@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Settings, Eye, ShoppingCart } from 'lucide-react';
+import { ArrowLeft, Settings, Eye, ShoppingCart, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSections } from './useSections';
 import { useTheme } from './useTheme';
@@ -11,6 +11,7 @@ import { CheckoutSettingsPanel } from './CheckoutSettingsPanel';
 import { ThemePanel } from './ThemePanel';
 import { FullPagePreview } from './FullPagePreview';
 import { MobileNavigation, MobileTab } from './MobileNavigation';
+import { ProductsPanel } from './ProductsPanel';
 import { Section, SectionType, CheckoutConfig } from './types';
 import { cn } from '@/lib/utils';
 
@@ -20,7 +21,7 @@ interface SectionBuilderProps {
   onBack: () => void;
 }
 
-type RightPanel = 'preview' | 'theme' | 'checkout';
+type RightPanel = 'preview' | 'theme' | 'checkout' | 'products';
 
 export function SectionBuilder({ landingPageId, gtmId, onBack }: SectionBuilderProps) {
   const [activeSection, setActiveSection] = useState<Section | null>(null);
@@ -131,6 +132,14 @@ export function SectionBuilder({ landingPageId, gtmId, onBack }: SectionBuilderP
             Theme
           </Button>
           <Button
+            variant={rightPanel === 'products' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setRightPanel('products')}
+          >
+            <Package className="h-4 w-4 mr-1" />
+            Products
+          </Button>
+          <Button
             variant={rightPanel === 'checkout' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setRightPanel('checkout')}
@@ -179,7 +188,7 @@ export function SectionBuilder({ landingPageId, gtmId, onBack }: SectionBuilderP
           )}
         </div>
 
-        {/* Right: Preview, Theme, or Checkout Settings */}
+        {/* Right: Preview, Theme, Products, or Checkout Settings */}
         <div className="col-span-4 border rounded-lg p-4 overflow-hidden">
           {rightPanel === 'theme' ? (
             <ThemePanel
@@ -187,6 +196,8 @@ export function SectionBuilder({ landingPageId, gtmId, onBack }: SectionBuilderP
               onSave={saveTheme}
               isSaving={isThemeSaving}
             />
+          ) : rightPanel === 'products' ? (
+            <ProductsPanel landingPageId={landingPageId} />
           ) : rightPanel === 'checkout' ? (
             <CheckoutSettingsPanel landingPageId={landingPageId} />
           ) : (
