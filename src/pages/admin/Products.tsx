@@ -188,6 +188,7 @@ export default function Products() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b bg-muted/50">
+                    <th className="px-4 py-3 text-left font-medium w-16">Image</th>
                     <th className="px-4 py-3 text-left font-medium">Name</th>
                     <th className="px-4 py-3 text-left font-medium">Price</th>
                     <th className="px-4 py-3 text-left font-medium">Status</th>
@@ -197,21 +198,34 @@ export default function Products() {
                 <tbody>
                   {isLoading ? (
                     <tr>
-                      <td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">
+                      <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
                         Loading...
                       </td>
                     </tr>
                   ) : products?.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">
+                      <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
                         No products yet
                       </td>
                     </tr>
                   ) : (
                     products?.map((product) => (
                       <tr key={product.id} className="border-b">
+                        <td className="px-4 py-3">
+                          <div className="w-12 h-12 rounded border overflow-hidden bg-muted flex items-center justify-center">
+                            {product.images?.[0] ? (
+                              <img
+                                src={product.images[0]}
+                                alt={product.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                            )}
+                          </div>
+                        </td>
                         <td className="px-4 py-3 font-medium">{product.name}</td>
-                        <td className="px-4 py-3">${Number(product.price).toFixed(2)}</td>
+                        <td className="px-4 py-3">৳{Number(product.price).toLocaleString()}</td>
                         <td className="px-4 py-3">
                           <span className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${
                             product.active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
