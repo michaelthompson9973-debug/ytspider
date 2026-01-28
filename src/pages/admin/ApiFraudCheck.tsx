@@ -73,6 +73,8 @@ export default function ApiFraudCheck() {
   
   const { toast } = useToast();
 
+  const hasActiveKey = apiKeys.some((k) => k.status === 'active');
+
   useEffect(() => {
     fetchApiKeys();
   }, []);
@@ -328,6 +330,15 @@ export default function ApiFraudCheck() {
         description: "Phone number is required",
         variant: "destructive",
       });
+      return;
+    }
+
+    // Prevent calling the backend when we already know there is no usable key.
+    if (!hasActiveKey) {
+      const msg = "No active FraudCheck API key found. Run 'Check All' or add a new valid key.";
+      setTestResult(null);
+      setTestError(msg);
+      toast({ title: "No active API key", description: msg, variant: "destructive" });
       return;
     }
 
@@ -627,7 +638,7 @@ export default function ApiFraudCheck() {
                   maxLength={11}
                 />
               </div>
-              <Button onClick={handleTestPhone} disabled={isTesting || !testPhone.trim() || apiKeys.length === 0}>
+              <Button onClick={handleTestPhone} disabled={isTesting || !testPhone.trim() || !hasActiveKey}>
                 {isTesting ? (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 ) : (
@@ -641,6 +652,13 @@ export default function ApiFraudCheck() {
               <div className="text-sm text-amber-600 bg-amber-50 dark:bg-amber-950/30 p-3 rounded-lg">
                 <AlertCircle className="h-4 w-4 inline mr-2" />
                 Add at least one active API key to test fraud check.
+              </div>
+            )}
+
+            {apiKeys.length > 0 && !hasActiveKey && (
+              <div className="text-sm text-amber-600 bg-amber-50 dark:bg-amber-950/30 p-3 rounded-lg">
+                <AlertCircle className="h-4 w-4 inline mr-2" />
+                No <span className="font-medium">active</span> key found. Click <span className="font-medium">Check All</span> above to verify keys, or add a new valid key.
               </div>
             )}
 
