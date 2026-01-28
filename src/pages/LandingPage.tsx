@@ -100,6 +100,24 @@ export default function LandingPage() {
     enabled: !!page?.id,
   });
 
+  // Fallback: fetch legacy single product if junction table is empty
+  const { data: legacyProduct } = useQuery({
+    queryKey: ['landing-page-legacy-product', page?.product_id],
+    queryFn: async () => {
+      if (!page?.product_id) return null;
+      
+      const { data, error } = await supabase
+        .from('products')
+        .select('id, name, price, images')
+        .eq('id', page.product_id)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!page?.product_id && landingPageProducts.length === 0,
+  });
+
   // Fetch sections for the landing page
   const { data: sections = [] } = useQuery<SectionData[]>({
     queryKey: ['landing-page-sections', page?.id],
@@ -135,15 +153,26 @@ export default function LandingPage() {
   const themeConfig = (themeData?.config as unknown as ThemeConfig) ?? defaultThemeConfig;
 
   // Transform landing page products to the format CheckoutSection expects
-  const products = landingPageProducts
-    .filter(lp => lp.products)
-    .map(lp => ({
-      id: lp.products!.id,
-      name: lp.products!.name,
-      price: Number(lp.products!.price),
-      images: lp.products!.images,
-      defaultQuantity: lp.default_quantity,
-    }));
+  // First try junction table, then fallback to legacy product_id
+  const products = landingPageProducts.length > 0
+    ? landingPageProducts
+        .filter(lp => lp.products)
+        .map(lp => ({
+          id: lp.products!.id,
+          name: lp.products!.name,
+          price: Number(lp.products!.price),
+          images: lp.products!.images,
+          defaultQuantity: lp.default_quantity,
+        }))
+    : legacyProduct
+      ? [{
+          id: legacyProduct.id,
+          name: legacyProduct.name,
+          price: Number(legacyProduct.price),
+          images: legacyProduct.images,
+          defaultQuantity: 1,
+        }]
+      : [];
 
   // Inject Google Fonts
   useEffect(() => {
