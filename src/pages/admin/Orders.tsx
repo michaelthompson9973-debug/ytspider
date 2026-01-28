@@ -1,158 +1,335 @@
-import { useState } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import AdminLayout from '@/components/admin/AdminLayout';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Download, Search, Eye } from 'lucide-react';
+import { useOrderNotification } from '@/hooks/useOrderNotification';
+import { useOrderRealtime } from '@/hooks/useOrderRealtime';
 import { format } from 'date-fns';
+import {
+  Order,
+  OrderItem,
+  OrderStatus,
+  OrderStatusHistory,
+  CustomerCourierHistory,
+  DateFilter,
+  ViewMode,
+  STATUS_CONFIG,
+  OrdersHeader,
+  OrderFilters,
+  StatusTabs,
+  OrderTable,
+  OrderGrid,
+  Pagination,
+  BulkActionsBar,
+  DeleteConfirmDialog,
+  FraudCheckModal,
+  OrderEditModal,
+  OrderDetailsModal,
+  getDateRange,
+  formatCurrency,
+  normalizePhone,
+} from '@/components/admin/orders';
 
-type OrderStatus = 'new' | 'confirmed' | 'shipped' | 'cancelled';
-
-interface OrderItem {
-  id: string;
-  product_id: string | null;
-  product_name: string;
-  quantity: number;
-  unit_price: number;
-  subtotal: number;
-}
+const PAGE_SIZE = 15;
 
 export default function Orders() {
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [productFilter, setProductFilter] = useState<string>('all');
-  const [search, setSearch] = useState('');
-  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
-  const queryClient = useQueryClient();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const { data: orders, isLoading } = useQuery({
-    queryKey: ['orders', statusFilter, productFilter, search],
-    queryFn: async () => {
-      let query = supabase
-        .from('orders')
-        .select(`
-          *,
-          products (name),
-          landing_pages (slug)
-        `)
-        .order('created_at', { ascending: false });
+  // View state
+  const [viewMode, setViewMode] = useState<ViewMode>('table');
+  const [search, setSearch] = useState('');
+  const [dateFilter, setDateFilter] = useState<DateFilter>('all');
+  const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(PAGE_SIZE);
 
-      if (statusFilter !== 'all') {
-        query = query.eq('status', statusFilter as 'new' | 'confirmed' | 'shipped' | 'cancelled');
-      }
-      if (productFilter !== 'all') {
-        query = query.eq('product_id', productFilter);
-      }
-      if (search) {
-        query = query.or(`customer_name.ilike.%${search}%,customer_phone.ilike.%${search}%,customer_city.ilike.%${search}%`);
-      }
+  // Selection state
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
-      const { data, error } = await query;
-      if (error) throw error;
-      return data;
+  // Modal state
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [orderToEdit, setOrderToEdit] = useState<Order | null>(null);
+  const [orderToDelete, setOrderToDelete] = useState<Order | null>(null);
+  const [fraudCheckPhone, setFraudCheckPhone] = useState<string>('');
+  const [showFraudCheckModal, setShowFraudCheckModal] = useState(false);
+  const [refreshingPhones, setRefreshingPhones] = useState<string[]>([]);
+
+  // Realtime & notifications
+  useOrderRealtime({ enabled: true });
+  const { notificationsEnabled, toggleNotifications } = useOrderNotification({
+    enabled: true,
+    onNewOrder: () => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
     },
   });
 
-  // Fetch order items for the selected order
-  const { data: orderItems = [] } = useQuery<OrderItem[]>({
-    queryKey: ['order-items', selectedOrderId],
+  // Fetch orders with filters
+  const { data: ordersData, isLoading: isLoadingOrders } = useQuery({
+    queryKey: ['orders', search, dateFilter, statusFilter, currentPage, pageSize],
     queryFn: async () => {
-      if (!selectedOrderId) return [];
+      const dateRange = getDateRange(dateFilter);
+      
+      let query = supabase
+        .from('orders')
+        .select('*, products(name), landing_pages(slug)', { count: 'exact' })
+        .order('created_at', { ascending: false });
+
+      // Apply status filter
+      if (statusFilter !== 'all') {
+        query = query.eq('status', statusFilter);
+      }
+
+      // Apply date filter
+      if (dateRange.start) {
+        query = query.gte('created_at', dateRange.start.toISOString());
+      }
+      if (dateRange.end) {
+        query = query.lt('created_at', dateRange.end.toISOString());
+      }
+
+      // Apply search filter
+      if (search) {
+        query = query.or(
+          `customer_name.ilike.%${search}%,customer_phone.ilike.%${search}%,id.ilike.%${search}%`
+        );
+      }
+
+      // Apply pagination
+      const from = (currentPage - 1) * pageSize;
+      query = query.range(from, from + pageSize - 1);
+
+      const { data, error, count } = await query;
+      if (error) throw error;
+      
+      return { orders: data as Order[], totalCount: count || 0 };
+    },
+  });
+
+  const orders = ordersData?.orders || [];
+  const totalCount = ordersData?.totalCount || 0;
+  const totalPages = Math.ceil(totalCount / pageSize);
+
+  // Fetch status counts
+  const { data: statusCounts = [] } = useQuery({
+    queryKey: ['order-counts'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('status');
+      
+      if (error) throw error;
+
+      const counts: Record<string, number> = { all: data.length };
+      data.forEach((order) => {
+        counts[order.status] = (counts[order.status] || 0) + 1;
+      });
+
+      return Object.entries(counts).map(([status, count]) => ({
+        status: status as OrderStatus | 'all',
+        count,
+      }));
+    },
+  });
+
+  // Fetch courier history for visible orders
+  const phones = useMemo(() => 
+    [...new Set(orders.map((o) => o.customer_phone))],
+    [orders]
+  );
+
+  const { data: courierHistoryData = [] } = useQuery({
+    queryKey: ['courier-history', phones],
+    queryFn: async () => {
+      if (phones.length === 0) return [];
+      
+      const { data, error } = await supabase
+        .from('customer_courier_history')
+        .select('*')
+        .in('phone', phones);
+      
+      if (error) throw error;
+      return data as CustomerCourierHistory[];
+    },
+    enabled: phones.length > 0,
+  });
+
+  const courierHistoryMap = useMemo(() => {
+    const map: Record<string, CustomerCourierHistory[]> = {};
+    courierHistoryData.forEach((h) => {
+      if (!map[h.phone]) map[h.phone] = [];
+      map[h.phone].push(h);
+    });
+    return map;
+  }, [courierHistoryData]);
+
+  // Fetch order items for selected order
+  const { data: orderItems = [] } = useQuery({
+    queryKey: ['order-items', selectedOrder?.id],
+    queryFn: async () => {
+      if (!selectedOrder) return [];
       const { data, error } = await supabase
         .from('order_items')
         .select('*')
-        .eq('order_id', selectedOrderId)
-        .order('created_at', { ascending: true });
+        .eq('order_id', selectedOrder.id);
       if (error) throw error;
       return data as OrderItem[];
     },
-    enabled: !!selectedOrderId,
+    enabled: !!selectedOrder,
   });
 
-  const { data: products } = useQuery({
-    queryKey: ['products-filter'],
+  // Fetch status history for selected order
+  const { data: statusHistory = [], isLoading: isLoadingHistory } = useQuery({
+    queryKey: ['order-status-history', selectedOrder?.id],
+    queryFn: async () => {
+      if (!selectedOrder) return [];
+      const { data, error } = await supabase
+        .from('order_status_history')
+        .select('*')
+        .eq('order_id', selectedOrder.id)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data as OrderStatusHistory[];
+    },
+    enabled: !!selectedOrder,
+  });
+
+  // Fetch products for item editing
+  const { data: products = [] } = useQuery({
+    queryKey: ['products-list'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('products')
-        .select('id, name')
+        .select('id, name, price')
+        .eq('active', true)
         .order('name');
       if (error) throw error;
       return data;
     },
   });
 
+  // Update order status mutation
   const updateStatusMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: OrderStatus }) => {
+    mutationFn: async ({ orderId, status }: { orderId: string; status: OrderStatus }) => {
+      // Get current order
+      const { data: currentOrder } = await supabase
+        .from('orders')
+        .select('status')
+        .eq('id', orderId)
+        .single();
+
+      // Update order
       const { error } = await supabase
         .from('orders')
         .update({ status })
-        .eq('id', id);
+        .eq('id', orderId);
+      if (error) throw error;
+
+      // Log status change
+      await supabase.from('order_status_history').insert({
+        order_id: orderId,
+        old_status: currentOrder?.status,
+        new_status: status,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['order-counts'] });
+      queryClient.invalidateQueries({ queryKey: ['order-status-history'] });
+      toast({ title: 'স্ট্যাটাস আপডেট হয়েছে' });
+    },
+    onError: (error) => {
+      toast({ title: 'এরর', description: error.message, variant: 'destructive' });
+    },
+  });
+
+  // Update order mutation
+  const updateOrderMutation = useMutation({
+    mutationFn: async ({ orderId, updates }: { orderId: string; updates: Partial<Order> }) => {
+      const { error } = await supabase
+        .from('orders')
+        .update(updates)
+        .eq('id', orderId);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
-      toast({ title: 'Order status updated' });
+      setOrderToEdit(null);
+      toast({ title: 'অর্ডার আপডেট হয়েছে' });
     },
     onError: (error) => {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      toast({ title: 'এরর', description: error.message, variant: 'destructive' });
     },
   });
 
-  const formatCurrency = (amount: number | null, currency: string | null) => {
-    if (amount === null || amount === undefined) return '-';
-    const symbol = currency === 'USD' ? '$' : currency === 'INR' ? '₹' : '৳';
-    return `${symbol}${Number(amount).toLocaleString()}`;
-  };
+  // Delete order mutation
+  const deleteOrderMutation = useMutation({
+    mutationFn: async (orderId: string) => {
+      // Delete order items first
+      await supabase.from('order_items').delete().eq('order_id', orderId);
+      // Delete order
+      const { error } = await supabase.from('orders').delete().eq('id', orderId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['order-counts'] });
+      setOrderToDelete(null);
+      toast({ title: 'অর্ডার ডিলিট হয়েছে' });
+    },
+    onError: (error) => {
+      toast({ title: 'এরর', description: error.message, variant: 'destructive' });
+    },
+  });
 
-  const exportCSV = () => {
-    if (!orders || orders.length === 0) {
-      toast({ title: 'No orders to export', variant: 'destructive' });
+  // Fraud check mutation
+  const fraudCheckMutation = useMutation({
+    mutationFn: async (phone: string) => {
+      const { data, error } = await supabase.functions.invoke('test-fraudcheck', {
+        body: { phone: normalizePhone(phone) },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['courier-history'] });
+      toast({ title: 'ফ্রড চেক সম্পন্ন' });
+    },
+    onError: (error) => {
+      toast({ title: 'এরর', description: error.message, variant: 'destructive' });
+    },
+  });
+
+  // Export CSV
+  const exportCSV = useCallback(() => {
+    if (orders.length === 0) {
+      toast({ title: 'কোনো অর্ডার নেই', variant: 'destructive' });
       return;
     }
 
     const headers = [
-      'ID', 'Customer', 'Phone', 'Address', 'City', 'Product', 'Page',
-      'Qty', 'Unit Price', 'Subtotal', 'Delivery', 'Total', 'Currency',
-      'Status', 'UTM Source', 'UTM Medium', 'UTM Campaign', 'Created'
+      'ID', 'Customer', 'Phone', 'Address', 'City', 'Product', 
+      'Qty', 'Total', 'Currency', 'Status', 'Created'
     ];
-    const rows = orders.map(o => [
+    const rows = orders.map((o) => [
       o.id,
       o.customer_name,
       o.customer_phone,
       o.customer_address,
       o.customer_city,
       o.products?.name ?? '',
-      o.landing_pages?.slug ?? '',
       o.quantity ?? 1,
-      o.unit_price ?? '',
-      o.subtotal ?? '',
-      o.delivery_charge ?? '',
       o.total ?? '',
       o.currency ?? 'BDT',
       o.status,
-      o.utm_source ?? '',
-      o.utm_medium ?? '',
-      o.utm_campaign ?? '',
       format(new Date(o.created_at), 'yyyy-MM-dd HH:mm'),
     ]);
 
-    const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const csv = [headers, ...rows]
+      .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+    
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -160,235 +337,264 @@ export default function Orders() {
     a.download = `orders-${format(new Date(), 'yyyy-MM-dd')}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-  };
+  }, [orders, toast]);
 
-  const statusColors: Record<OrderStatus, string> = {
-    new: 'bg-blue-100 text-blue-800',
-    confirmed: 'bg-green-100 text-green-800',
-    shipped: 'bg-purple-100 text-purple-800',
-    cancelled: 'bg-red-100 text-red-800',
-  };
+  // Print invoice
+  const printInvoice = useCallback((order: Order) => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
 
-  // Get the selected order for the dialog
-  const selectedOrder = orders?.find(o => o.id === selectedOrderId);
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Invoice - ${order.id.slice(0, 8)}</title>
+        <style>
+          body { font-family: sans-serif; padding: 20px; }
+          h1 { font-size: 24px; }
+          .info { margin: 20px 0; }
+          table { width: 100%; border-collapse: collapse; }
+          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          .total { font-weight: bold; font-size: 18px; text-align: right; margin-top: 20px; }
+        </style>
+      </head>
+      <body>
+        <h1>Invoice #${order.id.slice(0, 8).toUpperCase()}</h1>
+        <div class="info">
+          <p><strong>Customer:</strong> ${order.customer_name}</p>
+          <p><strong>Phone:</strong> ${order.customer_phone}</p>
+          <p><strong>Address:</strong> ${order.customer_address}, ${order.customer_city}</p>
+          <p><strong>Date:</strong> ${format(new Date(order.created_at), 'dd/MM/yyyy HH:mm')}</p>
+        </div>
+        <div class="total">Total: ${formatCurrency(order.total, order.currency)}</div>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
+  }, []);
+
+  // Handlers
+  const handleSelectAll = useCallback((selected: boolean) => {
+    setSelectedIds(selected ? orders.map((o) => o.id) : []);
+  }, [orders]);
+
+  const handleTrustBadgeClick = useCallback((phone: string) => {
+    setFraudCheckPhone(phone);
+    setShowFraudCheckModal(true);
+    
+    // Auto-check if no history
+    const history = courierHistoryMap[phone];
+    if (!history || history.length === 0) {
+      fraudCheckMutation.mutate(phone);
+    }
+  }, [courierHistoryMap, fraudCheckMutation]);
+
+  const handleRefreshTrust = useCallback(async (phone: string) => {
+    setRefreshingPhones((prev) => [...prev, phone]);
+    try {
+      await fraudCheckMutation.mutateAsync(phone);
+    } finally {
+      setRefreshingPhones((prev) => prev.filter((p) => p !== phone));
+    }
+  }, [fraudCheckMutation]);
+
+  const handleBulkStatusChange = useCallback(async (status: OrderStatus) => {
+    for (const id of selectedIds) {
+      await updateStatusMutation.mutateAsync({ orderId: id, status });
+    }
+    setSelectedIds([]);
+  }, [selectedIds, updateStatusMutation]);
+
+  const handleBulkSendToCourier = useCallback(() => {
+    toast({ title: 'Coming soon', description: 'Bulk courier sending will be available soon' });
+  }, [toast]);
+
+  const handleSendToCourier = useCallback(() => {
+    toast({ title: 'Coming soon', description: 'Courier integration will be available soon' });
+  }, [toast]);
+
+  const handleSaveItems = useCallback(async (items: OrderItem[]) => {
+    // This would update order items - simplified for now
+    toast({ title: 'Coming soon', description: 'Item editing will be available soon' });
+  }, [toast]);
+
+  // Courier history for fraud check modal
+  const fraudCheckHistory = useMemo(() => {
+    return courierHistoryMap[fraudCheckPhone] || [];
+  }, [courierHistoryMap, fraudCheckPhone]);
 
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <h1 className="text-2xl font-bold">Orders</h1>
-          <Button onClick={exportCSV} variant="outline">
-            <Download className="mr-2 h-4 w-4" />
-            Export CSV
-          </Button>
-        </div>
+        {/* Header */}
+        <OrdersHeader
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          notificationsEnabled={notificationsEnabled}
+          onToggleNotifications={toggleNotifications}
+          onExportCSV={exportCSV}
+          onOpenFraudCheck={() => {
+            setFraudCheckPhone('');
+            setShowFraudCheckModal(true);
+          }}
+        />
 
-        <div className="flex flex-col gap-4 sm:flex-row">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Search by name, phone, city..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full sm:w-40">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="new">New</SelectItem>
-              <SelectItem value="confirmed">Confirmed</SelectItem>
-              <SelectItem value="shipped">Shipped</SelectItem>
-              <SelectItem value="cancelled">Cancelled</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={productFilter} onValueChange={setProductFilter}>
-            <SelectTrigger className="w-full sm:w-40">
-              <SelectValue placeholder="Product" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Products</SelectItem>
-              {products?.map((p) => (
-                <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        {/* Filters */}
+        <OrderFilters
+          search={search}
+          onSearchChange={(value) => {
+            setSearch(value);
+            setCurrentPage(1);
+          }}
+          dateFilter={dateFilter}
+          onDateFilterChange={(value) => {
+            setDateFilter(value);
+            setCurrentPage(1);
+          }}
+        />
 
-        <Card>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-muted/50">
-                    <th className="px-4 py-3 text-left font-medium whitespace-nowrap">Customer</th>
-                    <th className="px-4 py-3 text-left font-medium whitespace-nowrap">Phone</th>
-                    <th className="px-4 py-3 text-left font-medium whitespace-nowrap">City</th>
-                    <th className="px-4 py-3 text-left font-medium whitespace-nowrap">Products</th>
-                    <th className="px-4 py-3 text-right font-medium whitespace-nowrap">Total</th>
-                    <th className="px-4 py-3 text-left font-medium whitespace-nowrap">Date</th>
-                    <th className="px-4 py-3 text-left font-medium whitespace-nowrap">Status</th>
-                    <th className="px-4 py-3 text-center font-medium whitespace-nowrap">Details</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {isLoading ? (
-                    <tr>
-                      <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
-                        Loading...
-                      </td>
-                    </tr>
-                  ) : orders?.length === 0 ? (
-                    <tr>
-                      <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
-                        No orders found
-                      </td>
-                    </tr>
-                  ) : (
-                    orders?.map((order) => (
-                      <tr key={order.id} className="border-b">
-                        <td className="px-4 py-3 font-medium whitespace-nowrap">{order.customer_name}</td>
-                        <td className="px-4 py-3 whitespace-nowrap">{order.customer_phone}</td>
-                        <td className="px-4 py-3 whitespace-nowrap">{order.customer_city}</td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <span className="text-xs text-muted-foreground">
-                            {order.quantity ?? 1} item{(order.quantity ?? 1) !== 1 ? 's' : ''}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-right whitespace-nowrap font-semibold">
-                          {formatCurrency(order.total, order.currency)}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-xs">
-                          {format(new Date(order.created_at), 'MMM dd, HH:mm')}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <Select
-                            value={order.status}
-                            onValueChange={(status: OrderStatus) => 
-                              updateStatusMutation.mutate({ id: order.id, status })
-                            }
-                          >
-                            <SelectTrigger className={`h-8 w-28 text-xs ${statusColors[order.status as OrderStatus]}`}>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="new">New</SelectItem>
-                              <SelectItem value="confirmed">Confirmed</SelectItem>
-                              <SelectItem value="shipped">Shipped</SelectItem>
-                              <SelectItem value="cancelled">Cancelled</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => setSelectedOrderId(order.id)}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Status Tabs */}
+        <StatusTabs
+          counts={statusCounts}
+          selectedStatus={statusFilter}
+          onStatusChange={(status) => {
+            setStatusFilter(status);
+            setCurrentPage(1);
+          }}
+        />
 
-        {/* Order Details Dialog */}
-        <Dialog open={!!selectedOrderId} onOpenChange={(open) => !open && setSelectedOrderId(null)}>
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
-              <DialogTitle>Order Details</DialogTitle>
-            </DialogHeader>
-            
-            {selectedOrder && (
-              <div className="space-y-4">
-                {/* Customer Info */}
-                <div className="space-y-2">
-                  <h4 className="font-semibold text-sm">Customer</h4>
-                  <div className="text-sm space-y-1">
-                    <p><span className="text-muted-foreground">Name:</span> {selectedOrder.customer_name}</p>
-                    <p><span className="text-muted-foreground">Phone:</span> {selectedOrder.customer_phone}</p>
-                    <p><span className="text-muted-foreground">Address:</span> {selectedOrder.customer_address}</p>
-                    <p><span className="text-muted-foreground">City:</span> {selectedOrder.customer_city}</p>
-                  </div>
-                </div>
+        {/* Orders List */}
+        {viewMode === 'table' ? (
+          <OrderTable
+            orders={orders}
+            selectedIds={selectedIds}
+            onSelectChange={setSelectedIds}
+            onSelectAll={handleSelectAll}
+            onViewDetails={setSelectedOrder}
+            onEdit={setOrderToEdit}
+            onPrint={printInvoice}
+            onSendToCourier={handleSendToCourier}
+            onDelete={setOrderToDelete}
+            onStatusChange={(orderId, status) => updateStatusMutation.mutate({ orderId, status })}
+            onTrustBadgeClick={handleTrustBadgeClick}
+            onRefreshTrust={handleRefreshTrust}
+            courierHistoryMap={courierHistoryMap}
+            refreshingPhones={refreshingPhones}
+            isLoading={isLoadingOrders}
+          />
+        ) : (
+          <OrderGrid
+            orders={orders}
+            selectedIds={selectedIds}
+            onSelectChange={setSelectedIds}
+            onViewDetails={setSelectedOrder}
+            onEdit={setOrderToEdit}
+            onPrint={printInvoice}
+            onSendToCourier={handleSendToCourier}
+            onDelete={setOrderToDelete}
+            onStatusChange={(orderId, status) => updateStatusMutation.mutate({ orderId, status })}
+            onTrustBadgeClick={handleTrustBadgeClick}
+            onRefreshTrust={handleRefreshTrust}
+            courierHistoryMap={courierHistoryMap}
+            refreshingPhones={refreshingPhones}
+            isLoading={isLoadingOrders}
+          />
+        )}
 
-                {/* Order Items */}
-                <div className="space-y-2">
-                  <h4 className="font-semibold text-sm">Products</h4>
-                  {orderItems.length > 0 ? (
-                    <div className="border rounded-lg overflow-hidden">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="bg-muted/50 border-b">
-                            <th className="px-3 py-2 text-left font-medium">Product</th>
-                            <th className="px-3 py-2 text-right font-medium">Price</th>
-                            <th className="px-3 py-2 text-right font-medium">Qty</th>
-                            <th className="px-3 py-2 text-right font-medium">Subtotal</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {orderItems.map((item) => (
-                            <tr key={item.id} className="border-b last:border-b-0">
-                              <td className="px-3 py-2">{item.product_name}</td>
-                              <td className="px-3 py-2 text-right">
-                                {formatCurrency(item.unit_price, selectedOrder.currency)}
-                              </td>
-                              <td className="px-3 py-2 text-right">{item.quantity}</td>
-                              <td className="px-3 py-2 text-right font-medium">
-                                {formatCurrency(item.subtotal, selectedOrder.currency)}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      {selectedOrder.products?.name || 'Legacy order - no item details'}
-                    </p>
-                  )}
-                </div>
+        {/* Pagination */}
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalCount}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={(size) => {
+            setPageSize(size);
+            setCurrentPage(1);
+          }}
+        />
 
-                {/* Order Summary */}
-                <div className="space-y-2 border-t pt-3">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Subtotal:</span>
-                    <span>{formatCurrency(selectedOrder.subtotal, selectedOrder.currency)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Delivery:</span>
-                    <span>{formatCurrency(selectedOrder.delivery_charge, selectedOrder.currency)}</span>
-                  </div>
-                  <div className="flex justify-between font-semibold">
-                    <span>Total:</span>
-                    <span>{formatCurrency(selectedOrder.total, selectedOrder.currency)}</span>
-                  </div>
-                </div>
+        {/* Bulk Actions Bar */}
+        <BulkActionsBar
+          selectedCount={selectedIds.length}
+          onClearSelection={() => setSelectedIds([])}
+          onBulkStatusChange={handleBulkStatusChange}
+          onBulkSendToCourier={handleBulkSendToCourier}
+        />
 
-                {/* UTM Info */}
-                {(selectedOrder.utm_source || selectedOrder.utm_medium || selectedOrder.utm_campaign) && (
-                  <div className="space-y-2 border-t pt-3">
-                    <h4 className="font-semibold text-sm">UTM Parameters</h4>
-                    <div className="text-xs text-muted-foreground space-y-1">
-                      {selectedOrder.utm_source && <p>Source: {selectedOrder.utm_source}</p>}
-                      {selectedOrder.utm_medium && <p>Medium: {selectedOrder.utm_medium}</p>}
-                      {selectedOrder.utm_campaign && <p>Campaign: {selectedOrder.utm_campaign}</p>}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
+        {/* Modals */}
+        <OrderDetailsModal
+          open={!!selectedOrder}
+          onOpenChange={(open) => !open && setSelectedOrder(null)}
+          order={selectedOrder}
+          orderItems={orderItems}
+          statusHistory={statusHistory}
+          courierHistory={courierHistoryMap[selectedOrder?.customer_phone || ''] || []}
+          products={products}
+          onStatusChange={(status) => {
+            if (selectedOrder) {
+              updateStatusMutation.mutate({ orderId: selectedOrder.id, status });
+            }
+          }}
+          onSendToCourier={handleSendToCourier}
+          onPrint={() => selectedOrder && printInvoice(selectedOrder)}
+          onEdit={() => {
+            if (selectedOrder) {
+              setOrderToEdit(selectedOrder);
+              setSelectedOrder(null);
+            }
+          }}
+          onSaveItems={handleSaveItems}
+          onTrustBadgeClick={() => {
+            if (selectedOrder) {
+              handleTrustBadgeClick(selectedOrder.customer_phone);
+            }
+          }}
+          onRefreshTrust={() => {
+            if (selectedOrder) {
+              handleRefreshTrust(selectedOrder.customer_phone);
+            }
+          }}
+          isRefreshingTrust={selectedOrder ? refreshingPhones.includes(selectedOrder.customer_phone) : false}
+          isLoadingHistory={isLoadingHistory}
+        />
+
+        <OrderEditModal
+          open={!!orderToEdit}
+          onOpenChange={(open) => !open && setOrderToEdit(null)}
+          order={orderToEdit}
+          onSave={(updates) => {
+            if (orderToEdit) {
+              updateOrderMutation.mutate({ orderId: orderToEdit.id, updates });
+            }
+          }}
+          isSaving={updateOrderMutation.isPending}
+        />
+
+        <DeleteConfirmDialog
+          open={!!orderToDelete}
+          onOpenChange={(open) => !open && setOrderToDelete(null)}
+          order={orderToDelete}
+          onConfirm={() => {
+            if (orderToDelete) {
+              deleteOrderMutation.mutate(orderToDelete.id);
+            }
+          }}
+          isDeleting={deleteOrderMutation.isPending}
+        />
+
+        <FraudCheckModal
+          open={showFraudCheckModal}
+          onOpenChange={setShowFraudCheckModal}
+          phone={fraudCheckPhone}
+          courierHistory={fraudCheckHistory}
+          onCheckPhone={async (phone) => {
+            setFraudCheckPhone(phone);
+            await fraudCheckMutation.mutateAsync(phone);
+          }}
+          isChecking={fraudCheckMutation.isPending}
+        />
       </div>
     </AdminLayout>
   );

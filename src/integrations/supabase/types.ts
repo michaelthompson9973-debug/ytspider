@@ -118,6 +118,48 @@ export type Database = {
           },
         ]
       }
+      customer_courier_history: {
+        Row: {
+          checked_at: string
+          created_at: string
+          id: string
+          phone: string
+          provider: string
+          raw_data: Json | null
+          success_rate: number | null
+          total_cancelled: number | null
+          total_delivered: number | null
+          total_orders: number | null
+          updated_at: string
+        }
+        Insert: {
+          checked_at?: string
+          created_at?: string
+          id?: string
+          phone: string
+          provider: string
+          raw_data?: Json | null
+          success_rate?: number | null
+          total_cancelled?: number | null
+          total_delivered?: number | null
+          total_orders?: number | null
+          updated_at?: string
+        }
+        Update: {
+          checked_at?: string
+          created_at?: string
+          id?: string
+          phone?: string
+          provider?: string
+          raw_data?: Json | null
+          success_rate?: number | null
+          total_cancelled?: number | null
+          total_delivered?: number | null
+          total_orders?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       landing_page_checkout_settings: {
         Row: {
           created_at: string
@@ -414,8 +456,50 @@ export type Database = {
           },
         ]
       }
+      order_status_history: {
+        Row: {
+          changed_by: string | null
+          created_at: string
+          id: string
+          new_status: string
+          note: string | null
+          old_status: string | null
+          order_id: string
+        }
+        Insert: {
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          new_status: string
+          note?: string | null
+          old_status?: string | null
+          order_id: string
+        }
+        Update: {
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          new_status?: string
+          note?: string | null
+          old_status?: string | null
+          order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_status_history_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
+          consignment_id: string | null
+          courier_provider: string | null
+          courier_status: string | null
+          courier_synced_at: string | null
           created_at: string
           currency: string | null
           customer_address: string
@@ -427,11 +511,13 @@ export type Database = {
           id: string
           ip_address: string | null
           landing_page_id: string | null
+          note: string | null
           product_id: string | null
           quantity: number
           status: Database["public"]["Enums"]["order_status"]
           subtotal: number | null
           total: number | null
+          tracking_code: string | null
           unit_price: number | null
           updated_at: string
           utm_campaign: string | null
@@ -441,6 +527,10 @@ export type Database = {
           utm_term: string | null
         }
         Insert: {
+          consignment_id?: string | null
+          courier_provider?: string | null
+          courier_status?: string | null
+          courier_synced_at?: string | null
           created_at?: string
           currency?: string | null
           customer_address: string
@@ -452,11 +542,13 @@ export type Database = {
           id?: string
           ip_address?: string | null
           landing_page_id?: string | null
+          note?: string | null
           product_id?: string | null
           quantity?: number
           status?: Database["public"]["Enums"]["order_status"]
           subtotal?: number | null
           total?: number | null
+          tracking_code?: string | null
           unit_price?: number | null
           updated_at?: string
           utm_campaign?: string | null
@@ -466,6 +558,10 @@ export type Database = {
           utm_term?: string | null
         }
         Update: {
+          consignment_id?: string | null
+          courier_provider?: string | null
+          courier_status?: string | null
+          courier_synced_at?: string | null
           created_at?: string
           currency?: string | null
           customer_address?: string
@@ -477,11 +573,13 @@ export type Database = {
           id?: string
           ip_address?: string | null
           landing_page_id?: string | null
+          note?: string | null
           product_id?: string | null
           quantity?: number
           status?: Database["public"]["Enums"]["order_status"]
           subtotal?: number | null
           total?: number | null
+          tracking_code?: string | null
           unit_price?: number | null
           updated_at?: string
           utm_campaign?: string | null
@@ -543,6 +641,30 @@ export type Database = {
         }
         Relationships: []
       }
+      shop_settings: {
+        Row: {
+          created_at: string
+          id: string
+          key: string
+          updated_at: string
+          value: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          key: string
+          updated_at?: string
+          value?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          key?: string
+          updated_at?: string
+          value?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -581,7 +703,14 @@ export type Database = {
     Enums: {
       app_role: "admin"
       delivery_mode: "flat" | "conditional" | "free" | "zoned"
-      order_status: "new" | "confirmed" | "shipped" | "cancelled"
+      order_status:
+        | "new"
+        | "confirmed"
+        | "shipped"
+        | "cancelled"
+        | "pending"
+        | "processing"
+        | "delivered"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -711,7 +840,15 @@ export const Constants = {
     Enums: {
       app_role: ["admin"],
       delivery_mode: ["flat", "conditional", "free", "zoned"],
-      order_status: ["new", "confirmed", "shipped", "cancelled"],
+      order_status: [
+        "new",
+        "confirmed",
+        "shipped",
+        "cancelled",
+        "pending",
+        "processing",
+        "delivered",
+      ],
     },
   },
 } as const
