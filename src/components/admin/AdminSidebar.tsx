@@ -105,7 +105,7 @@ const navGroups: NavGroup[] = [
         icon: Key,
         children: [
           { href: '/admin/api/ai', label: 'AI', icon: Bot, badge: 'available' },
-          { href: '/admin/api/fraud-check', label: 'Fraud Check', icon: ShieldAlert, badge: 'N/A' },
+          { href: '/admin/api/fraud-check', label: 'Fraud Check', icon: ShieldAlert, badge: 'available' },
           { href: '/admin/api/courier', label: 'Courier', icon: Truck, badge: 'N/A' },
         ]
       },

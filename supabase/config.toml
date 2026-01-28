@@ -34,3 +34,9 @@ verify_jwt = false
 
 [functions.check-api-key]
 verify_jwt = false
+
+[functions.check-fraudcheck-key]
+verify_jwt = false
+
+[functions.test-fraudcheck]
+verify_jwt = false
