@@ -1,53 +1,172 @@
 
+# API Sub-menu + নতুন Pages - Implementation Plan
 
-# Phone Version এ 1 Column Layout - Fix Plan
+## Overview
 
-## সমস্যা
-
-Preview এর Phone mode এ checkout section 2 column দেখাচ্ছে কিন্তু এটা 1 column হওয়া উচিত।
-
-**বর্তমান সমস্যাযুক্ত কোড (`themeUtils.ts` line 381):**
-```html
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
-```
-এটা সবসময় 2 column, responsive breakpoint নেই।
-
-## সমাধান
-
-`generateCheckoutPreviewHTML` function এ Tailwind CSS classes ব্যবহার করে responsive grid implement করতে হবে:
-
-**নতুন কোড:**
-```html
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-```
-
-এতে:
-- **Phone (< 768px)**: 1 column (grid-cols-1)
-- **Desktop (≥ 768px)**: 2 column (md:grid-cols-2)
+Sidebar এ "API" item এর বদলে একটা collapsible dropdown menu তৈরি করা হবে যেখানে তিনটা sub-item থাকবে:
+- **AI** (বর্তমান `/admin/api` page - rename করে `/admin/api/ai`)
+- **Fraud Check** (নতুন page - `/admin/api/fraud-check`)
+- **Courier** (নতুন page - `/admin/api/courier`)
 
 ---
 
-## Technical Implementation
+## বর্তমান Structure
 
-### File: `src/components/admin/landing-page-editor/themeUtils.ts`
+```
+Settings
+├── Allowed Domains
+├── Webhooks
+└── API (single page)
+```
 
-**পরিবর্তন:**
-- Line 381: inline style এর বদলে Tailwind responsive classes ব্যবহার করা
-- `grid-template-columns: 1fr 1fr` হটিয়ে `class="grid grid-cols-1 md:grid-cols-2 gap-6"` দেওয়া
+## নতুন Structure
+
+```
+Settings
+├── Allowed Domains
+├── Webhooks
+└── API (dropdown)
+    ├── AI
+    ├── Fraud Check
+    └── Courier
+```
 
 ---
 
-## Expected Result
+## Implementation Steps
 
-### Fix এর পরে:
+### Step 1: নতুন Pages তৈরি করা
 
-1. **Phone Mode Preview (375px)**
-   - Product image/info এবং form একটার নিচে আরেকটা (stacked)
-   - সিঙ্গেল কলাম লেআউট
+| File | Description |
+|------|-------------|
+| `src/pages/admin/ApiFraudCheck.tsx` | Fraud Check API settings page (placeholder) |
+| `src/pages/admin/ApiCourier.tsx` | Courier API settings page (placeholder) |
 
-2. **Desktop Mode Preview**
-   - বাম পাশে Product info, ডান পাশে Form
-   - 2 কলাম লেআউট
+প্রতিটি page এ "Coming Soon" বা configuration options থাকবে।
 
-এটা `CheckoutSection.tsx` এর React component এর সাথে match করবে যেখানে `grid grid-cols-1 md:grid-cols-2` ব্যবহার করা হয়েছে।
+### Step 2: Current ApiSettings.tsx Rename
 
+`ApiSettings.tsx` কে rename করা হবে `ApiAi.tsx` এ এবং route change হবে `/admin/api/ai`।
+
+### Step 3: Sidebar Structure Update
+
+`AdminSidebar.tsx` এ API item কে nested dropdown এ convert করা হবে:
+
+```typescript
+// New interface for nested items
+interface NavItem {
+  href: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  badge?: string;          // "available" বা "N/A"
+  children?: NavItem[];    // Nested items for dropdown
+}
+
+// Updated Settings group
+{
+  label: 'Settings',
+  items: [
+    { href: '/admin/domains', label: 'Allowed Domains', icon: Globe },
+    { href: '/admin/webhooks', label: 'Webhooks', icon: Bell },
+    { 
+      href: '/admin/api', 
+      label: 'API', 
+      icon: Key,
+      children: [
+        { href: '/admin/api/ai', label: 'AI', badge: 'available' },
+        { href: '/admin/api/fraud-check', label: 'Fraud Check', badge: 'N/A' },
+        { href: '/admin/api/courier', label: 'Courier', badge: 'N/A' },
+      ]
+    },
+  ],
+}
+```
+
+### Step 4: Routes Update
+
+`App.tsx` এ নতুন routes add করা হবে:
+
+```typescript
+// Existing route rename
+<Route path="/admin/api/ai" element={<ProtectedRoute requireAdmin><ApiAi /></ProtectedRoute>} />
+
+// New routes
+<Route path="/admin/api/fraud-check" element={<ProtectedRoute requireAdmin><ApiFraudCheck /></ProtectedRoute>} />
+<Route path="/admin/api/courier" element={<ProtectedRoute requireAdmin><ApiCourier /></ProtectedRoute>} />
+
+// Redirect for old URL
+<Route path="/admin/api" element={<Navigate to="/admin/api/ai" replace />} />
+```
+
+---
+
+## Files to Create/Edit
+
+| File | Action | Description |
+|------|--------|-------------|
+| `src/pages/admin/ApiAi.tsx` | Create | Rename current ApiSettings to ApiAi |
+| `src/pages/admin/ApiFraudCheck.tsx` | Create | New Fraud Check API page |
+| `src/pages/admin/ApiCourier.tsx` | Create | New Courier API page |
+| `src/components/admin/AdminSidebar.tsx` | Edit | Add nested dropdown for API menu |
+| `src/App.tsx` | Edit | Update routes |
+
+---
+
+## New Pages Preview
+
+### Fraud Check Page (`ApiFraudCheck.tsx`)
+
+```
+┌────────────────────────────────────────┐
+│ Fraud Check API                        │
+│ Configure fraud detection services     │
+├────────────────────────────────────────┤
+│ ┌────────────────────────────────────┐ │
+│ │ 🚧 Coming Soon                     │ │
+│ │                                    │ │
+│ │ Fraud check API integration will   │ │
+│ │ be available in a future update.   │ │
+│ └────────────────────────────────────┘ │
+└────────────────────────────────────────┘
+```
+
+### Courier Page (`ApiCourier.tsx`)
+
+```
+┌────────────────────────────────────────┐
+│ Courier API                            │
+│ Configure courier/shipping services    │
+├────────────────────────────────────────┤
+│ ┌────────────────────────────────────┐ │
+│ │ 🚧 Coming Soon                     │ │
+│ │                                    │ │
+│ │ Courier API integration will       │ │
+│ │ be available in a future update.   │ │
+│ └────────────────────────────────────┘ │
+└────────────────────────────────────────┘
+```
+
+---
+
+## Sidebar Dropdown Design
+
+Expanded state:
+```
+Settings
+├── Allowed Domains
+├── Webhooks
+└── ▼ API
+    ├── AI          [available]
+    ├── Fraud Check [N/A]
+    └── Courier     [N/A]
+```
+
+Collapsed sidebar এ শুধু Key icon দেখাবে, hover এ sub-menu tooltip আসবে।
+
+---
+
+## Technical Notes
+
+1. **Badge Component**: "available" badge green, "N/A" badge gray/muted color এ দেখাবে
+2. **Active State**: Any `/admin/api/*` route এ API dropdown open থাকবে
+3. **Backward Compatibility**: `/admin/api` URL এ গেলে auto redirect হবে `/admin/api/ai` তে
