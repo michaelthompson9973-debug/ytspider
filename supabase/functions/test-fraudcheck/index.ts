@@ -241,6 +241,36 @@ serve(async (req) => {
         .eq("id", apiKey.id);
     }
 
+    // Save results to customer_courier_history table
+    const now = new Date().toISOString();
+    const courierEntries = Object.entries(data.apis || {}).map(([provider, courierData]: [string, any]) => ({
+      phone: cleanPhone,
+      provider: provider.toLowerCase(),
+      total_orders: courierData.total_parcels || 0,
+      total_delivered: parseInt(courierData.total_delivered_parcels) || 0,
+      total_cancelled: parseInt(courierData.total_cancelled_parcels) || 0,
+      success_rate: courierData.total_parcels > 0 
+        ? ((parseInt(courierData.total_delivered_parcels) || 0) / courierData.total_parcels) * 100 
+        : 0,
+      raw_data: courierData,
+      checked_at: now,
+      updated_at: now,
+    }));
+
+    // Upsert each courier entry
+    for (const entry of courierEntries) {
+      const { error: upsertError } = await supabaseAdmin
+        .from("customer_courier_history")
+        .upsert(entry, { 
+          onConflict: "phone,provider",
+          ignoreDuplicates: false 
+        });
+      
+      if (upsertError) {
+        console.error("Error upserting courier history:", upsertError);
+      }
+    }
+
     return new Response(
       JSON.stringify(data),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
