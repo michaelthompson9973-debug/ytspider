@@ -53,16 +53,17 @@ serve(async (req) => {
     console.log(`Checking FraudCheck API key: ${keyId}`);
 
     // Test the key by making a simple API call with a test phone number.
-    // Fraudchecker expects form-urlencoded (per their docs), not multipart/form-data.
-    const body = new URLSearchParams({ phone: "01700000000" });
+    // Fraudchecker expects FormData (multipart/form-data) per their JS docs.
+    const formData = new FormData();
+    formData.append("phone", "01700000000");
 
     const response = await fetch("https://fraudchecker.link/api/v1/qc/", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${keyValue}`,
-        "Content-Type": "application/x-www-form-urlencoded",
+        // No Content-Type - let fetch set it automatically for FormData
       },
-      body,
+      body: formData,
     });
 
     let status = "active";

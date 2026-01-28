@@ -124,15 +124,17 @@ serve(async (req) => {
     console.log(`Using API key: ${apiKey.id}`);
 
     // Make API call to fraudchecker.link
-    const body = new URLSearchParams({ phone: cleanPhone });
+    // Fraudchecker expects FormData (multipart/form-data) per their JS docs.
+    const formData = new FormData();
+    formData.append("phone", cleanPhone);
 
     const response = await fetch("https://fraudchecker.link/api/v1/qc/", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${apiKey.key_value}`,
-        "Content-Type": "application/x-www-form-urlencoded",
+        // No Content-Type - let fetch set it automatically for FormData
       },
-      body,
+      body: formData,
     });
 
     // Update usage count
