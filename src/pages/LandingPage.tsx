@@ -15,10 +15,16 @@ declare global {
   }
 }
 
-// GTM Event helper
+// GA4/Google Ads Enhanced dataLayer helper
 const pushDataLayer = (event: string, data?: Record<string, unknown>) => {
   if (typeof window !== 'undefined') {
     window.dataLayer = window.dataLayer || [];
+    
+    // Clear previous ecommerce data for clean state (GA4 best practice)
+    if (data?.ecommerce) {
+      window.dataLayer.push({ ecommerce: null });
+    }
+    
     window.dataLayer.push({
       event,
       ...data,
@@ -238,19 +244,34 @@ export default function LandingPage() {
     noscript.innerHTML = `<iframe src="https://www.googletagmanager.com/ns.html?id=${page.gtm_id}" height="0" width="0" style="display:none;visibility:hidden"></iframe>`;
     document.body.insertBefore(noscript, document.body.firstChild);
 
-    // Fire page_view event
+    // Fire page_view event (GA4 compatible)
     pushDataLayer('page_view', {
+      page_location: window.location.href,
       page_path: `/p/${slug}`,
       page_title: products[0]?.name || slug,
     });
 
-    // Fire view_content event for products
+    // Fire view_item event for products (GA4 ecommerce standard)
     if (products.length > 0) {
-      pushDataLayer('view_content', {
+      const totalValue = products.reduce((sum, p) => sum + p.price, 0);
+      
+      pushDataLayer('view_item', {
+        ecommerce: {
+          currency: 'BDT',
+          value: totalValue,
+          items: products.map((p, index) => ({
+            item_id: p.id,
+            item_name: p.name,
+            price: p.price,
+            quantity: 1,
+            index: index,
+          })),
+        },
+        // Legacy format for backward compatibility
         content_type: 'product',
         content_ids: products.map(p => p.id),
         content_name: products.map(p => p.name).join(', '),
-        value: products.reduce((sum, p) => sum + p.price, 0),
+        value: totalValue,
         currency: 'BDT',
       });
     }
