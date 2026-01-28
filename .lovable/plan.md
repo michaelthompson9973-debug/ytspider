@@ -1,102 +1,117 @@
 
-# API Sub-menu + নতুন Pages - Implementation Plan
+# Fraud Check API Integration - Implementation Plan
 
 ## Overview
 
-Sidebar এ "API" item এর বদলে একটা collapsible dropdown menu তৈরি করা হবে যেখানে তিনটা sub-item থাকবে:
-- **AI** (বর্তমান `/admin/api` page - rename করে `/admin/api/ai`)
-- **Fraud Check** (নতুন page - `/admin/api/fraud-check`)
-- **Courier** (নতুন page - `/admin/api/courier`)
+AI API page এর মতো Fraud Check API integration page তৈরি করা হবে। এতে থাকবে:
+- API Key management (add, batch import, delete)
+- Key status check functionality
+- Export functionality
+- Phone number test feature
 
 ---
 
-## বর্তমান Structure
+## API Documentation Summary
 
-```
-Settings
-├── Allowed Domains
-├── Webhooks
-└── API (single page)
-```
+| Field | Value |
+|-------|-------|
+| **Base URL** | `https://fraudchecker.link/api/v1/qc/` |
+| **Method** | POST |
+| **Auth Header** | `Authorization: Bearer {API_KEY}` |
+| **Body** | `phone` (form-data) |
+| **Credits** | 1 credit per call |
 
-## নতুন Structure
-
-```
-Settings
-├── Allowed Domains
-├── Webhooks
-└── API (dropdown)
-    ├── AI
-    ├── Fraud Check
-    └── Courier
-```
+**Response Fields:**
+- `mobile_number` - Phone number checked
+- `total_parcels` - Total orders found
+- `total_delivered` - Successful deliveries  
+- `total_cancel` - Cancelled orders
+- `apis` - Courier-wise breakdown (Pathao, Steadfast, etc.)
 
 ---
 
 ## Implementation Steps
 
-### Step 1: নতুন Pages তৈরি করা
+### Step 1: Database Schema Update
 
-| File | Description |
-|------|-------------|
-| `src/pages/admin/ApiFraudCheck.tsx` | Fraud Check API settings page (placeholder) |
-| `src/pages/admin/ApiCourier.tsx` | Courier API settings page (placeholder) |
+`api_keys` table এ provider হিসেবে `fraudcheck` support add করতে হবে। Table structure already exists, just need to use different provider value.
 
-প্রতিটি page এ "Coming Soon" বা configuration options থাকবে।
+### Step 2: Edge Function তৈরি করা
 
-### Step 2: Current ApiSettings.tsx Rename
+**New File: `supabase/functions/check-fraudcheck-key/index.ts`**
 
-`ApiSettings.tsx` কে rename করা হবে `ApiAi.tsx` এ এবং route change হবে `/admin/api/ai`।
+এই function করবে:
+1. API key validate করা fraudchecker.link API দিয়ে একটা test phone number check করে
+2. Key status update করা (active/invalid/rate_limited)
 
-### Step 3: Sidebar Structure Update
-
-`AdminSidebar.tsx` এ API item কে nested dropdown এ convert করা হবে:
-
-```typescript
-// New interface for nested items
-interface NavItem {
-  href: string;
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-  badge?: string;          // "available" বা "N/A"
-  children?: NavItem[];    // Nested items for dropdown
-}
-
-// Updated Settings group
-{
-  label: 'Settings',
-  items: [
-    { href: '/admin/domains', label: 'Allowed Domains', icon: Globe },
-    { href: '/admin/webhooks', label: 'Webhooks', icon: Bell },
-    { 
-      href: '/admin/api', 
-      label: 'API', 
-      icon: Key,
-      children: [
-        { href: '/admin/api/ai', label: 'AI', badge: 'available' },
-        { href: '/admin/api/fraud-check', label: 'Fraud Check', badge: 'N/A' },
-        { href: '/admin/api/courier', label: 'Courier', badge: 'N/A' },
-      ]
-    },
-  ],
-}
+```
+Request: POST
+Body: { keyId, keyValue }
+Response: { status: 'active' | 'invalid' | 'rate_limited', keyId }
 ```
 
-### Step 4: Routes Update
+### Step 3: ApiFraudCheck Page Update
 
-`App.tsx` এ নতুন routes add করা হবে:
+**File: `src/pages/admin/ApiFraudCheck.tsx`**
 
-```typescript
-// Existing route rename
-<Route path="/admin/api/ai" element={<ProtectedRoute requireAdmin><ApiAi /></ProtectedRoute>} />
+ApiAi.tsx এর pattern follow করে complete page তৈরি করা:
 
-// New routes
-<Route path="/admin/api/fraud-check" element={<ProtectedRoute requireAdmin><ApiFraudCheck /></ProtectedRoute>} />
-<Route path="/admin/api/courier" element={<ProtectedRoute requireAdmin><ApiCourier /></ProtectedRoute>} />
-
-// Redirect for old URL
-<Route path="/admin/api" element={<Navigate to="/admin/api/ai" replace />} />
+```text
+┌──────────────────────────────────────────────────────────────┐
+│ Fraud Check API                                              │
+│ Manage fraud detection API keys for order validation         │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│ ┌──────────────────────────────────────────────────────────┐ │
+│ │ + Add New API Key                                        │ │
+│ │ Get your key from fraudchecker.link dashboard            │ │
+│ │                                                          │ │
+│ │ Name (Optional)     │ API Key                            │ │
+│ │ [________________]  │ [____________________________]     │ │
+│ │                                                          │ │
+│ │ [Add Key] [Batch Import]                                 │ │
+│ └──────────────────────────────────────────────────────────┘ │
+│                                                              │
+│ ┌──────────────────────────────────────────────────────────┐ │
+│ │ 🔑 API Keys (3)                    [Check All] [Export]  │ │
+│ │                                                          │ │
+│ │ ┌────────────────────────────────────────────────────┐   │ │
+│ │ │ FraudCheck Key 1         [Active ✓]                │   │ │
+│ │ │ 577d••••••1a58          Used 45 times              │   │ │
+│ │ │                          [👁] [📋] [🗑]            │   │ │
+│ │ └────────────────────────────────────────────────────┘   │ │
+│ │                                                          │ │
+│ │ ┌────────────────────────────────────────────────────┐   │ │
+│ │ │ FraudCheck Key 2         [Rate Limited ⚠]          │   │ │
+│ │ │ 89ab••••••cd12          Used 150 times             │   │ │
+│ │ │                          [🔄] [👁] [📋] [🗑]       │   │ │
+│ │ └────────────────────────────────────────────────────┘   │ │
+│ └──────────────────────────────────────────────────────────┘ │
+│                                                              │
+│ ┌──────────────────────────────────────────────────────────┐ │
+│ │ 🧪 Test Fraud Check                                      │ │
+│ │ Test your API by checking a phone number                 │ │
+│ │                                                          │ │
+│ │ Phone Number: [01712345678_____] [Check Phone]           │ │
+│ │                                                          │ │
+│ │ ┌────────────────────────────────────────────────────┐   │ │
+│ │ │ Result:                                            │   │ │
+│ │ │ Total Parcels: 15                                  │   │ │
+│ │ │ Delivered: 12 (80%)     Cancelled: 3 (20%)         │   │ │
+│ │ │                                                    │   │ │
+│ │ │ Courier Breakdown:                                 │   │ │
+│ │ │ • Pathao: 4/5 delivered                            │   │ │
+│ │ │ • Steadfast: 3/4 delivered                         │   │ │
+│ │ └────────────────────────────────────────────────────┘   │ │
+│ └──────────────────────────────────────────────────────────┘ │
+└──────────────────────────────────────────────────────────────┘
 ```
+
+### Step 4: Admin Sidebar Badge Update
+
+**File: `src/components/admin/AdminSidebar.tsx`**
+
+Fraud Check item এর badge "N/A" থেকে "available" এ change করা।
 
 ---
 
@@ -104,69 +119,99 @@ interface NavItem {
 
 | File | Action | Description |
 |------|--------|-------------|
-| `src/pages/admin/ApiAi.tsx` | Create | Rename current ApiSettings to ApiAi |
-| `src/pages/admin/ApiFraudCheck.tsx` | Create | New Fraud Check API page |
-| `src/pages/admin/ApiCourier.tsx` | Create | New Courier API page |
-| `src/components/admin/AdminSidebar.tsx` | Edit | Add nested dropdown for API menu |
-| `src/App.tsx` | Edit | Update routes |
+| `supabase/functions/check-fraudcheck-key/index.ts` | Create | Edge function for validating FraudCheck API keys |
+| `supabase/functions/test-fraudcheck/index.ts` | Create | Edge function for testing phone number lookup |
+| `supabase/config.toml` | Edit | Add new edge function configs |
+| `src/pages/admin/ApiFraudCheck.tsx` | Edit | Full page implementation |
+| `src/components/admin/AdminSidebar.tsx` | Edit | Update badge to "available" |
 
 ---
 
-## New Pages Preview
+## Technical Details
 
-### Fraud Check Page (`ApiFraudCheck.tsx`)
+### Edge Function: check-fraudcheck-key
 
+```typescript
+// Pseudocode
+async function checkFraudCheckKey(keyId, keyValue) {
+  // Test the key by making a simple API call
+  const response = await fetch('https://fraudchecker.link/api/v1/qc/', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${keyValue}` },
+    body: formData({ phone: '01700000000' }) // Test phone
+  });
+
+  if (response.status === 401 || response.status === 403) {
+    return { status: 'invalid' };
+  }
+  if (response.status === 429) {
+    return { status: 'rate_limited' };
+  }
+  return { status: 'active' };
+}
 ```
+
+### Edge Function: test-fraudcheck
+
+```typescript
+// Pseudocode
+async function testFraudCheck(phone) {
+  // Get active fraud check API key
+  const { data: keys } = await supabase
+    .from('api_keys')
+    .select('*')
+    .eq('provider', 'fraudcheck')
+    .eq('status', 'active')
+    .limit(1);
+
+  if (!keys?.length) {
+    throw new Error('No active fraud check API key');
+  }
+
+  // Make API call
+  const response = await fetch('https://fraudchecker.link/api/v1/qc/', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${keys[0].key_value}` },
+    body: formData({ phone })
+  });
+
+  // Update usage count
+  await supabase.from('api_keys')
+    .update({ 
+      usage_count: keys[0].usage_count + 1,
+      last_used_at: new Date().toISOString()
+    })
+    .eq('id', keys[0].id);
+
+  return await response.json();
+}
+```
+
+### ApiFraudCheck Page Features
+
+1. **Add New Key** - Single key add form
+2. **Batch Import** - Dialog for pasting multiple keys
+3. **Key List** - Show all fraudcheck provider keys with status
+4. **Batch Check** - Check all keys sequentially with progress bar
+5. **Copy/Export** - Copy all or export to .txt file
+6. **Test Section** - Phone number input + result display with delivery rate visualization
+
+### Delivery Rate Visualization
+
+```text
 ┌────────────────────────────────────────┐
-│ Fraud Check API                        │
-│ Configure fraud detection services     │
-├────────────────────────────────────────┤
-│ ┌────────────────────────────────────┐ │
-│ │ 🚧 Coming Soon                     │ │
-│ │                                    │ │
-│ │ Fraud check API integration will   │ │
-│ │ be available in a future update.   │ │
-│ └────────────────────────────────────┘ │
+│ Delivery Rate                          │
+│ ████████████████████░░░░░ 80%          │
+│                                        │
+│ ✅ Delivered: 12    ❌ Cancelled: 3    │
 └────────────────────────────────────────┘
 ```
 
-### Courier Page (`ApiCourier.tsx`)
-
-```
-┌────────────────────────────────────────┐
-│ Courier API                            │
-│ Configure courier/shipping services    │
-├────────────────────────────────────────┤
-│ ┌────────────────────────────────────┐ │
-│ │ 🚧 Coming Soon                     │ │
-│ │                                    │ │
-│ │ Courier API integration will       │ │
-│ │ be available in a future update.   │ │
-│ └────────────────────────────────────┘ │
-└────────────────────────────────────────┘
-```
-
 ---
 
-## Sidebar Dropdown Design
+## Security Considerations
 
-Expanded state:
-```
-Settings
-├── Allowed Domains
-├── Webhooks
-└── ▼ API
-    ├── AI          [available]
-    ├── Fraud Check [N/A]
-    └── Courier     [N/A]
-```
-
-Collapsed sidebar এ শুধু Key icon দেখাবে, hover এ sub-menu tooltip আসবে।
-
----
-
-## Technical Notes
-
-1. **Badge Component**: "available" badge green, "N/A" badge gray/muted color এ দেখাবে
-2. **Active State**: Any `/admin/api/*` route এ API dropdown open থাকবে
-3. **Backward Compatibility**: `/admin/api` URL এ গেলে auto redirect হবে `/admin/api/ai` তে
+1. API key শুধুমাত্র server-side (Edge Function) এ use হবে
+2. Client থেকে সরাসরি fraudchecker.link API call হবে না
+3. Admin only access (RLS policy দ্বারা protected)
+4. Key masking UI তে (প্রথম ৪ ও শেষ ৪ character দেখাবে)
