@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Search, Loader2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Loader2, RefreshCw } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -11,6 +11,8 @@ import { Input } from '@/components/ui/input';
 import { CustomerCourierHistory } from './types';
 import { formatRelativeTime, normalizePhone } from './utils';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 interface FraudCheckModalProps {
   open: boolean;
@@ -22,19 +24,55 @@ interface FraudCheckModalProps {
 }
 
 export const FraudCheckModal = React.forwardRef<HTMLDivElement, FraudCheckModalProps>(
-  ({ open, onOpenChange, phone = '', courierHistory, onCheckPhone, isChecking }, ref) => {
+  ({ open, onOpenChange, phone = '', courierHistory: externalHistory, onCheckPhone, isChecking }, ref) => {
     const [inputPhone, setInputPhone] = useState(phone);
+    const [lastCheckedPhone, setLastCheckedPhone] = useState<string | null>(null);
+    const queryClient = useQueryClient();
 
-    React.useEffect(() => {
+    // Fetch history directly from DB for the current phone
+    const normalizedInputPhone = normalizePhone(inputPhone);
+    const { data: fetchedHistory = [], refetch, isRefetching } = useQuery({
+      queryKey: ['fraud-check-modal-history', normalizedInputPhone],
+      queryFn: async () => {
+        if (!normalizedInputPhone || normalizedInputPhone.length < 11) return [];
+        const { data, error } = await supabase
+          .from('customer_courier_history')
+          .select('*')
+          .eq('phone', normalizedInputPhone);
+        if (error) throw error;
+        return data as CustomerCourierHistory[];
+      },
+      enabled: open && normalizedInputPhone.length >= 11,
+      staleTime: 0,
+    });
+
+    // Use fetched history if available, otherwise fall back to external
+    const courierHistory = fetchedHistory.length > 0 ? fetchedHistory : externalHistory;
+
+    useEffect(() => {
       if (phone) {
         setInputPhone(phone);
       }
     }, [phone]);
 
-    const handleCheck = () => {
+    // Refetch when check completes
+    useEffect(() => {
+      if (!isChecking && lastCheckedPhone) {
+        // Delay to ensure DB persistence
+        const timer = setTimeout(() => {
+          refetch();
+          queryClient.invalidateQueries({ queryKey: ['courier-history'] });
+        }, 600);
+        setLastCheckedPhone(null);
+        return () => clearTimeout(timer);
+      }
+    }, [isChecking, lastCheckedPhone, refetch, queryClient]);
+
+    const handleCheck = async () => {
       const normalized = normalizePhone(inputPhone);
       if (normalized.length >= 11) {
-        onCheckPhone(normalized);
+        setLastCheckedPhone(normalized);
+        await onCheckPhone(normalized);
       }
     };
 
@@ -66,6 +104,8 @@ export const FraudCheckModal = React.forwardRef<HTMLDivElement, FraudCheckModalP
           courierHistory[0].checked_at
         )
       : null;
+    
+    const showLoading = isChecking || isRefetching;
 
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -176,7 +216,7 @@ export const FraudCheckModal = React.forwardRef<HTMLDivElement, FraudCheckModalP
             )}
 
             {/* No Data State */}
-            {courierHistory.length === 0 && !isChecking && (
+            {courierHistory.length === 0 && !showLoading && (
               <div className="text-center py-8 text-slate-400">
                 <p>এই নম্বরের কোনো ইতিহাস পাওয়া যায়নি</p>
                 <p className="text-sm mt-1">ফোন নম্বর দিয়ে চেক করুন</p>
@@ -184,7 +224,7 @@ export const FraudCheckModal = React.forwardRef<HTMLDivElement, FraudCheckModalP
             )}
 
             {/* Loading State */}
-            {isChecking && (
+            {showLoading && (
               <div className="text-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin text-indigo-400 mx-auto" />
                 <p className="text-sm text-slate-400 mt-2">চেক করা হচ্ছে...</p>
