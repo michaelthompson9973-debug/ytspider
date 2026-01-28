@@ -52,16 +52,17 @@ serve(async (req) => {
 
     console.log(`Checking FraudCheck API key: ${keyId}`);
 
-    // Test the key by making a simple API call with a test phone number
-    const formData = new FormData();
-    formData.append("phone", "01700000000"); // Test phone number
+    // Test the key by making a simple API call with a test phone number.
+    // Fraudchecker expects form-urlencoded (per their docs), not multipart/form-data.
+    const body = new URLSearchParams({ phone: "01700000000" });
 
     const response = await fetch("https://fraudchecker.link/api/v1/qc/", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${keyValue}`,
+        "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: formData,
+      body,
     });
 
     let status = "active";
@@ -77,10 +78,11 @@ serve(async (req) => {
       console.log(`Key ${keyId} is invalid`);
     } else if (!response.ok) {
       const errorText = await response.text();
-      console.error(`Key ${keyId} error:`, errorText);
-      // If it's a 400 with "Phone number is required", key is valid but our test failed
-      // Otherwise mark as invalid
-      if (response.status !== 400) {
+      console.error(`Key ${keyId} error:`, response.status, errorText);
+
+      // Some upstream errors can be transient; only hard-fail on auth errors.
+      // For other non-2xx, keep it active so the system can still try it during real checks.
+      if (response.status === 401 || response.status === 403) {
         status = "invalid";
       }
     } else {

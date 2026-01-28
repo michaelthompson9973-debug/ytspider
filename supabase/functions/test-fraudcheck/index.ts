@@ -18,6 +18,12 @@ interface FraudCheckResponse {
   }>;
 }
 
+function addMinutes(date: Date, minutes: number) {
+  const d = new Date(date);
+  d.setMinutes(d.getMinutes() + minutes);
+  return d;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -73,39 +79,60 @@ serve(async (req) => {
 
     console.log(`Testing fraud check for phone: ${cleanPhone}`);
 
-    // Get active fraud check API key
-    const { data: keys, error: keysError } = await supabaseAdmin
+    // 1) Prefer an active key that isn't currently rate-limited.
+    // 2) If none exists, fallback to the most recent key (even if status is stale/invalid)
+    //    and let the real API response decide the correct status.
+    const nowIso = new Date().toISOString();
+
+    const { data: activeKeys, error: activeKeysError } = await supabaseAdmin
       .from("api_keys")
       .select("*")
       .eq("provider", "fraudcheck")
       .eq("status", "active")
+      .or(`rate_limited_until.is.null,rate_limited_until.lte.${nowIso}`)
+      .order("created_at", { ascending: false })
       .limit(1);
 
-    if (keysError) {
-      console.error("Error fetching API keys:", keysError);
-      throw keysError;
+    if (activeKeysError) {
+      console.error("Error fetching active API keys:", activeKeysError);
+      throw activeKeysError;
     }
 
-    if (!keys || keys.length === 0) {
+    let apiKey = activeKeys?.[0] ?? null;
+
+    if (!apiKey) {
+      const { data: fallbackKeys, error: fallbackError } = await supabaseAdmin
+        .from("api_keys")
+        .select("*")
+        .eq("provider", "fraudcheck")
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (fallbackError) {
+        console.error("Error fetching fallback API keys:", fallbackError);
+        throw fallbackError;
+      }
+      apiKey = fallbackKeys?.[0] ?? null;
+    }
+
+    if (!apiKey) {
       return new Response(
         JSON.stringify({ error: "No active fraud check API key available" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    const apiKey = keys[0];
     console.log(`Using API key: ${apiKey.id}`);
 
     // Make API call to fraudchecker.link
-    const formData = new FormData();
-    formData.append("phone", cleanPhone);
+    const body = new URLSearchParams({ phone: cleanPhone });
 
     const response = await fetch("https://fraudchecker.link/api/v1/qc/", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${apiKey.key_value}`,
+        "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: formData,
+      body,
     });
 
     // Update usage count
@@ -123,7 +150,7 @@ serve(async (req) => {
         .from("api_keys")
         .update({ 
           status: "rate_limited",
-          rate_limited_until: new Date(Date.now() + 60 * 60 * 1000).toISOString()
+          rate_limited_until: addMinutes(new Date(), 60).toISOString()
         })
         .eq("id", apiKey.id);
 
@@ -148,7 +175,7 @@ serve(async (req) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Fraud check API error:", errorText);
+      console.error("Fraud check API error:", response.status, errorText);
       return new Response(
         JSON.stringify({ error: "Failed to check phone number" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -157,6 +184,14 @@ serve(async (req) => {
 
     const data: FraudCheckResponse = await response.json();
     console.log("Fraud check result:", data);
+
+    // If the call succeeded, ensure the key is marked active (it may have been stale/invalid).
+    if (apiKey.status !== "active") {
+      await supabaseAdmin
+        .from("api_keys")
+        .update({ status: "active", rate_limited_until: null })
+        .eq("id", apiKey.id);
+    }
 
     return new Response(
       JSON.stringify(data),
