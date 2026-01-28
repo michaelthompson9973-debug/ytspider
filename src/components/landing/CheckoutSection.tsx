@@ -171,11 +171,49 @@ export function CheckoutSection({
   }
 
   const handleQuantityChange = (productId: string, newQuantity: number) => {
+    const item = cart.find(i => i.productId === productId);
+    const oldQuantity = item?.quantity || 0;
+    const clampedNewQuantity = Math.max(0, newQuantity);
+    
+    // Fire add_to_cart when quantity increases
+    if (item && clampedNewQuantity > oldQuantity) {
+      const quantityAdded = clampedNewQuantity - oldQuantity;
+      pushDataLayer('add_to_cart', {
+        ecommerce: {
+          currency: settings.currency,
+          value: item.unitPrice * quantityAdded,
+          items: [{
+            item_id: item.productId,
+            item_name: item.productName,
+            price: item.unitPrice,
+            quantity: quantityAdded,
+          }],
+        },
+      });
+    }
+    
+    // Fire remove_from_cart when quantity decreases
+    if (item && clampedNewQuantity < oldQuantity && clampedNewQuantity >= 0) {
+      const quantityRemoved = oldQuantity - clampedNewQuantity;
+      pushDataLayer('remove_from_cart', {
+        ecommerce: {
+          currency: settings.currency,
+          value: item.unitPrice * quantityRemoved,
+          items: [{
+            item_id: item.productId,
+            item_name: item.productName,
+            price: item.unitPrice,
+            quantity: quantityRemoved,
+          }],
+        },
+      });
+    }
+
     setCart(prev =>
-      prev.map(item =>
-        item.productId === productId
-          ? { ...item, quantity: Math.max(0, newQuantity) }
-          : item
+      prev.map(cartItem =>
+        cartItem.productId === productId
+          ? { ...cartItem, quantity: clampedNewQuantity }
+          : cartItem
       )
     );
   };
