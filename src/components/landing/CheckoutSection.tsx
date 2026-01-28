@@ -44,9 +44,16 @@ const defaultSettings: CheckoutSettings = {
   outside_city_amount: defaultCheckoutSettings.outside_city_amount,
 };
 
+// GA4/Google Ads Enhanced dataLayer helper
 const pushDataLayer = (event: string, data?: Record<string, unknown>) => {
   if (typeof window !== 'undefined') {
     window.dataLayer = window.dataLayer || [];
+    
+    // Clear previous ecommerce data for clean state (GA4 best practice)
+    if (data?.ecommerce) {
+      window.dataLayer.push({ ecommerce: null });
+    }
+    
     window.dataLayer.push({ event, ...data });
   }
 };
@@ -205,10 +212,24 @@ export function CheckoutSection({
     try {
       const eventId = `evt_${Date.now()}_${Math.random().toString(36).substring(7)}`;
 
-      // Fire lead event
-      pushDataLayer('lead', {
+      // Prepare cart items for GA4 ecommerce format
+      const activeItems = cart.filter(item => item.quantity > 0);
+      const ga4Items = activeItems.map((item, index) => ({
+        item_id: item.productId,
+        item_name: item.productName,
+        price: item.unitPrice,
+        quantity: item.quantity,
+        index: index,
+      }));
+
+      // Fire begin_checkout event (GA4 standard)
+      pushDataLayer('begin_checkout', {
+        ecommerce: {
+          currency: settings.currency,
+          value: total,
+          items: ga4Items,
+        },
         event_id: eventId,
-        customer_city: form.customer_city,
       });
 
       // Insert main order
@@ -234,16 +255,14 @@ export function CheckoutSection({
       if (error) throw error;
 
       // Insert order items for each product with quantity > 0
-      const orderItems = cart
-        .filter(item => item.quantity > 0)
-        .map(item => ({
-          order_id: orderData.id,
-          product_id: item.productId,
-          product_name: item.productName,
-          quantity: item.quantity,
-          unit_price: item.unitPrice,
-          subtotal: item.unitPrice * item.quantity,
-        }));
+      const orderItems = activeItems.map(item => ({
+        order_id: orderData.id,
+        product_id: item.productId,
+        product_name: item.productName,
+        quantity: item.quantity,
+        unit_price: item.unitPrice,
+        subtotal: item.unitPrice * item.quantity,
+      }));
 
       if (orderItems.length > 0) {
         const { error: itemsError } = await supabase
@@ -255,21 +274,32 @@ export function CheckoutSection({
         }
       }
 
-      // Push purchase event for GTM with all items
+      // Push purchase event (GA4 ecommerce standard for Google Ads)
       pushDataLayer('purchase', {
-        transaction_id: eventId,
+        ecommerce: {
+          transaction_id: orderData.id,
+          value: total,
+          tax: 0,
+          shipping: delivery,
+          currency: settings.currency,
+          items: ga4Items,
+        },
+        // Enhanced Conversions user data (hashed by GTM if configured)
+        user_data: {
+          phone_number: form.customer_phone || undefined,
+          address: {
+            city: form.customer_city || undefined,
+            country: 'BD',
+          },
+        },
+        // Legacy format for backward compatibility  
+        transaction_id: orderData.id,
+        event_id: eventId,
         value: total,
         subtotal,
         shipping: delivery,
         currency: settings.currency,
-        items: cart
-          .filter(item => item.quantity > 0)
-          .map(item => ({
-            item_id: item.productId,
-            item_name: item.productName,
-            price: item.unitPrice,
-            quantity: item.quantity,
-          })),
+        items: ga4Items,
       });
 
       // Call server-side tracking
