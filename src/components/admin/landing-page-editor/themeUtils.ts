@@ -377,8 +377,8 @@ export function generateCheckoutPreviewHTML(
             ${config.title || 'অর্ডার করুন'}
           </h2>
           
-          <!-- 2-Column Grid Layout -->
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+          <!-- Responsive Grid Layout: 1-col mobile, 2-col desktop -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Left Column: Product Info -->
             <div style="padding: 1rem; border-radius: ${themeConfig.borderRadius}; background: hsl(var(--muted) / 0.5); border: 1px solid #e5e7eb; display: flex; flex-direction: column; gap: 1rem;">
               <!-- Image Gallery -->
