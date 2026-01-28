@@ -579,7 +579,7 @@ export default function ApiFraudCheck() {
                       </div>
                     </div>
                     <div className="flex items-center gap-1 ml-4">
-                      {key.status === 'rate_limited' && (
+                    {(key.status === 'rate_limited' || key.status === 'invalid') && (
                         <Button
                           variant="ghost"
                           size="icon"
