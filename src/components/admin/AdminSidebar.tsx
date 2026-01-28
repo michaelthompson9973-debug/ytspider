@@ -13,9 +13,13 @@ import {
   Bell,
   Globe,
   ChevronDown,
+  ChevronRight,
   PanelLeftClose,
   Key,
   PanelLeft,
+  Bot,
+  ShieldAlert,
+  Truck,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -28,6 +32,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
   SidebarSeparator,
   useSidebar,
 } from '@/components/ui/sidebar';
@@ -42,13 +49,22 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { Badge } from '@/components/ui/badge';
 
 const STORAGE_KEY = 'ytspider-sidebar-collapsed';
+
+interface NavSubItem {
+  href: string;
+  label: string;
+  icon?: React.ComponentType<{ className?: string }>;
+  badge?: 'available' | 'N/A';
+}
 
 interface NavItem {
   href: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
+  children?: NavSubItem[];
 }
 
 interface NavGroup {
@@ -83,10 +99,121 @@ const navGroups: NavGroup[] = [
     items: [
       { href: '/admin/domains', label: 'Allowed Domains', icon: Globe },
       { href: '/admin/webhooks', label: 'Webhooks', icon: Bell },
-      { href: '/admin/api', label: 'API', icon: Key },
+      { 
+        href: '/admin/api', 
+        label: 'API', 
+        icon: Key,
+        children: [
+          { href: '/admin/api/ai', label: 'AI', icon: Bot, badge: 'available' },
+          { href: '/admin/api/fraud-check', label: 'Fraud Check', icon: ShieldAlert, badge: 'N/A' },
+          { href: '/admin/api/courier', label: 'Courier', icon: Truck, badge: 'N/A' },
+        ]
+      },
     ],
   },
 ];
+
+function ApiSubMenu({ item }: { item: NavItem }) {
+  const location = useLocation();
+  const { state } = useSidebar();
+  const isCollapsed = state === 'collapsed';
+  
+  const hasActiveChild = item.children?.some(
+    (child) => location.pathname === child.href
+  ) || false;
+  const [isOpen, setIsOpen] = useState(hasActiveChild);
+
+  useEffect(() => {
+    if (hasActiveChild) {
+      setIsOpen(true);
+    }
+  }, [hasActiveChild]);
+
+  const getBadge = (badge?: 'available' | 'N/A') => {
+    if (!badge) return null;
+    if (badge === 'available') {
+      return (
+        <Badge className="ml-auto text-[10px] px-1.5 py-0 h-4 bg-primary text-primary-foreground">
+          ✓
+        </Badge>
+      );
+    }
+    return (
+      <Badge variant="secondary" className="ml-auto text-[10px] px-1.5 py-0 h-4">
+        N/A
+      </Badge>
+    );
+  };
+
+  if (isCollapsed) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive={hasActiveChild}>
+              <Link to={item.children?.[0]?.href || item.href}>
+                <item.icon className="h-4 w-4" />
+                <span>{item.label}</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </TooltipTrigger>
+        <TooltipContent side="right" className="flex flex-col gap-1 p-2">
+          <span className="font-medium mb-1">{item.label}</span>
+          {item.children?.map((child) => (
+            <Link 
+              key={child.href} 
+              to={child.href}
+              className={cn(
+                "text-sm px-2 py-1 rounded hover:bg-accent",
+                location.pathname === child.href && "bg-accent font-medium"
+              )}
+            >
+              {child.label}
+            </Link>
+          ))}
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  return (
+    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+      <SidebarMenuItem>
+        <CollapsibleTrigger asChild>
+          <SidebarMenuButton isActive={hasActiveChild}>
+            <item.icon className="h-4 w-4" />
+            <span>{item.label}</span>
+            <ChevronRight
+              className={cn(
+                'ml-auto h-4 w-4 transition-transform duration-200',
+                isOpen && 'rotate-90'
+              )}
+            />
+          </SidebarMenuButton>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <SidebarMenuSub>
+            {item.children?.map((child) => {
+              const isActive = location.pathname === child.href;
+              return (
+                <SidebarMenuSubItem key={child.href}>
+                  <SidebarMenuSubButton asChild isActive={isActive}>
+                    <Link to={child.href} className="flex items-center gap-2">
+                      {child.icon && <child.icon className="h-3.5 w-3.5" />}
+                      <span>{child.label}</span>
+                      {getBadge(child.badge)}
+                    </Link>
+                  </SidebarMenuSubButton>
+                </SidebarMenuSubItem>
+              );
+            })}
+          </SidebarMenuSub>
+        </CollapsibleContent>
+      </SidebarMenuItem>
+    </Collapsible>
+  );
+}
 
 function NavGroupCollapsible({ group }: { group: NavGroup }) {
   const location = useLocation();
@@ -94,11 +221,11 @@ function NavGroupCollapsible({ group }: { group: NavGroup }) {
   const isCollapsed = state === 'collapsed';
 
   const hasActiveItem = group.items.some(
-    (item) => location.pathname === item.href
+    (item) => location.pathname === item.href || 
+              item.children?.some(child => location.pathname === child.href)
   );
-  const [isOpen, setIsOpen] = useState(true); // Default open
+  const [isOpen, setIsOpen] = useState(true);
 
-  // Keep group open if it contains the active route
   useEffect(() => {
     if (hasActiveItem) {
       setIsOpen(true);
@@ -106,7 +233,7 @@ function NavGroupCollapsible({ group }: { group: NavGroup }) {
   }, [hasActiveItem]);
 
   // For single-item groups like Dashboard, render without collapsible
-  if (group.items.length === 1) {
+  if (group.items.length === 1 && !group.items[0].children) {
     const item = group.items[0];
     const isActive = location.pathname === item.href;
 
@@ -136,6 +263,9 @@ function NavGroupCollapsible({ group }: { group: NavGroup }) {
       <SidebarGroup>
         <SidebarMenu>
           {group.items.map((item) => {
+            if (item.children) {
+              return <ApiSubMenu key={item.href} item={item} />;
+            }
             const isActive = location.pathname === item.href;
             return (
               <SidebarMenuItem key={item.href}>
@@ -175,6 +305,9 @@ function NavGroupCollapsible({ group }: { group: NavGroup }) {
           <SidebarGroupContent>
             <SidebarMenu>
               {group.items.map((item) => {
+                if (item.children) {
+                  return <ApiSubMenu key={item.href} item={item} />;
+                }
                 const isActive = location.pathname === item.href;
                 return (
                   <SidebarMenuItem key={item.href}>
