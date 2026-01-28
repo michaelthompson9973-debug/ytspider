@@ -1,4 +1,4 @@
-import { useRef, useState, forwardRef } from 'react';
+import { useRef, useState, useEffect, forwardRef } from 'react';
 import { Monitor, Smartphone, Copy, Check, Layers, RefreshCw, Maximize2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -16,13 +16,44 @@ interface FullPagePreviewProps {
   showCodeView?: boolean;
 }
 
+// Mobile device dimensions
+const MOBILE_WIDTH = 375;
+const MOBILE_HEIGHT = 667;
+
 export const FullPagePreview = forwardRef<HTMLDivElement, FullPagePreviewProps>(
   function FullPagePreview({ sections, themeConfig, landingPageId, gtmId, showCodeView = false }, ref) {
     const [device, setDevice] = useState<'desktop' | 'mobile'>('desktop');
     const [copied, setCopied] = useState(false);
     const [viewMode, setViewMode] = useState<'preview' | 'code'>(showCodeView ? 'code' : 'preview');
     const [refreshKey, setRefreshKey] = useState(0);
+    const [scale, setScale] = useState(1);
     const iframeRef = useRef<HTMLIFrameElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    // Calculate scale for mobile view to fit container
+    useEffect(() => {
+      if (device !== 'mobile') {
+        setScale(1);
+        return;
+      }
+
+      const updateScale = () => {
+        if (containerRef.current) {
+          const containerWidth = containerRef.current.clientWidth;
+          const newScale = Math.min(1, (containerWidth - 48) / MOBILE_WIDTH);
+          setScale(newScale);
+        }
+      };
+
+      updateScale();
+
+      const resizeObserver = new ResizeObserver(updateScale);
+      if (containerRef.current) {
+        resizeObserver.observe(containerRef.current);
+      }
+
+      return () => resizeObserver.disconnect();
+    }, [device]);
 
     const { toast } = useToast();
 
@@ -227,13 +258,35 @@ export const FullPagePreview = forwardRef<HTMLDivElement, FullPagePreviewProps>(
         {/* Content */}
         <div className="flex-1 min-h-0">
           {viewMode === 'preview' ? (
-            <div className="h-full border rounded-md bg-background overflow-hidden">
-              <div
-                className={cn(
-                  'h-full mx-auto transition-all duration-300',
-                  device === 'mobile' ? 'max-w-[375px] border-x' : 'w-full'
-                )}
-              >
+            <div 
+              ref={containerRef} 
+              className="h-full border rounded-md bg-background overflow-hidden"
+            >
+              {device === 'mobile' ? (
+                // Mobile: Fixed dimensions with scaling
+                <div className="h-full flex items-start justify-center overflow-auto py-4 bg-muted/30">
+                  <div
+                    style={{
+                      width: MOBILE_WIDTH,
+                      height: MOBILE_HEIGHT,
+                      transform: `scale(${scale})`,
+                      transformOrigin: 'top center',
+                    }}
+                    className="bg-background overflow-hidden shadow-xl rounded-[2rem] border-4 border-border shrink-0"
+                  >
+                    <iframe
+                      key={refreshKey}
+                      ref={iframeRef}
+                      srcDoc={previewHtml}
+                      style={{ width: MOBILE_WIDTH, height: MOBILE_HEIGHT }}
+                      className="border-0"
+                      sandbox="allow-scripts"
+                      title="Landing Page Preview"
+                    />
+                  </div>
+                </div>
+              ) : (
+                // Desktop: Full width
                 <iframe
                   key={refreshKey}
                   ref={iframeRef}
@@ -242,7 +295,7 @@ export const FullPagePreview = forwardRef<HTMLDivElement, FullPagePreviewProps>(
                   sandbox="allow-scripts"
                   title="Landing Page Preview"
                 />
-              </div>
+              )}
             </div>
           ) : (
             <pre className="h-full p-4 text-xs font-mono bg-muted rounded-md overflow-auto whitespace-pre-wrap break-all">
