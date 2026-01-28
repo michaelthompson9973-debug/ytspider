@@ -3,10 +3,92 @@
 @tailwind utilities;
 
 /* 
- * Font families are loaded via index.html with preload hints for optimal performance.
- * Fonts: Hind Siliguri, Anek Bangla, Inter, Poppins
- * Using font-display: swap via Google Fonts URL parameter for instant text rendering.
+ * Local font definitions for Hind Siliguri and Anek Bangla
+ * Files stored in public/fonts/ with preload hints in index.html
  */
+
+/* Hind Siliguri - Bangla Heading Font */
+@font-face {
+  font-family: 'Hind Siliguri';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/hind-siliguri-400.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Hind Siliguri';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/hind-siliguri-500.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Hind Siliguri';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/hind-siliguri-600.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Hind Siliguri';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/hind-siliguri-700.woff2') format('woff2');
+}
+
+/* Anek Bangla - Bangla Body Font */
+@font-face {
+  font-family: 'Anek Bangla';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/anek-bangla-400.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Anek Bangla';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/anek-bangla-500.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Anek Bangla';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/anek-bangla-600.woff2') format('woff2');
+}
+
+/* Inter - Button Font (already have local files) */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/inter-400.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/inter-500.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/inter-600.woff2') format('woff2');
+}
 
 /* Global smooth scrolling */
 @layer base {
