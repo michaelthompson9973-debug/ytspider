@@ -286,14 +286,18 @@ export default function Orders() {
   // Fraud check mutation
   const fraudCheckMutation = useMutation({
     mutationFn: async (phone: string) => {
+      const normalizedPhone = normalizePhone(phone);
       const { data, error } = await supabase.functions.invoke('test-fraudcheck', {
-        body: { phone: normalizePhone(phone) },
+        body: { phone: normalizedPhone },
       });
       if (error) throw error;
-      return data;
+      return { data, phone: normalizedPhone };
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['courier-history'] });
+    onSuccess: async (result) => {
+      // Wait a moment for DB to persist, then refetch
+      await new Promise(resolve => setTimeout(resolve, 500));
+      await queryClient.invalidateQueries({ queryKey: ['courier-history'] });
+      await queryClient.refetchQueries({ queryKey: ['courier-history', phones] });
       toast({ title: 'ফ্রড চেক সম্পন্ন' });
     },
     onError: (error) => {
