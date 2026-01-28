@@ -124,11 +124,14 @@ serve(async (req) => {
     console.log(`Using API key: ${apiKey.id}`);
 
     // Make API call to fraudchecker.link
-    // Fraudchecker expects FormData (multipart/form-data) per their JS docs.
+    // Some FraudChecker deployments accept multipart/form-data (FormData) while others expect urlencoded.
+    // We'll try FormData first, and if it returns auth/format errors, fallback to URLSearchParams.
+    const url = "https://fraudchecker.link/api/v1/qc/";
+
     const formData = new FormData();
     formData.append("phone", cleanPhone);
 
-    const response = await fetch("https://fraudchecker.link/api/v1/qc/", {
+    let response = await fetch(url, {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${apiKey.key_value}`,
@@ -136,6 +139,24 @@ serve(async (req) => {
       },
       body: formData,
     });
+
+    if ([400, 401, 403, 415].includes(response.status)) {
+      const bodyText = await response.text();
+      console.error("FraudChecker (FormData) non-ok response", {
+        status: response.status,
+        body: bodyText,
+      });
+
+      const urlEncoded = new URLSearchParams({ phone: cleanPhone });
+      response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey.key_value}`,
+          // Let fetch set Content-Type for URLSearchParams
+        },
+        body: urlEncoded,
+      });
+    }
 
     // Update usage count
     await supabaseAdmin
@@ -163,14 +184,39 @@ serve(async (req) => {
     }
 
     if (response.status === 401 || response.status === 403) {
-      // Mark key as invalid
+      const raw = await response.text();
+      let message = "";
+      try {
+        const parsed = JSON.parse(raw);
+        message = parsed?.message ?? "";
+      } catch {
+        // ignore
+      }
+
+      // FraudChecker sometimes returns 403 for billing/subscription issues (not an invalid key).
+      if (
+        response.status === 403 &&
+        (/no active subscription/i.test(message) || /payment pending|expired/i.test(message))
+      ) {
+        await supabaseAdmin
+          .from("api_keys")
+          .update({ status: "subscription_inactive" })
+          .eq("id", apiKey.id);
+
+        return new Response(
+          JSON.stringify({ error: "FraudChecker subscription/payment issue", details: message || raw }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Otherwise treat as invalid/forbidden
       await supabaseAdmin
         .from("api_keys")
         .update({ status: "invalid" })
         .eq("id", apiKey.id);
 
       return new Response(
-        JSON.stringify({ error: "API key is invalid" }),
+        JSON.stringify({ error: "API key is invalid", details: message || raw }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -179,7 +225,7 @@ serve(async (req) => {
       const errorText = await response.text();
       console.error("Fraud check API error:", response.status, errorText);
       return new Response(
-        JSON.stringify({ error: "Failed to check phone number" }),
+        JSON.stringify({ error: "Failed to check phone number", details: errorText }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
