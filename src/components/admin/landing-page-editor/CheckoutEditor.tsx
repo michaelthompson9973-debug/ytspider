@@ -122,7 +122,7 @@ export const CheckoutEditor = forwardRef<HTMLDivElement, CheckoutEditorProps>(
         free_over_amount: checkoutSettings.free_over_amount,
       } : null
     );
-    const previewHtml = generatePreviewHTML(checkoutHtml, themeConfig);
+    const previewHtml = generatePreviewHTML(checkoutHtml, themeConfig, window.location.origin);
 
     if (!section) {
       return (

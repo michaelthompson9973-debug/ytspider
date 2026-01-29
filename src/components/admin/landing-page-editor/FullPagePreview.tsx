@@ -140,8 +140,9 @@ export const FullPagePreview = forwardRef<HTMLDivElement, FullPagePreviewProps>(
     }).join('\n');
 
     // Generate HTML
-    const fullHtml = generateFullHTML(sectionsHtml, themeConfig, gtmId);
-    const previewHtml = generatePreviewHTML(sectionsHtml, themeConfig);
+    const baseUrl = window.location.origin;
+    const fullHtml = generateFullHTML(sectionsHtml, themeConfig, gtmId, baseUrl);
+    const previewHtml = generatePreviewHTML(sectionsHtml, themeConfig, baseUrl);
 
     const handleCopy = async () => {
       await navigator.clipboard.writeText(fullHtml);

@@ -205,10 +205,11 @@ input, textarea, select {
 export function generateFullHTML(
   sectionsHtml: string, 
   themeConfig: ThemeConfig, 
-  gtmId?: string
+  gtmId?: string,
+  baseUrl?: string
 ): string {
   const fontImports = getGoogleFontsImports(themeConfig);
-  const themeCSS = generateThemeCSS(themeConfig);
+  const themeCSS = generateThemeCSS(themeConfig, baseUrl);
 
   const gtmHead = gtmId ? `
     <!-- Google Tag Manager -->
@@ -262,10 +263,11 @@ ${themeCSS}
  */
 export function generatePreviewHTML(
   sectionsHtml: string, 
-  themeConfig: ThemeConfig
+  themeConfig: ThemeConfig,
+  baseUrl?: string
 ): string {
   const fontImports = getGoogleFontsImports(themeConfig);
-  const themeCSS = generateThemeCSS(themeConfig);
+  const themeCSS = generateThemeCSS(themeConfig, baseUrl);
 
   const fontLinks = fontImports
     .map(url => `<link href="${url}" rel="stylesheet">`)
