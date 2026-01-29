@@ -1,38 +1,45 @@
 import { ThemeConfig, availableFonts, defaultThemeConfig, CheckoutConfig, defaultCheckoutConfig, CheckoutField, defaultCheckoutFields } from './types';
 
+// Fonts that are locally hosted (no external URL needed)
+const locallyHostedFonts = ['Hind Siliguri', 'Anek Bangla', 'Inter'];
+
 /**
- * Local font definitions - fonts are self-hosted in public/fonts/
- * These match the @font-face rules in src/index.css
+ * Generate local font faces CSS with absolute URLs
+ * Uses absolute URLs so fonts work in srcdoc iframes
  */
-const localFontFaces = `
+export function getLocalFontFacesCSS(baseUrl: string = ''): string {
+  // Use provided baseUrl or try to get from window.location.origin
+  const origin = baseUrl || (typeof window !== 'undefined' ? window.location.origin : '');
+  
+  return `
 /* Hind Siliguri - Bangla Heading Font */
 @font-face {
   font-family: 'Hind Siliguri';
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('/fonts/hind-siliguri-400.woff2') format('woff2');
+  src: url('${origin}/fonts/hind-siliguri-400.woff2') format('woff2');
 }
 @font-face {
   font-family: 'Hind Siliguri';
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url('/fonts/hind-siliguri-500.woff2') format('woff2');
+  src: url('${origin}/fonts/hind-siliguri-500.woff2') format('woff2');
 }
 @font-face {
   font-family: 'Hind Siliguri';
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url('/fonts/hind-siliguri-600.woff2') format('woff2');
+  src: url('${origin}/fonts/hind-siliguri-600.woff2') format('woff2');
 }
 @font-face {
   font-family: 'Hind Siliguri';
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url('/fonts/hind-siliguri-700.woff2') format('woff2');
+  src: url('${origin}/fonts/hind-siliguri-700.woff2') format('woff2');
 }
 
 /* Anek Bangla - Bangla Body Font */
@@ -41,21 +48,21 @@ const localFontFaces = `
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('/fonts/anek-bangla-400.woff2') format('woff2');
+  src: url('${origin}/fonts/anek-bangla-400.woff2') format('woff2');
 }
 @font-face {
   font-family: 'Anek Bangla';
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url('/fonts/anek-bangla-500.woff2') format('woff2');
+  src: url('${origin}/fonts/anek-bangla-500.woff2') format('woff2');
 }
 @font-face {
   font-family: 'Anek Bangla';
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url('/fonts/anek-bangla-600.woff2') format('woff2');
+  src: url('${origin}/fonts/anek-bangla-600.woff2') format('woff2');
 }
 
 /* Inter - Button Font */
@@ -64,26 +71,24 @@ const localFontFaces = `
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('/fonts/inter-400.woff2') format('woff2');
+  src: url('${origin}/fonts/inter-400.woff2') format('woff2');
 }
 @font-face {
   font-family: 'Inter';
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url('/fonts/inter-500.woff2') format('woff2');
+  src: url('${origin}/fonts/inter-500.woff2') format('woff2');
 }
 @font-face {
   font-family: 'Inter';
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url('/fonts/inter-600.woff2') format('woff2');
+  src: url('${origin}/fonts/inter-600.woff2') format('woff2');
 }
 `;
-
-// Fonts that are locally hosted (no external URL needed)
-const locallyHostedFonts = ['Hind Siliguri', 'Anek Bangla', 'Inter'];
+}
 
 /**
  * Get Google Fonts import URLs for fonts that are NOT locally hosted
@@ -105,13 +110,17 @@ export function getGoogleFontsImports(config: ThemeConfig): string[] {
 
 /**
  * Generate CSS variables from theme config
+ * @param config Theme configuration
+ * @param baseUrl Optional base URL for font paths (needed for srcdoc iframes)
  */
-export function generateThemeCSS(config: ThemeConfig): string {
+export function generateThemeCSS(config: ThemeConfig, baseUrl?: string): string {
   const buttonRadius = config.buttonStyle === 'pill' 
     ? '9999px' 
     : config.buttonStyle === 'square' 
     ? '0' 
     : config.borderRadius;
+
+  const localFontFaces = getLocalFontFacesCSS(baseUrl);
 
   return `
 /* Local Font Faces */
