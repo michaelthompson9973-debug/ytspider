@@ -1,7 +1,93 @@
 import { ThemeConfig, availableFonts, defaultThemeConfig, CheckoutConfig, defaultCheckoutConfig, CheckoutField, defaultCheckoutFields } from './types';
 
 /**
- * Get Google Fonts import URLs for the theme fonts
+ * Local font definitions - fonts are self-hosted in public/fonts/
+ * These match the @font-face rules in src/index.css
+ */
+const localFontFaces = `
+/* Hind Siliguri - Bangla Heading Font */
+@font-face {
+  font-family: 'Hind Siliguri';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/hind-siliguri-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Hind Siliguri';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/hind-siliguri-500.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Hind Siliguri';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/hind-siliguri-600.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Hind Siliguri';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/hind-siliguri-700.woff2') format('woff2');
+}
+
+/* Anek Bangla - Bangla Body Font */
+@font-face {
+  font-family: 'Anek Bangla';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/anek-bangla-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Anek Bangla';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/anek-bangla-500.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Anek Bangla';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/anek-bangla-600.woff2') format('woff2');
+}
+
+/* Inter - Button Font */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/inter-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/inter-500.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/inter-600.woff2') format('woff2');
+}
+`;
+
+// Fonts that are locally hosted (no external URL needed)
+const locallyHostedFonts = ['Hind Siliguri', 'Anek Bangla', 'Inter'];
+
+/**
+ * Get Google Fonts import URLs for fonts that are NOT locally hosted
+ * Local fonts (Hind Siliguri, Anek Bangla, Inter) use @font-face instead
  */
 export function getGoogleFontsImports(config: ThemeConfig): string[] {
   const usedFonts = new Set([
@@ -11,8 +97,9 @@ export function getGoogleFontsImports(config: ThemeConfig): string[] {
     config.digitFont,
   ]);
 
+  // Only return Google Fonts URLs for fonts that are NOT locally hosted
   return availableFonts
-    .filter(font => usedFonts.has(font.value))
+    .filter(font => usedFonts.has(font.value) && !locallyHostedFonts.includes(font.value))
     .map(font => font.url);
 }
 
@@ -27,6 +114,9 @@ export function generateThemeCSS(config: ThemeConfig): string {
     : config.borderRadius;
 
   return `
+/* Local Font Faces */
+${localFontFaces}
+
 /* Theme CSS Variables - Tailwind Compatible */
 :root {
   --theme-primary: ${config.primaryColor};
