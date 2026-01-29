@@ -134,7 +134,7 @@ export function FullscreenPreviewModal({
     return s.html;
   }).join('\n');
 
-  const previewHtml = generatePreviewHTML(sectionsHtml, themeConfig);
+  const previewHtml = generatePreviewHTML(sectionsHtml, themeConfig, window.location.origin);
 
   const handleRefresh = () => {
     setRefreshKey(prev => prev + 1);

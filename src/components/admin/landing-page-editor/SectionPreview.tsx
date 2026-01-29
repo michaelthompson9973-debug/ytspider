@@ -27,7 +27,7 @@ export const SectionPreview = forwardRef<HTMLDivElement, SectionPreviewProps>(
     }
 
     const sectionsHtml = sectionsToPreview.map((s) => s.html).join('\n');
-    const previewHtml = generatePreviewHTML(sectionsHtml, themeConfig);
+    const previewHtml = generatePreviewHTML(sectionsHtml, themeConfig, window.location.origin);
 
     return (
       <div ref={ref} className="h-full">

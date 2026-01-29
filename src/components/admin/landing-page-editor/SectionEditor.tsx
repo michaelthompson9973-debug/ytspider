@@ -39,7 +39,7 @@ export const SectionEditor = forwardRef<HTMLDivElement, SectionEditorProps>(
     };
 
     // Generate preview HTML for this single section
-    const previewHtml = generatePreviewHTML(html, themeConfig);
+    const previewHtml = generatePreviewHTML(html, themeConfig, window.location.origin);
 
     if (!section) {
       return (
