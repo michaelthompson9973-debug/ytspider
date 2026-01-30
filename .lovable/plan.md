@@ -1,111 +1,119 @@
 
+# Pathao Credential Simplification Implementation Plan
 
-# API Dropdown এ "Messaging" Menu Item যোগ করা
+## সারসংক্ষেপ
 
-## Overview
+বর্তমানে Pathao integration 5টি field চাচ্ছে (client_id, client_secret, username, password, store_id), কিন্তু PHP WooCommerce Plugin এর মতো `/aladdin/api/v1/external/login` endpoint ব্যবহার করলে শুধু **Client ID ও Client Secret** দিয়েই কাজ হবে।
 
-API dropdown menu তে নতুন "Messaging" sub-item যোগ করা হবে যেখানে Messenger এবং WhatsApp এর API credentials manage করা যাবে।
+## বর্তমান vs নতুন Credentials
 
----
+| বর্তমান (5 fields) | নতুন (3 fields) |
+|-------------------|-----------------|
+| Client ID | Client ID |
+| Client Secret | Client Secret |
+| Username (Email) | ~~সরানো~~ |
+| Password | ~~সরানো~~ |
+| Store ID | Store ID (PathaoStoreConfig এ আলাদা) |
 
-## Current Structure
+## পরিবর্তনসমূহ
 
-```text
-Settings
-├── Allowed Domains
-├── Webhooks
-└── API ▼
-    ├── AI ✓
-    ├── Fraud Check ✓
-    └── Courier (N/A)
-```
+### 1. Update `CourierCredentialsList.tsx`
 
-## New Structure
-
-```text
-Settings
-├── Allowed Domains
-├── Webhooks
-└── API ▼
-    ├── AI ✓
-    ├── Fraud Check ✓
-    ├── Courier (N/A)
-    └── Messaging ▼
-        ├── Messenger
-        └── WhatsApp
-```
-
----
-
-## Implementation
-
-### Step 1: Update AdminSidebar.tsx
-
-API dropdown এ নতুন Messaging item যোগ করা হবে:
+**কি পরিবর্তন হবে:**
+- `PATHAO_FIELDS` array থেকে `username`, `password`, এবং `store_id` সরানো হবে
+- শুধু `client_id` এবং `client_secret` থাকবে
+- Store ID আগে থেকেই `PathaoStoreConfig` component এ আলাদা আছে
 
 ```typescript
-{
-  href: '/admin/api',
-  label: 'API',
-  icon: Key,
-  children: [
-    { href: '/admin/api/ai', label: 'AI', icon: Bot, badge: 'available' },
-    { href: '/admin/api/fraud-check', label: 'Fraud Check', icon: ShieldAlert, badge: 'available' },
-    { href: '/admin/api/courier', label: 'Courier', icon: Truck, badge: 'N/A' },
-    { href: '/admin/api/messaging/messenger', label: 'Messenger', icon: MessageCircle },
-    { href: '/admin/api/messaging/whatsapp', label: 'WhatsApp', icon: MessageSquare },
-  ]
-}
+// আগে (5 fields)
+const PATHAO_FIELDS = [
+  { key: 'client_id', ... },
+  { key: 'client_secret', ... },
+  { key: 'username', ... },     // সরানো হবে
+  { key: 'password', ... },     // সরানো হবে  
+  { key: 'store_id', ... },     // সরানো হবে (PathaoStoreConfig এ আছে)
+];
+
+// পরে (2 fields)
+const PATHAO_FIELDS = [
+  { key: 'client_id', label: 'Client ID', placeholder: 'Enter Pathao Client ID' },
+  { key: 'client_secret', label: 'Client Secret', placeholder: 'Enter Pathao Client Secret', isPassword: true },
+];
 ```
 
-**Note:** Single-level dropdown রাখা হবে কারণ nested dropdown (dropdown এর ভিতরে dropdown) complex হয়ে যাবে। তাই Messenger এবং WhatsApp সরাসরি API dropdown এ থাকবে।
+### 2. Update `pathao-auth` Edge Function
 
-### Step 2: Create New Pages
-
-দুটি নতুন page তৈরি করা হবে:
-
-| File | Route | Purpose |
-|------|-------|---------|
-| `src/pages/admin/ApiMessenger.tsx` | `/admin/api/messaging/messenger` | Messenger API credentials (App ID, App Secret) |
-| `src/pages/admin/ApiWhatsapp.tsx` | `/admin/api/messaging/whatsapp` | WhatsApp Business API credentials |
-
-### Step 3: Update App.tsx Routes
-
-নতুন routes register করা হবে:
+**কি পরিবর্তন হবে:**
+- `/aladdin/api/v1/issue-token` endpoint এর বদলে `/aladdin/api/v1/external/login` ব্যবহার করা হবে
+- Request body থেকে `username`, `password`, এবং `grant_type` সরানো হবে
+- Validation logic update করা হবে শুধু 2টি field check করতে
 
 ```typescript
-<Route path="/admin/api/messaging/messenger" element={<ProtectedRoute requireAdmin><ApiMessenger /></ProtectedRoute>} />
-<Route path="/admin/api/messaging/whatsapp" element={<ProtectedRoute requireAdmin><ApiWhatsapp /></ProtectedRoute>} />
+// আগে - issue-token endpoint
+const tokenResponse = await fetch('https://api-hermes.pathao.com/aladdin/api/v1/issue-token', {
+  body: JSON.stringify({
+    client_id: clientId,
+    client_secret: clientSecret,
+    username: username,
+    password: password,
+    grant_type: 'password',
+  }),
+});
+
+// পরে - external/login endpoint
+const tokenResponse = await fetch('https://api-hermes.pathao.com/aladdin/api/v1/external/login', {
+  body: JSON.stringify({
+    client_id: clientId,
+    client_secret: clientSecret,
+  }),
+});
 ```
 
----
+## Files to Modify
 
-## ApiMessenger Page এ যা থাকবে
+| File | পরিবর্তন |
+|------|----------|
+| `src/components/admin/courier/CourierCredentialsList.tsx` | PATHAO_FIELDS সিম্পলিফাই করা |
+| `supabase/functions/pathao-auth/index.ts` | External login endpoint ব্যবহার করা |
 
-Messenger API settings page এ:
+## যা পরিবর্তন হবে না
 
-1. **Facebook App ID Input** - Text input for Meta App ID
-2. **Facebook App Secret Input** - Password input for App Secret
-3. **Save Button** - Credentials save করার জন্য
-4. **Connection Status** - API connected কিনা দেখাবে
-5. **Setup Guide** - Meta Developer Console এ কিভাবে App তৈরি করতে হয় তার instructions
+এই files গুলো unchanged থাকবে কারণ তারা শুধু `access_token` ব্যবহার করে:
+- `supabase/functions/pathao-locations/index.ts` 
+- `supabase/functions/courier-create-order/index.ts`
+- `src/components/admin/courier/PathaoStoreConfig.tsx`
+- `src/hooks/useCourierActions.ts`
 
----
+## নতুন UI Flow
 
-## Files to Create/Modify
+```text
+┌─────────────────────────────────────────────────────────────┐
+│  API Credentials                                            │
+│  Enter your Pathao API credentials                          │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  Client ID                                                  │
+│  ┌───────────────────────────────────────────────┐ ┌───┐   │
+│  │ 7N1aMJQbWm                                    │ │ 🗑 │   │
+│  └───────────────────────────────────────────────┘ └───┘   │
+│                                                             │
+│  Client Secret                                              │
+│  ┌───────────────────────────────────────────────┐ ┌───┐   │
+│  │ ●●●●●●●●●●●●●●●●●●●●●●●●●●●●                   │ │ 🗑 │   │
+│  └───────────────────────────────────────────────┘ └───┘   │
+│                                                             │
+│  ┌───────────────────────────────────────────────────────┐ │
+│  │              💾 Save Credentials                       │ │
+│  └───────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+```
 
-| Action | File | Description |
-|--------|------|-------------|
-| Modify | `src/components/admin/AdminSidebar.tsx` | Add Messenger & WhatsApp to API dropdown |
-| Create | `src/pages/admin/ApiMessenger.tsx` | Messenger API credentials page |
-| Create | `src/pages/admin/ApiWhatsapp.tsx` | WhatsApp API credentials page |
-| Modify | `src/App.tsx` | Add new routes |
+## Test Credentials (Sandbox)
 
----
+- Base URL: `https://courier-api-sandbox.pathao.com`
+- Client ID: `7N1aMJQbWm`
+- Client Secret: `wRcaibZkUdSNz2EI9ZyuXLlNrnAv0TdPUPXMnD39`
 
-## Technical Notes
+## Backward Compatibility
 
-- Icons ইতিমধ্যে imported আছে (`MessageCircle`, `MessageSquare`)
-- Messenger এবং WhatsApp এর credentials আলাদা tables এ store হবে অথবা existing `messenger_connections` table এ `app_id` field আছে সেটা ব্যবহার করা যাবে
-- InboxMessenger page এ শুধু Chat UI থাকবে, credentials manage করার জন্য admin ApiMessenger page এ redirect করা হবে
-
+যাদের আগে থেকে `username` এবং `password` credentials stored আছে, তাদের data database এ থাকবে কিন্তু নতুন authentication এ ব্যবহার হবে না।
