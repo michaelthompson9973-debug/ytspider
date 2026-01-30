@@ -55,3 +55,6 @@ verify_jwt = false
 
 [functions.pathao-locations]
 verify_jwt = false
+
+[functions.optimize-image]
+verify_jwt = false
