@@ -11,6 +11,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import {
   Select,
@@ -33,6 +35,7 @@ export default function Media() {
   const { toast } = useToast();
   const { user } = useAuth();
   const [compressingId, setCompressingId] = useState<string | null>(null);
+  const [deleteItem, setDeleteItem] = useState<NonNullable<typeof media>[number] | null>(null);
   
   const { uploadFiles, isOptimizing, optimizeImage } = useImageOptimizer({ folder });
 
@@ -290,9 +293,9 @@ export default function Media() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => deleteMutation.mutate(item)}
+                        onClick={() => setDeleteItem(item)}
                       >
-                        <Trash2 className="h-3 w-3" />
+                        <Trash2 className="h-3 w-3 text-destructive" />
                       </Button>
                     </div>
                   </CardContent>
@@ -302,6 +305,7 @@ export default function Media() {
           )}
         </div>
 
+        {/* New Folder Dialog */}
         <Dialog open={folderDialogOpen} onOpenChange={setFolderDialogOpen}>
           <DialogContent>
             <DialogHeader>
@@ -320,6 +324,53 @@ export default function Media() {
                 <Button onClick={createFolder}>Create</Button>
               </div>
             </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={!!deleteItem} onOpenChange={(open) => !open && setDeleteItem(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>ফাইল ডিলিট করুন?</DialogTitle>
+              <DialogDescription>
+                আপনি কি নিশ্চিত যে "{deleteItem?.file_name}" ফাইলটি ডিলিট করতে চান? এই কাজটি আর ফেরানো যাবে না।
+              </DialogDescription>
+            </DialogHeader>
+            {deleteItem && (
+              <div className="flex justify-center py-4">
+                {deleteItem.file_type.startsWith('image/') && deleteItem.public_url ? (
+                  <img
+                    src={deleteItem.public_url}
+                    alt={deleteItem.file_name}
+                    className="max-h-32 rounded-md object-contain"
+                  />
+                ) : (
+                  <File className="h-16 w-16 text-muted-foreground" />
+                )}
+              </div>
+            )}
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button variant="outline" onClick={() => setDeleteItem(null)}>
+                বাতিল
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  if (deleteItem) {
+                    deleteMutation.mutate(deleteItem);
+                    setDeleteItem(null);
+                  }
+                }}
+                disabled={deleteMutation.isPending}
+              >
+                {deleteMutation.isPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="mr-2 h-4 w-4" />
+                )}
+                ডিলিট করুন
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
