@@ -1,64 +1,87 @@
 
 
-# Vercel Custom Domain Webhook Setup Plan
+# Inbox মেনু যোগ করা (Dropdown সহ Messenger ও WhatsApp)
 
 ## Overview
-Custom domain (যেমন `yourdomain.com/api/courier-webhook`) দিয়ে courier webhook URL সেটআপ করা হবে Vercel rewrites ব্যবহার করে। এটা করলে Supabase URL লুকানো থাকবে এবং professional দেখাবে।
+Admin sidebar এর **Operations** group এ নতুন "Inbox" মেনু যোগ করা হবে। এটা dropdown হবে যেখানে Messenger ও WhatsApp sub-items থাকবে।
 
 ---
 
 ## Implementation
 
-### Step 1: Create `vercel.json`
-Project root এ `vercel.json` ফাইল তৈরি করা হবে rewrite rules সহ:
+### Step 1: Add Lucide Icons
+AdminSidebar.tsx এ নতুন icons import করতে হবে:
+- `Inbox` - main menu icon
+- `MessageCircle` - Messenger এর জন্য
+- `Phone` বা `MessageSquare` - WhatsApp এর জন্য (Lucide-তে dedicated WhatsApp icon নেই)
 
-```json
+### Step 2: Update navGroups Array
+Operations group এ Inbox menu item যোগ করা হবে children সহ:
+
+```typescript
 {
-  "rewrites": [
-    {
-      "source": "/api/courier-webhook",
-      "destination": "https://otibsrdecgygoeshfoho.supabase.co/functions/v1/courier-webhook"
-    }
-  ]
-}
+  label: 'Operations',
+  items: [
+    { href: '/admin/orders', label: 'Orders', icon: ShoppingCart },
+    { href: '/admin/tracking', label: 'Tracking', icon: Activity },
+    { 
+      href: '/admin/inbox', 
+      label: 'Inbox', 
+      icon: Inbox,
+      children: [
+        { href: '/admin/inbox/messenger', label: 'Messenger', icon: MessageCircle },
+        { href: '/admin/inbox/whatsapp', label: 'WhatsApp', icon: MessageSquare },
+      ]
+    },
+  ],
+},
 ```
 
-### Step 2: Update `WebhookStatusCard.tsx`
-Webhook URL এখন custom domain URL দেখাবে:
+### Step 3: Rename ApiSubMenu to GenericSubMenu
+বর্তমান `ApiSubMenu` component টা শুধু API এর জন্য না, সব dropdown menu এর জন্য কাজ করে। তাই এটাকে `GenericSubMenu` নাম দিলে ভালো হবে (optional - functionality same থাকবে)।
 
-**Before:**
-```typescript
-const webhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/courier-webhook`;
-```
+### Step 4: Create Placeholder Pages
+নতুন routes এর জন্য placeholder pages তৈরি করতে হবে:
+- `/admin/inbox/messenger` → `src/pages/admin/InboxMessenger.tsx`
+- `/admin/inbox/whatsapp` → `src/pages/admin/InboxWhatsapp.tsx`
 
-**After:**
+### Step 5: Update App.tsx Routes
+নতুন routes register করতে হবে:
 ```typescript
-// Use custom domain path instead of Supabase URL
-const webhookUrl = `${window.location.origin}/api/courier-webhook`;
+<Route path="/admin/inbox" element={<Navigate to="/admin/inbox/messenger" replace />} />
+<Route path="/admin/inbox/messenger" element={<ProtectedRoute requireAdmin><InboxMessenger /></ProtectedRoute>} />
+<Route path="/admin/inbox/whatsapp" element={<ProtectedRoute requireAdmin><InboxWhatsapp /></ProtectedRoute>} />
 ```
 
 ---
 
-## Result
+## Files to Create/Modify
 
-| Before | After |
-|--------|-------|
-| `https://otibsrdecgygoeshfoho.supabase.co/functions/v1/courier-webhook` | `https://yourdomain.com/api/courier-webhook` |
+| Action | File | Description |
+|--------|------|-------------|
+| Modify | `src/components/admin/AdminSidebar.tsx` | Add Inbox menu with children |
+| Create | `src/pages/admin/InboxMessenger.tsx` | Messenger inbox page |
+| Create | `src/pages/admin/InboxWhatsapp.tsx` | WhatsApp inbox page |
+| Modify | `src/App.tsx` | Add new routes |
+
+---
+
+## UI Preview
+
+```text
+Operations
+├── Orders
+├── Tracking
+└── Inbox ▼
+    ├── Messenger
+    └── WhatsApp
+```
 
 ---
 
 ## Technical Notes
 
-- **Vercel Rewrites**: Request `/api/courier-webhook` এ আসলে Vercel সেটাকে internally Supabase edge function এ forward করে
-- **No CORS Issues**: Same origin থেকে call হওয়ায় CORS problem থাকবে না
-- **Localhost**: Development এ `localhost:5173/api/courier-webhook` কাজ করবে না (Vercel only), তবে সেটা কোনো সমস্যা না কারণ webhook শুধু production এ দরকার
-
----
-
-## Files
-
-| Action | File |
-|--------|------|
-| Create | `vercel.json` |
-| Modify | `src/components/admin/courier/WebhookStatusCard.tsx` |
+- বিদ্যমান `ApiSubMenu` component reuse করা হবে - এটা যেকোনো dropdown menu handle করতে পারে
+- Collapsed sidebar এ tooltip এ sub-items দেখাবে
+- Active route হলে parent menu automatically expanded থাকবে
 
