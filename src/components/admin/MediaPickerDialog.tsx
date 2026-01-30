@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Dialog,
@@ -10,7 +10,6 @@ import {
 } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -21,7 +20,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { ImageIcon, Upload, Check, Loader2, X } from 'lucide-react';
+import { ImageIcon, Upload, Check, Loader2, X, Zap } from 'lucide-react';
 
 export interface MediaPickerDialogProps {
   open: boolean;
@@ -41,6 +40,7 @@ export default function MediaPickerDialog({
   const [selectedUrls, setSelectedUrls] = useState<string[]>([]);
   const [folder, setFolder] = useState<string>('all');
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number; optimizing: boolean }>({ current: 0, total: 0, optimizing: false });
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
@@ -109,15 +109,83 @@ export default function MediaPickerDialog({
     onOpenChange(false);
   };
 
-  // Upload handler
+  // Optimize image via edge function
+  const optimizeImage = async (file: File): Promise<{ url: string; originalSize: number; compressedSize: number } | null> => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('fileName', file.name);
+      formData.append('folder', 'uploads');
+      formData.append('maxWidth', '1920');
+      formData.append('quality', '0.8');
+
+      const { data, error } = await supabase.functions.invoke('optimize-image', {
+        body: formData,
+      });
+
+      if (error) {
+        console.error('Optimization error:', error);
+        return null;
+      }
+
+      return {
+        url: data.public_url,
+        originalSize: data.original_size,
+        compressedSize: data.compressed_size,
+      };
+    } catch (error) {
+      console.error('Optimization failed:', error);
+      return null;
+    }
+  };
+
+  // Fallback direct upload (for videos or if optimization fails)
+  const directUpload = async (file: File): Promise<string | null> => {
+    const fileName = `${Date.now()}-${file.name}`;
+    const filePath = `uploads/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('media')
+      .upload(filePath, file);
+
+    if (uploadError) {
+      toast({ title: 'Upload failed', description: uploadError.message, variant: 'destructive' });
+      return null;
+    }
+
+    const { data: urlData } = supabase.storage.from('media').getPublicUrl(filePath);
+
+    const { error: insertError } = await supabase.from('media').insert({
+      file_name: file.name,
+      file_path: filePath,
+      file_type: file.type,
+      file_size: file.size,
+      public_url: urlData.publicUrl,
+      folder: 'uploads',
+    });
+
+    if (insertError) {
+      toast({ title: 'Database error', description: insertError.message, variant: 'destructive' });
+    }
+
+    return urlData.publicUrl;
+  };
+
+  // Upload handler with optimization
   const handleUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
 
     setUploading(true);
+    const fileArray = Array.from(files);
+    setUploadProgress({ current: 0, total: fileArray.length, optimizing: false });
     const uploadedUrls: string[] = [];
+    let totalSaved = 0;
 
     try {
-      for (const file of Array.from(files)) {
+      for (let i = 0; i < fileArray.length; i++) {
+        const file = fileArray[i];
+        setUploadProgress({ current: i + 1, total: fileArray.length, optimizing: file.type.startsWith('image/') });
+
         // Validate file type
         if (accept === 'image' && !file.type.startsWith('image/')) {
           toast({ title: 'Invalid file type', description: 'Only images allowed', variant: 'destructive' });
@@ -128,38 +196,26 @@ export default function MediaPickerDialog({
           continue;
         }
 
-        const fileName = `${Date.now()}-${file.name}`;
-        const filePath = `uploads/${fileName}`;
+        let url: string | null = null;
 
-        // Upload to storage
-        const { error: uploadError } = await supabase.storage
-          .from('media')
-          .upload(filePath, file);
-
-        if (uploadError) {
-          toast({ title: 'Upload failed', description: uploadError.message, variant: 'destructive' });
-          continue;
+        // Use optimization for images
+        if (file.type.startsWith('image/')) {
+          const result = await optimizeImage(file);
+          if (result) {
+            url = result.url;
+            totalSaved += result.originalSize - result.compressedSize;
+          } else {
+            // Fallback to direct upload if optimization fails
+            url = await directUpload(file);
+          }
+        } else {
+          // Direct upload for non-images
+          url = await directUpload(file);
         }
 
-        // Get public URL
-        const { data: urlData } = supabase.storage.from('media').getPublicUrl(filePath);
-
-        // Insert into media table
-        const { error: insertError } = await supabase.from('media').insert({
-          file_name: file.name,
-          file_path: filePath,
-          file_type: file.type,
-          file_size: file.size,
-          public_url: urlData.publicUrl,
-          folder: 'uploads',
-        });
-
-        if (insertError) {
-          toast({ title: 'Database error', description: insertError.message, variant: 'destructive' });
-          continue;
+        if (url) {
+          uploadedUrls.push(url);
         }
-
-        uploadedUrls.push(urlData.publicUrl);
       }
 
       if (uploadedUrls.length > 0) {
@@ -173,12 +229,22 @@ export default function MediaPickerDialog({
           setSelectedUrls([uploadedUrls[0]]);
         }
         
-        toast({ title: `${uploadedUrls.length} file(s) uploaded` });
+        // Show success with optimization stats
+        const savedMB = (totalSaved / (1024 * 1024)).toFixed(2);
+        if (totalSaved > 0) {
+          toast({ 
+            title: `${uploadedUrls.length} ফাইল আপলোড হয়েছে`, 
+            description: `${savedMB} MB অপটিমাইজ করা হয়েছে ⚡` 
+          });
+        } else {
+          toast({ title: `${uploadedUrls.length} ফাইল আপলোড হয়েছে` });
+        }
       }
     } catch (error) {
       toast({ title: 'Upload error', description: String(error), variant: 'destructive' });
     } finally {
       setUploading(false);
+      setUploadProgress({ current: 0, total: 0, optimizing: false });
     }
   };
 
@@ -295,23 +361,44 @@ export default function MediaPickerDialog({
               )}
             >
               {uploading ? (
-                <>
-                  <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">Uploading...</p>
-                </>
+                <div className="text-center">
+                  <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto" />
+                  <p className="text-sm text-muted-foreground mt-2">
+                    {uploadProgress.optimizing ? (
+                      <span className="flex items-center justify-center gap-1">
+                        <Zap className="h-4 w-4 text-amber-500" />
+                        অপটিমাইজ করা হচ্ছে...
+                      </span>
+                    ) : (
+                      'আপলোড হচ্ছে...'
+                    )}
+                  </p>
+                  {uploadProgress.total > 1 && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {uploadProgress.current} / {uploadProgress.total}
+                    </p>
+                  )}
+                </div>
               ) : (
                 <>
-                  <Upload className="h-10 w-10 text-muted-foreground" />
+                  <div className="flex items-center gap-2">
+                    <Upload className="h-10 w-10 text-muted-foreground" />
+                    <Zap className="h-5 w-5 text-amber-500" />
+                  </div>
                   <p className="text-sm text-muted-foreground">
-                    Drag & drop files here or
+                    ড্র্যাগ & ড্রপ করুন অথবা
                   </p>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => fileInputRef.current?.click()}
                   >
-                    Browse Files
+                    ফাইল সিলেক্ট করুন
                   </Button>
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Zap className="h-3 w-3 text-amber-500" />
+                    ইমেজ অটো অপটিমাইজ হবে
+                  </p>
                   <input
                     ref={fileInputRef}
                     type="file"
