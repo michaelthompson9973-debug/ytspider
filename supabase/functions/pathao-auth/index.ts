@@ -56,26 +56,22 @@ Deno.serve(async (req) => {
     // Get required credentials
     const clientId = credentials.find(c => c.credential_type === 'client_id')?.credential_value;
     const clientSecret = credentials.find(c => c.credential_type === 'client_secret')?.credential_value;
-    const username = credentials.find(c => c.credential_type === 'username')?.credential_value;
-    const password = credentials.find(c => c.credential_type === 'password')?.credential_value;
 
-    if (!clientId || !clientSecret || !username || !password) {
+    if (!clientId || !clientSecret) {
       return new Response(
         JSON.stringify({ 
-          error: 'Missing Pathao credentials. Required: client_id, client_secret, username, password',
+          error: 'Missing Pathao credentials. Required: client_id, client_secret',
           missing: {
             client_id: !clientId,
             client_secret: !clientSecret,
-            username: !username,
-            password: !password,
           }
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Call Pathao OAuth endpoint
-    const tokenResponse = await fetch('https://api-hermes.pathao.com/aladdin/api/v1/issue-token', {
+    // Call Pathao External Login endpoint (simplified - no username/password needed)
+    const tokenResponse = await fetch('https://api-hermes.pathao.com/aladdin/api/v1/external/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -84,9 +80,6 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         client_id: clientId,
         client_secret: clientSecret,
-        username: username,
-        password: password,
-        grant_type: 'password',
       }),
     });
 

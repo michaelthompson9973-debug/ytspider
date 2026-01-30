@@ -24,9 +24,6 @@ const STEADFAST_FIELDS = [
 const PATHAO_FIELDS = [
   { key: 'client_id', label: 'Client ID', placeholder: 'Enter Pathao Client ID' },
   { key: 'client_secret', label: 'Client Secret', placeholder: 'Enter Pathao Client Secret', isPassword: true },
-  { key: 'username', label: 'Username (Email)', placeholder: 'Enter your Pathao email' },
-  { key: 'password', label: 'Password', placeholder: 'Enter your Pathao password', isPassword: true },
-  { key: 'store_id', label: 'Store ID', placeholder: 'Enter your Store ID' },
 ];
 
 export function CourierCredentialsList({ provider }: CredentialsListProps) {
