@@ -32,8 +32,9 @@ export default function Media() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { user } = useAuth();
+  const [compressingId, setCompressingId] = useState<string | null>(null);
   
-  const { uploadFiles, isOptimizing } = useImageOptimizer({ folder });
+  const { uploadFiles, isOptimizing, optimizeImage } = useImageOptimizer({ folder });
 
   const { data: media, isLoading } = useQuery({
     queryKey: ['media', folder],
@@ -83,6 +84,47 @@ export default function Media() {
       toast({ title: 'Delete failed', description: error.message, variant: 'destructive' });
     },
   });
+
+  const handleCompress = async (item: NonNullable<typeof media>[number]) => {
+    if (!item.public_url || !item.file_type.startsWith('image/')) return;
+    
+    setCompressingId(item.id);
+    try {
+      // Fetch the image from public URL
+      const response = await fetch(item.public_url);
+      const blob = await response.blob();
+      const file = new globalThis.File([blob], item.file_name, { type: item.file_type });
+      
+      const result = await optimizeImage(file);
+      if (result) {
+        // Delete old file from storage
+        await supabase.storage.from('media').remove([item.file_path]);
+        
+        // Update database record with new compressed file info
+        await supabase
+          .from('media')
+          .update({
+            file_path: result.url.split('/media/')[1] || item.file_path,
+            file_size: result.compressedSize,
+            public_url: result.url,
+          })
+          .eq('id', item.id);
+        
+        queryClient.invalidateQueries({ queryKey: ['media'] });
+        
+        const savedKB = ((result.originalSize - result.compressedSize) / 1024).toFixed(1);
+        toast({ 
+          title: 'ইমেজ কম্প্রেস হয়েছে ⚡', 
+          description: `${savedKB} KB সেভ হয়েছে (${result.reductionPercent.toFixed(0)}% কম)` 
+        });
+      }
+    } catch (error) {
+      console.error('Compression error:', error);
+      toast({ title: 'কম্প্রেশন ব্যর্থ', variant: 'destructive' });
+    } finally {
+      setCompressingId(null);
+    }
+  };
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -230,6 +272,21 @@ export default function Media() {
                         <Copy className="mr-1 h-3 w-3" />
                         Copy URL
                       </Button>
+                      {isImage && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleCompress(item)}
+                          disabled={compressingId === item.id}
+                          title="কম্প্রেস করুন"
+                        >
+                          {compressingId === item.id ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <Zap className="h-3 w-3 text-amber-500" />
+                          )}
+                        </Button>
+                      )}
                       <Button
                         variant="outline"
                         size="sm"
