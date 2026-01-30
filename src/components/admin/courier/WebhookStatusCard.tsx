@@ -18,7 +18,8 @@ export function WebhookStatusCard({ provider }: WebhookStatusCardProps) {
   const [copied, setCopied] = React.useState(false);
   const { toast } = useToast();
 
-  const webhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/courier-webhook`;
+  // Use custom domain path for cleaner webhook URL (proxied via Vercel rewrites)
+  const webhookUrl = `${window.location.origin}/api/courier-webhook`;
 
   const handleCopy = async () => {
     try {
