@@ -2,7 +2,8 @@ import { useState, useEffect, forwardRef, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Save, FileCode, Eye, Code, Maximize2 } from 'lucide-react';
+import { RichTextEditor } from '@/components/ui/rich-text-editor';
+import { Save, FileCode, Eye, Code, Maximize2, Type } from 'lucide-react';
 import { Section, ThemeConfig, defaultThemeConfig } from './types';
 import { AiEnhanceButton } from './AiEnhanceButton';
 import { FullscreenCodeModal } from './FullscreenCodeModal';
@@ -20,7 +21,7 @@ export const SectionEditor = forwardRef<HTMLDivElement, SectionEditorProps>(
     const [name, setName] = useState('');
     const [html, setHtml] = useState('');
     const [isDirty, setIsDirty] = useState(false);
-    const [viewMode, setViewMode] = useState<'preview' | 'code'>('preview');
+    const [viewMode, setViewMode] = useState<'preview' | 'richtext' | 'code'>('richtext');
     const [codeFullscreenOpen, setCodeFullscreenOpen] = useState(false);
     const iframeRef = useRef<HTMLIFrameElement>(null);
 
@@ -86,13 +87,22 @@ export const SectionEditor = forwardRef<HTMLDivElement, SectionEditorProps>(
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-1">
             <Button
+              variant={viewMode === 'richtext' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('richtext')}
+              className="h-7 px-2 text-xs"
+            >
+              <Type className="h-3.5 w-3.5 mr-1" />
+              এডিটর
+            </Button>
+            <Button
               variant={viewMode === 'preview' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setViewMode('preview')}
               className="h-7 px-2 text-xs"
             >
               <Eye className="h-3.5 w-3.5 mr-1" />
-              Preview
+              প্রিভিউ
             </Button>
             <Button
               variant={viewMode === 'code' ? 'default' : 'ghost'}
@@ -128,8 +138,17 @@ export const SectionEditor = forwardRef<HTMLDivElement, SectionEditorProps>(
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 min-h-0">
-          {viewMode === 'preview' ? (
+        <div className="flex-1 min-h-0 overflow-auto">
+          {viewMode === 'richtext' ? (
+            <RichTextEditor
+              value={html}
+              onChange={(newHtml) => {
+                setHtml(newHtml);
+                setIsDirty(true);
+              }}
+              className="h-full"
+            />
+          ) : viewMode === 'preview' ? (
             <div className="h-full border rounded-md bg-background overflow-hidden">
               <iframe
                 ref={iframeRef}
