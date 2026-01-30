@@ -1,145 +1,54 @@
 
 
-# Bulk Upload System with Background Compression
+# Image Compression Fix - FormData Issue
 
-## Overview
-Media Library-তে একটি উন্নত bulk upload system তৈরি করা হবে যেখানে:
-- Drag & drop দিয়ে অনেক ফাইল একসাথে আপলোড করা যাবে
-- Compression background-এ হবে, admin কে wait করতে হবে না
-- Real-time progress দেখা যাবে
+## সমস্যা
+Edge Function logs দেখাচ্ছে **"Body can not be decoded as form data"** error। এটি হচ্ছে কারণ:
+- `supabase.functions.invoke()` FormData কে সরাসরি multipart/form-data হিসেবে পাঠায় না
+- Edge Function `req.formData()` সঠিক Content-Type ছাড়া parse করতে পারে না
 
-## Current Issues (বর্তমান সমস্যা)
+## সমাধান
+`supabase.functions.invoke()` এর বদলে **native fetch API** ব্যবহার করা হবে যাতে FormData সঠিকভাবে multipart/form-data হিসেবে পাঠানো যায়।
 
-| সমস্যা | প্রভাব |
-|--------|--------|
-| Sequential upload | ১০টা ফাইলে ১০x সময় |
-| Blocking UI | অন্য কাজ করা যায় না |
-| No drag & drop | ফাইল select করা কঠিন |
-| Sync compression | প্রতিটা ফাইলে wait |
+## পরিবর্তন
 
-## Solution Architecture
+### File 1: `src/hooks/useBulkUpload.ts`
 
-```text
-+-------------------+     +------------------+     +-------------------+
-|   Drag & Drop     | --> | Upload Queue     | --> | Background Worker |
-|   Area            |     | (Parallel x3)    |     | (Edge Function)   |
-+-------------------+     +------------------+     +-------------------+
-         |                        |                        |
-         v                        v                        v
-+-------------------+     +------------------+     +-------------------+
-| Visual Feedback   |     | Progress Tracker |     | DB Update         |
-| (Drop zone)       |     | (Per-file %)     |     | (Realtime)        |
-+-------------------+     +------------------+     +-------------------+
+**আগে:**
+```typescript
+const { data, error } = await supabase.functions.invoke('optimize-image', {
+  body: formData,
+});
 ```
 
-## Implementation Steps
-
-### Step 1: Drag & Drop Zone Component
-**নতুন ফাইল:** `src/components/admin/BulkUploadZone.tsx`
-- Drag & drop area তৈরি
-- Visual feedback (হাইলাইট যখন drag করা হয়)
-- File validation (image/video only)
-- Multiple file selection support
-
-### Step 2: Parallel Upload Queue
-**আপডেট:** `src/hooks/useImageOptimizer.ts`
-- `Promise.all` দিয়ে parallel upload (3টা একসাথে)
-- Individual file progress tracking
-- Queue management system
-- Non-blocking upload
-
-### Step 3: Upload Progress UI
-**নতুন ফাইল:** `src/components/admin/UploadProgressList.tsx`
-- প্রতিটা ফাইলের জন্য আলাদা progress bar
-- Status indicators: queued, uploading, compressing, done, error
-- Cancel button for individual files
-- Minimizable progress panel
-
-### Step 4: Background Compression
-**আপডেট:** `src/hooks/useImageOptimizer.ts`
-- Upload আগে হবে (fast response)
-- Compression পরে background-এ হবে
-- Admin immediately UI ব্যবহার করতে পারবে
-- Compression শেষ হলে notification
-
-### Step 5: Media.tsx Integration
-**আপডেট:** `src/pages/admin/Media.tsx`
-- BulkUploadZone component integrate
-- UploadProgressList component integrate
-- Improved state management
-- Real-time updates via refetch
-
-## UI Design
-
-```text
-┌─────────────────────────────────────────────────────────┐
-│  Media Library                        [+ New Folder]    │
-├─────────────────────────────────────────────────────────┤
-│  ┌─────────────────────────────────────────────────┐   │
-│  │                                                  │   │
-│  │     📁 Drag & drop files here                   │   │
-│  │     or click to select                          │   │
-│  │                                                  │   │
-│  │     Supports: JPG, PNG, GIF, MP4, WebM          │   │
-│  │                                                  │   │
-│  └─────────────────────────────────────────────────┘   │
-│                                                         │
-│  ┌─ Uploading 5 files ─────────────────────────────┐   │
-│  │  ✓ image1.jpg          12KB saved (85%)  [Done] │   │
-│  │  ⚡ image2.png          Compressing...   [████░]│   │
-│  │  ↑ image3.jpg          Uploading...     [██░░░]│   │
-│  │  ⏳ image4.png          Queued           [░░░░░]│   │
-│  │  ⏳ image5.jpg          Queued           [░░░░░]│   │
-│  └─────────────────────────────────────────────────┘   │
-│                                                         │
-│  [Root ▼]                                               │
-│  ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐                       │
-│  │ 🖼️  │ │ 🖼️  │ │ 🖼️  │ │ 🖼️  │                       │
-│  └─────┘ └─────┘ └─────┘ └─────┘                       │
-└─────────────────────────────────────────────────────────┘
+**পরে:**
+```typescript
+// Direct fetch for proper FormData handling
+const response = await fetch(
+  `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/optimize-image`,
+  {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+    },
+    body: formData, // FormData auto-sets Content-Type to multipart/form-data
+  }
+);
+const data = await response.json();
 ```
+
+### File 2: `src/hooks/useImageOptimizer.ts`
+
+একই পরিবর্তন এখানেও করা হবে।
 
 ## Technical Details
 
-### Parallel Upload Logic
-```typescript
-// 3টা ফাইল একসাথে process করবে
-const CONCURRENT_UPLOADS = 3;
+- **Why fetch instead of SDK?** Supabase SDK `functions.invoke()` FormData কে JSON-এ convert করার চেষ্টা করে, যা কাজ করে না
+- **Why no Content-Type header?** FormData ব্যবহার করলে browser স্বয়ংক্রিয়ভাবে সঠিক `multipart/form-data` boundary সহ Content-Type সেট করে
+- **Auth:** Anon key ব্যবহার করা হবে Authorization header-এ
 
-async function processQueue(files: File[]) {
-  const chunks = chunkArray(files, CONCURRENT_UPLOADS);
-  for (const chunk of chunks) {
-    await Promise.all(chunk.map(file => uploadFile(file)));
-  }
-}
-```
-
-### File State Types
-```typescript
-interface UploadingFile {
-  id: string;
-  file: File;
-  status: 'queued' | 'uploading' | 'compressing' | 'done' | 'error';
-  progress: number;
-  savedBytes?: number;
-  error?: string;
-}
-```
-
-## Files to Create/Modify
-
-| File | Action | Description |
-|------|--------|-------------|
-| `src/components/admin/BulkUploadZone.tsx` | Create | Drag & drop upload area |
-| `src/components/admin/UploadProgressList.tsx` | Create | Progress tracking UI |
-| `src/hooks/useImageOptimizer.ts` | Modify | Parallel + background processing |
-| `src/pages/admin/Media.tsx` | Modify | Integrate new components |
-
-## Benefits
-
-- **3x faster uploads**: Parallel processing
-- **No waiting**: Background compression
-- **Better UX**: Drag & drop support
-- **Clear feedback**: Per-file progress
-- **Non-blocking**: Admin can continue working
+## প্রত্যাশিত ফলাফল
+- ইমেজ আপলোড করলে 80%+ compression হবে
+- 100KB ইমেজ → ~20KB হয়ে যাবে
+- Progress panel-এ reduction % দেখা যাবে
 
