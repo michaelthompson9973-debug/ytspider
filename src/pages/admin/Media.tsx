@@ -20,17 +20,20 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Upload, Copy, Trash2, FolderPlus, Image, Video, File } from 'lucide-react';
+import { useImageOptimizer } from '@/hooks/useImageOptimizer';
+import { Upload, Copy, Trash2, FolderPlus, Image, Video, File, Zap, Loader2 } from 'lucide-react';
 
 export default function Media() {
   const [folder, setFolder] = useState('root');
   const [newFolder, setNewFolder] = useState('');
   const [folderDialogOpen, setFolderDialogOpen] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number; optimizing: boolean } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { user } = useAuth();
+  
+  const { uploadFiles, isOptimizing } = useImageOptimizer({ folder });
 
   const { data: media, isLoading } = useQuery({
     queryKey: ['media', folder],
@@ -54,45 +57,6 @@ export default function Media() {
       if (error) throw error;
       const uniqueFolders = [...new Set(data.map(m => m.folder).filter(Boolean))];
       return uniqueFolders as string[];
-    },
-  });
-
-  const uploadMutation = useMutation({
-    mutationFn: async (file: File) => {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-      const filePath = `${folder}/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('media')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('media')
-        .getPublicUrl(filePath);
-
-      const { error: dbError } = await supabase.from('media').insert({
-        file_name: file.name,
-        file_path: filePath,
-        file_type: file.type,
-        file_size: file.size,
-        folder: folder,
-        public_url: publicUrl,
-        uploaded_by: user?.id,
-      });
-
-      if (dbError) throw dbError;
-      return publicUrl;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['media'] });
-      queryClient.invalidateQueries({ queryKey: ['media-folders'] });
-      toast({ title: 'File uploaded' });
-    },
-    onError: (error) => {
-      toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
     },
   });
 
@@ -124,11 +88,16 @@ export default function Media() {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    setUploading(true);
-    for (const file of Array.from(files)) {
-      await uploadMutation.mutateAsync(file);
-    }
-    setUploading(false);
+    setUploadProgress({ current: 0, total: files.length, optimizing: false });
+
+    await uploadFiles(files, user?.id, (current, total, optimizing) => {
+      setUploadProgress({ current, total, optimizing });
+    });
+
+    queryClient.invalidateQueries({ queryKey: ['media'] });
+    queryClient.invalidateQueries({ queryKey: ['media-folders'] });
+    
+    setUploadProgress(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -153,6 +122,8 @@ export default function Media() {
     return File;
   };
 
+  const uploading = isOptimizing || uploadProgress !== null;
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -164,8 +135,25 @@ export default function Media() {
               New Folder
             </Button>
             <Button onClick={() => fileInputRef.current?.click()} disabled={uploading}>
-              <Upload className="mr-2 h-4 w-4" />
-              {uploading ? 'Uploading...' : 'Upload'}
+              {uploading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {uploadProgress?.optimizing ? (
+                    <span className="flex items-center gap-1">
+                      <Zap className="h-3 w-3 text-amber-400" />
+                      অপটিমাইজ হচ্ছে...
+                    </span>
+                  ) : (
+                    `আপলোড ${uploadProgress?.current}/${uploadProgress?.total}`
+                  )}
+                </>
+              ) : (
+                <>
+                  <Upload className="mr-2 h-4 w-4" />
+                  <Zap className="mr-1 h-3 w-3 text-amber-500" />
+                  Upload
+                </>
+              )}
             </Button>
             <input
               ref={fileInputRef}
@@ -176,6 +164,12 @@ export default function Media() {
               onChange={handleUpload}
             />
           </div>
+        </div>
+
+        {/* Optimization info banner */}
+        <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
+          <Zap className="h-4 w-4 text-amber-500" />
+          <span>ইমেজ অটোমেটিক অপটিমাইজ হয় - ফাইল সাইজ কমে, কোয়ালিটি থাকে!</span>
         </div>
 
         <div className="flex items-center gap-4">
