@@ -118,6 +118,45 @@ export type Database = {
           },
         ]
       }
+      courier_credentials: {
+        Row: {
+          access_token: string | null
+          created_at: string
+          credential_type: string
+          credential_value: string
+          id: string
+          is_active: boolean
+          label: string | null
+          provider: string
+          token_expires_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          access_token?: string | null
+          created_at?: string
+          credential_type: string
+          credential_value: string
+          id?: string
+          is_active?: boolean
+          label?: string | null
+          provider: string
+          token_expires_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string | null
+          created_at?: string
+          credential_type?: string
+          credential_value?: string
+          id?: string
+          is_active?: boolean
+          label?: string | null
+          provider?: string
+          token_expires_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       customer_courier_history: {
         Row: {
           checked_at: string
@@ -604,6 +643,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      pathao_locations: {
+        Row: {
+          area_id: number | null
+          area_name: string | null
+          city_id: number | null
+          city_name: string | null
+          created_at: string
+          id: string
+          zone_id: number | null
+          zone_name: string | null
+        }
+        Insert: {
+          area_id?: number | null
+          area_name?: string | null
+          city_id?: number | null
+          city_name?: string | null
+          created_at?: string
+          id?: string
+          zone_id?: number | null
+          zone_name?: string | null
+        }
+        Update: {
+          area_id?: number | null
+          area_name?: string | null
+          city_id?: number | null
+          city_name?: string | null
+          created_at?: string
+          id?: string
+          zone_id?: number | null
+          zone_name?: string | null
+        }
+        Relationships: []
       }
       products: {
         Row: {

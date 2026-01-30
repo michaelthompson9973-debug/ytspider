@@ -40,3 +40,18 @@ verify_jwt = false
 
 [functions.test-fraudcheck]
 verify_jwt = false
+
+[functions.courier-create-order]
+verify_jwt = false
+
+[functions.courier-sync-status]
+verify_jwt = false
+
+[functions.courier-webhook]
+verify_jwt = false
+
+[functions.pathao-auth]
+verify_jwt = false
+
+[functions.pathao-locations]
+verify_jwt = false
