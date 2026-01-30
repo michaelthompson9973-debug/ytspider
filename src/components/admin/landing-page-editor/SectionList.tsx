@@ -14,7 +14,7 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { Plus, Layers, FileCode, ShoppingCart } from 'lucide-react';
+import { Plus, Layers, FileCode, ShoppingCart, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -25,8 +25,10 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
 import { Section, SectionType, defaultCheckoutConfig } from './types';
 import { SectionItem } from './SectionItem';
+import { LibraryPickerModal, LibraryComponent } from '@/components/admin/library';
 import { cn } from '@/lib/utils';
 
 interface SectionListProps {
@@ -64,6 +66,7 @@ export function SectionList({
   isAdding,
 }: SectionListProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [libraryPickerOpen, setLibraryPickerOpen] = useState(false);
   const [newSectionName, setNewSectionName] = useState('');
   const [newSectionType, setNewSectionType] = useState<DialogSectionType>('html');
 
@@ -140,6 +143,15 @@ export function SectionList({
     setNewSectionName('');
     setNewSectionType('html');
     setDialogOpen(false);
+  };
+
+  const handleLibrarySelect = (component: LibraryComponent) => {
+    onAddSection({
+      name: component.name,
+      html: component.html,
+      type: 'html',
+      config: null,
+    });
   };
 
   return (
@@ -267,6 +279,28 @@ export function SectionList({
                 onKeyDown={(e) => e.key === 'Enter' && handleAddSection()}
               />
             </div>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <Separator className="w-full" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">or</span>
+              </div>
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={() => {
+                setDialogOpen(false);
+                setLibraryPickerOpen(true);
+              }}
+            >
+              <BookOpen className="h-4 w-4 mr-2" />
+              Choose from Library
+            </Button>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
@@ -278,6 +312,12 @@ export function SectionList({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <LibraryPickerModal
+        open={libraryPickerOpen}
+        onOpenChange={setLibraryPickerOpen}
+        onSelect={handleLibrarySelect}
+      />
     </div>
   );
 }

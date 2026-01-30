@@ -77,6 +77,39 @@ export type Database = {
         }
         Relationships: []
       }
+      component_library: {
+        Row: {
+          category: string
+          created_at: string | null
+          created_by: string | null
+          html: string
+          id: string
+          name: string
+          thumbnail_url: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string
+          created_at?: string | null
+          created_by?: string | null
+          html?: string
+          id?: string
+          name: string
+          thumbnail_url?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          created_by?: string | null
+          html?: string
+          id?: string
+          name?: string
+          thumbnail_url?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       conversion_events: {
         Row: {
           event_id: string
