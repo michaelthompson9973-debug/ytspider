@@ -147,24 +147,31 @@ export function useBulkUpload(options: UseBulkUploadOptions = {}) {
     filesToProcess: UploadingFile[],
     userId?: string
   ) => {
-    const queue = [...filesToProcess];
-    const activeUploads: Promise<void>[] = [];
-
+    // Track which files have been picked up to prevent race conditions
+    const pickedUp = new Set<string>();
+    
     const processNext = async (): Promise<void> => {
-      const file = queue.find(f => f.status === 'queued');
+      // Find a file that hasn't been picked up yet
+      const file = filesToProcess.find(f => f.status === 'queued' && !pickedUp.has(f.id));
       if (!file) return;
-
+      
+      // Mark as picked up immediately to prevent duplicate processing
+      pickedUp.add(file.id);
+      
       updateFile(file.id, { status: 'uploading' });
       await uploadSingleFile(file, userId);
+      
+      // Process next file in queue
       await processNext();
     };
 
-    // Start concurrent uploads
-    for (let i = 0; i < Math.min(concurrentUploads, queue.length); i++) {
-      activeUploads.push(processNext());
-    }
+    // Start concurrent uploads (up to concurrentUploads limit)
+    const workers = Array.from(
+      { length: Math.min(concurrentUploads, filesToProcess.length) },
+      () => processNext()
+    );
 
-    await Promise.all(activeUploads);
+    await Promise.all(workers);
   }, [concurrentUploads, uploadSingleFile, updateFile]);
 
   const startUpload = useCallback(async (
