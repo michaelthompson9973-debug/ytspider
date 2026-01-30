@@ -4,6 +4,14 @@ import AdminLayout from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { useIsMobile } from '@/hooks/use-mobile';
+import {
   ComponentCard,
   ComponentEditor,
   ComponentPreviewModal,
@@ -29,6 +37,7 @@ export default function ComponentLibrary() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [editingComponent, setEditingComponent] = useState<LibraryComponent | null>(null);
   const [previewComponent, setPreviewComponent] = useState<LibraryComponent | null>(null);
+  const isMobile = useIsMobile();
 
   const handleAdd = () => {
     setEditingComponent(null);
@@ -52,72 +61,101 @@ export default function ComponentLibrary() {
     return allComponents?.filter(c => c.category === category).length || 0;
   };
 
+  const CategorySidebar = () => (
+    <div className="space-y-1">
+      <h3 className="text-sm font-medium text-muted-foreground mb-3 px-2">Categories</h3>
+      
+      <button
+        onClick={() => setSelectedCategory('all')}
+        className={cn(
+          "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors",
+          selectedCategory === 'all' 
+            ? "bg-primary text-primary-foreground" 
+            : "hover:bg-muted"
+        )}
+      >
+        {selectedCategory === 'all' ? (
+          <FolderOpen className="h-4 w-4" />
+        ) : (
+          <Folder className="h-4 w-4" />
+        )}
+        <span className="flex-1 text-left">All</span>
+        <span className="text-xs opacity-70">{getCategoryCount('all')}</span>
+      </button>
+
+      {componentCategories.map((cat) => (
+        <button
+          key={cat.value}
+          onClick={() => setSelectedCategory(cat.value)}
+          className={cn(
+            "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors",
+            selectedCategory === cat.value 
+              ? "bg-primary text-primary-foreground" 
+              : "hover:bg-muted"
+          )}
+        >
+          {selectedCategory === cat.value ? (
+            <FolderOpen className="h-4 w-4" />
+          ) : (
+            <Folder className="h-4 w-4" />
+          )}
+          <span className="flex-1 text-left">{cat.label}</span>
+          <span className="text-xs opacity-70">{getCategoryCount(cat.value)}</span>
+        </button>
+      ))}
+    </div>
+  );
+
   return (
     <AdminLayout>
       <div className="flex h-full">
-        {/* Left Sidebar - Categories */}
-        <div className="w-56 shrink-0 border-r bg-muted/30 p-4 space-y-1">
-          <h3 className="text-sm font-medium text-muted-foreground mb-3 px-2">Categories</h3>
-          
-          <button
-            onClick={() => setSelectedCategory('all')}
-            className={cn(
-              "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors",
-              selectedCategory === 'all' 
-                ? "bg-primary text-primary-foreground" 
-                : "hover:bg-muted"
-            )}
-          >
-            {selectedCategory === 'all' ? (
-              <FolderOpen className="h-4 w-4" />
-            ) : (
-              <Folder className="h-4 w-4" />
-            )}
-            <span className="flex-1 text-left">All</span>
-            <span className="text-xs opacity-70">{getCategoryCount('all')}</span>
-          </button>
-
-          {componentCategories.map((cat) => (
-            <button
-              key={cat.value}
-              onClick={() => setSelectedCategory(cat.value)}
-              className={cn(
-                "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors",
-                selectedCategory === cat.value 
-                  ? "bg-primary text-primary-foreground" 
-                  : "hover:bg-muted"
-              )}
-            >
-              {selectedCategory === cat.value ? (
-                <FolderOpen className="h-4 w-4" />
-              ) : (
-                <Folder className="h-4 w-4" />
-              )}
-              <span className="flex-1 text-left">{cat.label}</span>
-              <span className="text-xs opacity-70">{getCategoryCount(cat.value)}</span>
-            </button>
-          ))}
-        </div>
+        {/* Desktop Sidebar */}
+        {!isMobile && (
+          <div className="w-56 shrink-0 border-r bg-muted/30 p-4">
+            <CategorySidebar />
+          </div>
+        )}
 
         {/* Main Content */}
-        <div className="flex-1 p-6 space-y-6 overflow-auto">
+        <div className="flex-1 p-4 md:p-6 space-y-4 md:space-y-6 overflow-auto">
           {/* Header */}
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <BookOpen className="h-6 w-6 text-primary" />
+              <BookOpen className="h-5 w-5 md:h-6 md:w-6 text-primary shrink-0" />
               <div>
-                <h1 className="text-2xl font-bold">Component Library</h1>
-                <p className="text-sm text-muted-foreground">
+                <h1 className="text-lg md:text-2xl font-bold">Component Library</h1>
+                <p className="text-xs md:text-sm text-muted-foreground">
                   {components.length} component{components.length !== 1 ? 's' : ''} 
                   {selectedCategory !== 'all' && ` in ${componentCategories.find(c => c.value === selectedCategory)?.label || selectedCategory}`}
                 </p>
               </div>
             </div>
-            <Button onClick={handleAdd}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Component
+            <Button onClick={handleAdd} size={isMobile ? "sm" : "default"}>
+              <Plus className="h-4 w-4 mr-1 md:mr-2" />
+              <span className="hidden sm:inline">Add Component</span>
+              <span className="sm:hidden">Add</span>
             </Button>
           </div>
+
+          {/* Mobile Category Filter */}
+          {isMobile && (
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger className="w-full">
+                <Folder className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="All Categories" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">
+                  All ({getCategoryCount('all')})
+                </SelectItem>
+                {componentCategories.map((cat) => (
+                  <SelectItem key={cat.value} value={cat.value}>
+                    {cat.label} ({getCategoryCount(cat.value)})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
 
           {/* Content */}
           {isLoading ? (
@@ -140,7 +178,7 @@ export default function ComponentLibrary() {
               </Button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {components.map((component) => (
                 <ComponentCard
                   key={component.id}
