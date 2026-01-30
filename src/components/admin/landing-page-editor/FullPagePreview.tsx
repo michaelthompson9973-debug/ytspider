@@ -262,50 +262,50 @@ export const FullPagePreview = forwardRef<HTMLDivElement, FullPagePreviewProps>(
                 </Button>
               </>
             )}
-            {viewMode === 'code' && (
-              <Button size="sm" variant="outline" onClick={handleCopy}>
-                {copied ? (
-                  <>
-                    <Check className="h-4 w-4 mr-1" />
-                    Copied!
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-4 w-4 mr-1" />
-                    Copy
-                  </>
-                )}
-              </Button>
-            )}
           </div>
         </div>
 
-        {/* Code Sub-tabs */}
+        {/* Code Sub-tabs with individual copy buttons */}
         {viewMode === 'code' && (
-          <div className="flex items-center gap-1 mb-2">
-            <Button
-              variant={codeTab === 'full' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setCodeTab('full')}
-              className="h-7 px-3 text-xs"
-            >
-              Full Code
-            </Button>
-            <Button
-              variant={codeTab === 'head' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setCodeTab('head')}
-              className="h-7 px-3 text-xs"
-            >
-              Head
-            </Button>
-            <Button
-              variant={codeTab === 'body' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setCodeTab('body')}
-              className="h-7 px-3 text-xs"
-            >
-              Body
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-1">
+              <Button
+                variant={codeTab === 'full' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setCodeTab('full')}
+                className="h-7 px-3 text-xs"
+              >
+                Full Code
+              </Button>
+              <Button
+                variant={codeTab === 'head' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setCodeTab('head')}
+                className="h-7 px-3 text-xs"
+              >
+                Head
+              </Button>
+              <Button
+                variant={codeTab === 'body' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setCodeTab('body')}
+                className="h-7 px-3 text-xs"
+              >
+                Body
+              </Button>
+            </div>
+            <Button size="sm" variant="outline" onClick={handleCopy} className="h-7 text-xs">
+              {copied ? (
+                <>
+                  <Check className="h-3.5 w-3.5 mr-1" />
+                  Copied!
+                </>
+              ) : (
+                <>
+                  <Copy className="h-3.5 w-3.5 mr-1" />
+                  Copy {codeTab === 'full' ? 'Full' : codeTab === 'head' ? 'Head' : 'Body'}
+                </>
+              )}
             </Button>
           </div>
         )}
