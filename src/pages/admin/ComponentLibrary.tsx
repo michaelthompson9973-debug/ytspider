@@ -1,14 +1,8 @@
 import { useState } from 'react';
-import { Plus, BookOpen, Filter } from 'lucide-react';
+import { Plus, BookOpen, FolderOpen, Folder } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 import {
   ComponentCard,
   ComponentEditor,
@@ -51,72 +45,114 @@ export default function ComponentLibrary() {
     setPreviewOpen(true);
   };
 
+  // Get counts per category
+  const allComponents = useComponentLibrary().components;
+  const getCategoryCount = (category: string) => {
+    if (category === 'all') return allComponents?.length || 0;
+    return allComponents?.filter(c => c.category === category).length || 0;
+  };
+
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <BookOpen className="h-6 w-6 text-primary" />
-            <h1 className="text-2xl font-bold">Component Library</h1>
-          </div>
-          <Button onClick={handleAdd}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Component
-          </Button>
+      <div className="flex h-full">
+        {/* Left Sidebar - Categories */}
+        <div className="w-56 shrink-0 border-r bg-muted/30 p-4 space-y-1">
+          <h3 className="text-sm font-medium text-muted-foreground mb-3 px-2">Categories</h3>
+          
+          <button
+            onClick={() => setSelectedCategory('all')}
+            className={cn(
+              "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors",
+              selectedCategory === 'all' 
+                ? "bg-primary text-primary-foreground" 
+                : "hover:bg-muted"
+            )}
+          >
+            {selectedCategory === 'all' ? (
+              <FolderOpen className="h-4 w-4" />
+            ) : (
+              <Folder className="h-4 w-4" />
+            )}
+            <span className="flex-1 text-left">All</span>
+            <span className="text-xs opacity-70">{getCategoryCount('all')}</span>
+          </button>
+
+          {componentCategories.map((cat) => (
+            <button
+              key={cat.value}
+              onClick={() => setSelectedCategory(cat.value)}
+              className={cn(
+                "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors",
+                selectedCategory === cat.value 
+                  ? "bg-primary text-primary-foreground" 
+                  : "hover:bg-muted"
+              )}
+            >
+              {selectedCategory === cat.value ? (
+                <FolderOpen className="h-4 w-4" />
+              ) : (
+                <Folder className="h-4 w-4" />
+              )}
+              <span className="flex-1 text-left">{cat.label}</span>
+              <span className="text-xs opacity-70">{getCategoryCount(cat.value)}</span>
+            </button>
+          ))}
         </div>
 
-        {/* Filters */}
-        <div className="flex items-center gap-3">
-          <Filter className="h-4 w-4 text-muted-foreground" />
-          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="All Categories" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
-              {componentCategories.map((cat) => (
-                <SelectItem key={cat.value} value={cat.value}>
-                  {cat.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <span className="text-sm text-muted-foreground">
-            {components.length} component{components.length !== 1 ? 's' : ''}
-          </span>
-        </div>
-
-        {/* Content */}
-        {isLoading ? (
-          <div className="flex items-center justify-center h-64 text-muted-foreground">
-            Loading components...
-          </div>
-        ) : components.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-64 text-center">
-            <BookOpen className="h-12 w-12 text-muted-foreground/50 mb-4" />
-            <h3 className="text-lg font-medium mb-2">No components yet</h3>
-            <p className="text-muted-foreground mb-4">
-              Add your first reusable HTML component to the library
-            </p>
+        {/* Main Content */}
+        <div className="flex-1 p-6 space-y-6 overflow-auto">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <BookOpen className="h-6 w-6 text-primary" />
+              <div>
+                <h1 className="text-2xl font-bold">Component Library</h1>
+                <p className="text-sm text-muted-foreground">
+                  {components.length} component{components.length !== 1 ? 's' : ''} 
+                  {selectedCategory !== 'all' && ` in ${componentCategories.find(c => c.value === selectedCategory)?.label || selectedCategory}`}
+                </p>
+              </div>
+            </div>
             <Button onClick={handleAdd}>
               <Plus className="h-4 w-4 mr-2" />
               Add Component
             </Button>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {components.map((component) => (
-              <ComponentCard
-                key={component.id}
-                component={component}
-                onPreview={handlePreview}
-                onEdit={handleEdit}
-                onDelete={deleteComponent}
-              />
-            ))}
-          </div>
-        )}
+
+          {/* Content */}
+          {isLoading ? (
+            <div className="flex items-center justify-center h-64 text-muted-foreground">
+              Loading components...
+            </div>
+          ) : components.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-64 text-center">
+              <BookOpen className="h-12 w-12 text-muted-foreground/50 mb-4" />
+              <h3 className="text-lg font-medium mb-2">No components yet</h3>
+              <p className="text-muted-foreground mb-4">
+                {selectedCategory === 'all' 
+                  ? 'Add your first reusable HTML component to the library'
+                  : `No components in ${componentCategories.find(c => c.value === selectedCategory)?.label || selectedCategory} category`
+                }
+              </p>
+              <Button onClick={handleAdd}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Component
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {components.map((component) => (
+                <ComponentCard
+                  key={component.id}
+                  component={component}
+                  onPreview={handlePreview}
+                  onEdit={handleEdit}
+                  onDelete={deleteComponent}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Editor Modal */}
