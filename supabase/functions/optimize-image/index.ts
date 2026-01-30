@@ -109,9 +109,15 @@ serve(async (req) => {
     const outputMimeType = isPng ? 'image/png' : 'image/jpeg';
     const outputExt = isPng ? 'png' : 'jpg';
     
-    // Generate new filename
-    const baseName = fileName.replace(/\.[^/.]+$/, ''); // Remove extension
-    const optimizedFileName = `${Date.now()}-${baseName}.${outputExt}`;
+    // Sanitize filename - remove special characters that storage doesn't accept
+    const sanitizedBaseName = fileName
+      .replace(/\.[^/.]+$/, '') // Remove extension
+      .replace(/[^a-zA-Z0-9_-]/g, '_') // Replace special chars with underscore
+      .substring(0, 50); // Limit length
+    
+    // Generate new filename with random suffix for uniqueness
+    const randomSuffix = Math.random().toString(36).substring(2, 8);
+    const optimizedFileName = `${Date.now()}-${randomSuffix}-${sanitizedBaseName}.${outputExt}`;
     const filePath = `${folder}/${optimizedFileName}`;
 
     // Upload compressed image to storage
