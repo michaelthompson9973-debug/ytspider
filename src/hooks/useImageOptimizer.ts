@@ -39,14 +39,25 @@ export function useImageOptimizer(options: UseImageOptimizerOptions = {}) {
       formData.append('maxWidth', maxWidth.toString());
       formData.append('quality', quality.toString());
 
-      const { data, error } = await supabase.functions.invoke('optimize-image', {
-        body: formData,
-      });
+      // Use native fetch for proper FormData handling (SDK doesn't handle multipart/form-data correctly)
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/optimize-image`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: formData, // Browser auto-sets Content-Type to multipart/form-data with boundary
+        }
+      );
 
-      if (error) {
-        console.error('Optimization error:', error);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Optimization error:', errorData);
         return null;
       }
+
+      const data = await response.json();
 
       return {
         url: data.public_url,
