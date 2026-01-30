@@ -1,133 +1,188 @@
 
+# HTML Code Editor Tabs Feature
 
-# Compression Speed Optimization - Background Processing
+## বর্তমান অবস্থা
+- Single `html` field-এ সব HTML content সংরক্ষিত
+- একটি textarea-তে সম্পূর্ণ code edit হয়
 
-## সমস্যা Analysis
+## প্রস্তাবিত সমাধান
 
-Edge Function logs থেকে দেখা যাচ্ছে:
-- **7.3MB PNG → 1.09MB** (85% reduction) নিচ্ছে ~3-4 সেকেন্ড
-- প্রতিটা ইমেজে সময় লাগছে কারণ:
-  1. Edge Function cold start (~30ms)
-  2. imagescript library dynamic import
-  3. Image decode → resize → encode (CPU intensive)
-  4. Storage upload
-  5. Database insert
-
-## সমাধান: Two-Phase Upload
+### UI Design
 
 ```text
-বর্তমান (Slow):
-User → Upload → [Edge: Compress + Upload + DB] → Response → Show Image
-                     ▲
-                     └── Admin waits here (3-4 sec per image)
-
-নতুন (Fast):
-User → Upload → [Edge: Quick Upload] → Response → Show Image (instant!)
-                     │
-                     └──→ [Background: Compress + Replace] → Update UI
-                              (Admin continues working)
+┌─────────────────────────────────────────────────────────┐
+│  [এডিটর]  [প্রিভিউ]  [HTML] ←── এটায় ক্লিক করলে নিচে ট্যাব আসবে │
+├─────────────────────────────────────────────────────────┤
+│  ┌──────────────┬────────┬────────┐                      │
+│  │  Full Code ✓ │  Head  │  Body  │ ←── Sub-tabs        │
+│  └──────────────┴────────┴────────┘                      │
+│  ┌─────────────────────────────────────────────────────┐ │
+│  │ 1 │ <style>                                         │ │
+│  │ 2 │   .hero { background: #fff; }                   │ │
+│  │ 3 │ </style>                                        │ │
+│  │ 4 │ <section class="hero">                          │ │
+│  │ 5 │   <h1>Welcome</h1>                              │ │
+│  │ 6 │ </section>                                      │ │
+│  └─────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────┘
 ```
 
-## Implementation Steps
+### কিভাবে কাজ করবে
 
-### Step 1: Edge Function Update
-`supabase/functions/optimize-image/index.ts`
+| Tab | বিষয়বস্তু | উদ্দেশ্য |
+|-----|-----------|----------|
+| **Full Code** | সম্পূর্ণ HTML | সব একসাথে edit করা (বর্তমান behavior) |
+| **Head** | শুধু `<style>`, `<script>` | CSS/JS আলাদাভাবে edit করা |
+| **Body** | শুধু main content | HTML structure আলাদাভাবে edit করা |
 
-```typescript
-// Option A: Return immediately, compress in background
-EdgeRuntime.waitUntil(compressAndReplace(file, filePath));
-return new Response(JSON.stringify({ 
-  success: true, 
-  status: 'processing',
-  temp_url: tempUrl 
-}));
-```
+### Technical Approach
 
-অথবা
-
-### Step 2: Client-Side Quick Upload + Background Compression
-
-**আরো সহজ approach:**
-1. ছোট ইমেজ (<500KB) → Direct compression (fast)
-2. বড় ইমেজ (>500KB) → Quick upload first, then background compress
-
-### Step 3: Hook Update
-`src/hooks/useBulkUpload.ts`
+**Option A: Parse & Merge (Recommended)**
+- Database-এ কোনো change লাগবে না
+- Single `html` field-ই থাকবে
+- UI-তে parse করে আলাদা tabs-এ দেখাবে
+- Save করার সময় merge করে একটা html-এ রাখবে
 
 ```typescript
-// For large files, upload first, compress later
-if (file.size > 500 * 1024) { // > 500KB
-  // Quick upload to storage
-  const tempUrl = await quickUpload(file);
-  updateFile(id, { status: 'done', url: tempUrl });
+// Parse logic
+function parseHtml(fullHtml: string) {
+  // Extract <style>...</style> and <script>...</script> as "head"
+  // Remaining content as "body"
+  const styleRegex = /<style[^>]*>[\s\S]*?<\/style>/gi;
+  const scriptRegex = /<script[^>]*>[\s\S]*?<\/script>/gi;
   
-  // Background compression (non-blocking)
-  triggerBackgroundCompression(file.id);
-} else {
-  // Small files: inline compression (already fast)
-  await optimizeAndUpload(file);
+  const styles = fullHtml.match(styleRegex) || [];
+  const scripts = fullHtml.match(scriptRegex) || [];
+  
+  const head = [...styles, ...scripts].join('\n');
+  const body = fullHtml
+    .replace(styleRegex, '')
+    .replace(scriptRegex, '')
+    .trim();
+  
+  return { head, body };
+}
+
+// Merge logic
+function mergeHtml(head: string, body: string) {
+  return `${head}\n\n${body}`;
 }
 ```
 
-## Simpler Solution: Client-Side Pre-compression
+---
 
-Browser-এ compression করলে:
-- Edge Function call কমবে
-- Network data কমবে
-- Faster overall
+## Implementation Steps
 
-**browser-image-compression** library দিয়ে:
+### Step 1: Update SectionEditor.tsx
 
+**Sub-tab state management:**
 ```typescript
-import imageCompression from 'browser-image-compression';
-
-const compressedFile = await imageCompression(file, {
-  maxSizeMB: 0.5,
-  maxWidthOrHeight: 1200,
-  useWebWorker: true, // Non-blocking!
-});
-// Then upload the already-compressed file
+const [codeTab, setCodeTab] = useState<'full' | 'head' | 'body'>('full');
+const [headCode, setHeadCode] = useState('');
+const [bodyCode, setBodyCode] = useState('');
 ```
 
-## প্রস্তাবিত পদক্ষেপ
+**Parse on tab switch:**
+- Full → Head/Body: Parse current `html` into parts
+- Head/Body → Full: Merge parts back
 
-| Option | Speed | Complexity | Recommendation |
-|--------|-------|------------|----------------|
-| A. Client-side compression | ⚡⚡⚡ | Low | ✅ Best for UX |
-| B. Background Edge Function | ⚡⚡ | Medium | Good alternative |
-| C. Current (sync) | ⚡ | Done | Too slow |
+### Step 2: Add Tab UI
 
-## Implementation Plan
+```typescript
+{viewMode === 'code' && (
+  <div className="flex items-center gap-1 mb-2">
+    <Button 
+      variant={codeTab === 'full' ? 'default' : 'ghost'}
+      size="sm" 
+      onClick={() => setCodeTab('full')}
+    >
+      Full Code
+    </Button>
+    <Button 
+      variant={codeTab === 'head' ? 'default' : 'ghost'}
+      size="sm" 
+      onClick={() => setCodeTab('head')}
+    >
+      Head
+    </Button>
+    <Button 
+      variant={codeTab === 'body' ? 'default' : 'ghost'}
+      size="sm" 
+      onClick={() => setCodeTab('body')}
+    >
+      Body
+    </Button>
+  </div>
+)}
+```
 
-### Option A: Browser-side compression (Recommended)
+### Step 3: Textarea Switching
 
-1. **Install library:**
-   ```bash
-   npm install browser-image-compression
-   ```
+```typescript
+{codeTab === 'full' ? (
+  <textarea value={html} onChange={...} />
+) : codeTab === 'head' ? (
+  <textarea value={headCode} onChange={...} placeholder="<style>...</style>" />
+) : (
+  <textarea value={bodyCode} onChange={...} placeholder="<section>...</section>" />
+)}
+```
 
-2. **Update `useBulkUpload.ts`:**
-   - Compress in browser using Web Worker (non-blocking)
-   - Upload pre-compressed file to storage
-   - Skip Edge Function for compression
+### Step 4: Update FullscreenCodeModal
 
-3. **Benefits:**
-   - 3x faster (no network round-trip for compression)
-   - Non-blocking (Web Worker)
-   - Less Edge Function calls
-   - Lower bandwidth usage
+Same 3-tab system FullscreenCodeModal-এও add করতে হবে।
+
+---
 
 ## Files to Modify
 
 | File | Change |
 |------|--------|
-| `package.json` | Add `browser-image-compression` |
-| `src/hooks/useBulkUpload.ts` | Add client-side compression |
-| `src/hooks/useImageOptimizer.ts` | Add client-side compression |
-| Keep Edge Function | For manual compress button (existing images) |
+| `src/components/admin/landing-page-editor/SectionEditor.tsx` | Sub-tabs + parse/merge logic |
+| `src/components/admin/landing-page-editor/FullscreenCodeModal.tsx` | Same sub-tabs |
+
+---
+
+## Technical Details
+
+### Parse Function
+```typescript
+function parseHtmlParts(fullHtml: string): { head: string; body: string } {
+  const styleMatches = fullHtml.match(/<style[^>]*>[\s\S]*?<\/style>/gi) || [];
+  const scriptMatches = fullHtml.match(/<script[^>]*>[\s\S]*?<\/script>/gi) || [];
+  
+  let bodyHtml = fullHtml;
+  [...styleMatches, ...scriptMatches].forEach(match => {
+    bodyHtml = bodyHtml.replace(match, '');
+  });
+  
+  return {
+    head: [...styleMatches, ...scriptMatches].join('\n\n'),
+    body: bodyHtml.trim()
+  };
+}
+```
+
+### Merge Function
+```typescript
+function mergeHtmlParts(head: string, body: string): string {
+  const trimmedHead = head.trim();
+  const trimmedBody = body.trim();
+  
+  if (!trimmedHead) return trimmedBody;
+  if (!trimmedBody) return trimmedHead;
+  return `${trimmedHead}\n\n${trimmedBody}`;
+}
+```
+
+---
 
 ## Expected Result
 
-- **আগে:** 7MB ইমেজ → 3-4 সেকেন্ড wait
-- **পরে:** 7MB ইমেজ → ~1 সেকেন্ড (browser compress) + instant upload
+- HTML button-এ ক্লিক করলে 3টা sub-tab দেখাবে
+- **Full Code**: বর্তমান behavior (সম্পূর্ণ HTML)
+- **Head**: শুধু `<style>` এবং `<script>` tags
+- **Body**: বাকি সব content
+- Tab switch করলে automatically parse/merge হবে
+- Database-এ কোনো পরিবর্তন লাগবে না
 
