@@ -23,6 +23,7 @@ import {
   Inbox,
   MessageCircle,
   MessageSquare,
+  BookOpen,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -86,7 +87,15 @@ const navGroups: NavGroup[] = [
     label: 'Content',
     items: [
       { href: '/admin/products', label: 'Products', icon: Package },
-      { href: '/admin/pages', label: 'Landing Pages', icon: FileText },
+      { 
+        href: '/admin/pages', 
+        label: 'Landing Pages', 
+        icon: FileText,
+        children: [
+          { href: '/admin/pages/library', label: 'Library', icon: BookOpen },
+          { href: '/admin/pages/manage', label: 'Pages', icon: FileText },
+        ]
+      },
       { href: '/admin/media', label: 'Media', icon: Image },
     ],
   },

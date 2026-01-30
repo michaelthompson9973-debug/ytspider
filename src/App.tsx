@@ -9,6 +9,7 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/admin/Dashboard";
 import Products from "./pages/admin/Products";
 import LandingPages from "./pages/admin/LandingPages";
+import ComponentLibrary from "./pages/admin/ComponentLibrary";
 import Orders from "./pages/admin/Orders";
 import Media from "./pages/admin/Media";
 import Tracking from "./pages/admin/Tracking";
@@ -38,7 +39,9 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/admin" element={<ProtectedRoute requireAdmin><Dashboard /></ProtectedRoute>} />
             <Route path="/admin/products" element={<ProtectedRoute requireAdmin><Products /></ProtectedRoute>} />
-            <Route path="/admin/pages" element={<ProtectedRoute requireAdmin><LandingPages /></ProtectedRoute>} />
+            <Route path="/admin/pages" element={<Navigate to="/admin/pages/manage" replace />} />
+            <Route path="/admin/pages/manage" element={<ProtectedRoute requireAdmin><LandingPages /></ProtectedRoute>} />
+            <Route path="/admin/pages/library" element={<ProtectedRoute requireAdmin><ComponentLibrary /></ProtectedRoute>} />
             <Route path="/admin/orders" element={<ProtectedRoute requireAdmin><Orders /></ProtectedRoute>} />
             <Route path="/admin/media" element={<ProtectedRoute requireAdmin><Media /></ProtectedRoute>} />
             <Route path="/admin/tracking" element={<ProtectedRoute requireAdmin><Tracking /></ProtectedRoute>} />
