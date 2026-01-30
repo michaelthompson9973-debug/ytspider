@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, forwardRef } from 'react';
+import { useRef, useState, useEffect, forwardRef, useCallback } from 'react';
 import { Monitor, Smartphone, Copy, Check, Layers, RefreshCw, Maximize2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Section, ThemeConfig, CheckoutConfig, defaultCheckoutConfig, defaultCheckoutFields } from './types';
 import { generateFullHTML, generatePreviewHTML, generateCheckoutPreviewHTML } from './themeUtils';
+import { parseHtmlParts } from './htmlParseUtils';
 import { cn } from '@/lib/utils';
 
 interface FullPagePreviewProps {
@@ -15,6 +16,8 @@ interface FullPagePreviewProps {
   gtmId?: string;
   showCodeView?: boolean;
 }
+
+type CodeTab = 'full' | 'head' | 'body';
 
 // Mobile device dimensions
 const MOBILE_WIDTH = 375;
@@ -27,6 +30,9 @@ export const FullPagePreview = forwardRef<HTMLDivElement, FullPagePreviewProps>(
     const [viewMode, setViewMode] = useState<'preview' | 'code'>(showCodeView ? 'code' : 'preview');
     const [refreshKey, setRefreshKey] = useState(0);
     const [scale, setScale] = useState(1);
+    const [codeTab, setCodeTab] = useState<CodeTab>('full');
+    const [headCode, setHeadCode] = useState('');
+    const [bodyCode, setBodyCode] = useState('');
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -144,8 +150,26 @@ export const FullPagePreview = forwardRef<HTMLDivElement, FullPagePreviewProps>(
     const fullHtml = generateFullHTML(sectionsHtml, themeConfig, gtmId, baseUrl);
     const previewHtml = generatePreviewHTML(sectionsHtml, themeConfig, baseUrl);
 
+    // Parse HTML parts for sub-tabs
+    const getCurrentContent = useCallback(() => {
+      switch (codeTab) {
+        case 'head': return headCode;
+        case 'body': return bodyCode;
+        default: return fullHtml;
+      }
+    }, [codeTab, fullHtml, headCode, bodyCode]);
+
+    // Update head/body when switching to code view or when fullHtml changes
+    useEffect(() => {
+      if (viewMode === 'code') {
+        const parts = parseHtmlParts(fullHtml);
+        setHeadCode(parts.head);
+        setBodyCode(parts.body);
+      }
+    }, [viewMode, fullHtml]);
+
     const handleCopy = async () => {
-      await navigator.clipboard.writeText(fullHtml);
+      await navigator.clipboard.writeText(getCurrentContent());
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     };
@@ -256,6 +280,36 @@ export const FullPagePreview = forwardRef<HTMLDivElement, FullPagePreviewProps>(
           </div>
         </div>
 
+        {/* Code Sub-tabs */}
+        {viewMode === 'code' && (
+          <div className="flex items-center gap-1 mb-2">
+            <Button
+              variant={codeTab === 'full' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setCodeTab('full')}
+              className="h-7 px-3 text-xs"
+            >
+              Full Code
+            </Button>
+            <Button
+              variant={codeTab === 'head' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setCodeTab('head')}
+              className="h-7 px-3 text-xs"
+            >
+              Head
+            </Button>
+            <Button
+              variant={codeTab === 'body' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setCodeTab('body')}
+              className="h-7 px-3 text-xs"
+            >
+              Body
+            </Button>
+          </div>
+        )}
+
         {/* Content */}
         <div className="flex-1 min-h-0">
           {viewMode === 'preview' ? (
@@ -300,7 +354,7 @@ export const FullPagePreview = forwardRef<HTMLDivElement, FullPagePreviewProps>(
             </div>
           ) : (
             <pre className="h-full p-4 text-xs font-mono bg-muted rounded-md overflow-auto whitespace-pre-wrap break-all">
-              {fullHtml}
+              {getCurrentContent()}
             </pre>
           )}
         </div>
