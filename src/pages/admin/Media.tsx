@@ -93,10 +93,16 @@ export default function Media() {
     
     setCompressingId(item.id);
     try {
-      // Fetch the image from public URL
-      const response = await fetch(item.public_url);
-      const blob = await response.blob();
-      const file = new globalThis.File([blob], item.file_name, { type: item.file_type });
+      // Download file directly from Supabase Storage (avoids CORS issues)
+      const { data: blobData, error: downloadError } = await supabase.storage
+        .from('media')
+        .download(item.file_path);
+      
+      if (downloadError || !blobData) {
+        throw new Error(downloadError?.message || 'Failed to download file');
+      }
+      
+      const file = new globalThis.File([blobData], item.file_name, { type: item.file_type });
       
       const result = await optimizeImage(file);
       if (result) {
@@ -123,7 +129,7 @@ export default function Media() {
       }
     } catch (error) {
       console.error('Compression error:', error);
-      toast({ title: 'কম্প্রেশন ব্যর্থ', variant: 'destructive' });
+      toast({ title: 'কম্প্রেশন ব্যর্থ', description: String(error), variant: 'destructive' });
     } finally {
       setCompressingId(null);
     }
