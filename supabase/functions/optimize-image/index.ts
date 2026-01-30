@@ -6,14 +6,13 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Aggressive image compression using canvas API
-// Converts to JPEG with very low quality for maximum compression
+// Aggressive image compression - always converts to JPEG for maximum compression
 async function compressImage(
   imageBuffer: ArrayBuffer, 
   mimeType: string,
   maxWidth: number = 1200,
   quality: number = 0.5
-): Promise<{ buffer: Uint8Array; width: number; height: number }> {
+): Promise<{ buffer: Uint8Array; width: number; height: number; outputType: string }> {
   const { Image } = await import("https://deno.land/x/imagescript@1.3.0/mod.ts");
   
   try {
@@ -22,7 +21,7 @@ async function compressImage(
     let width = image.width;
     let height = image.height;
     
-    // Aggressive resize for web - max 1200px width
+    // Always resize to maxWidth for web optimization
     if (width > maxWidth) {
       const ratio = maxWidth / width;
       width = maxWidth;
@@ -30,24 +29,40 @@ async function compressImage(
       image.resize(width, height);
     }
     
-    // Use JPEG with very aggressive quality for maximum compression (80%+ reduction)
-    // Quality 40-50% gives excellent compression while maintaining acceptable visual quality
-    const jpegQuality = Math.round(quality * 100);
-    const outputBuffer = await image.encodeJPEG(jpegQuality);
+    // Check if image has transparency (PNG with alpha)
+    const isPngWithAlpha = mimeType === 'image/png';
     
-    console.log(`Compressed to JPEG: ${width}x${height}, quality: ${jpegQuality}%`);
+    let outputBuffer: Uint8Array;
+    let outputType: string;
+    
+    if (isPngWithAlpha) {
+      // For PNGs, use aggressive PNG compression level
+      // Level 3 = maximum compression for PNG
+      outputBuffer = await image.encode(3);
+      outputType = 'image/png';
+      console.log(`Compressed PNG: ${width}x${height}, compression level 3`);
+    } else {
+      // For JPEG/others, use very aggressive JPEG quality
+      const jpegQuality = Math.round(quality * 100);
+      outputBuffer = await image.encodeJPEG(jpegQuality);
+      outputType = 'image/jpeg';
+      console.log(`Compressed to JPEG: ${width}x${height}, quality: ${jpegQuality}%`);
+    }
     
     return {
       buffer: outputBuffer,
       width,
-      height
+      height,
+      outputType
     };
   } catch (error) {
-    console.error('Image compression failed, returning original:', error);
+    console.error('Image compression failed:', error);
+    // Return original if compression fails
     return {
       buffer: new Uint8Array(imageBuffer),
       width: 0,
-      height: 0
+      height: 0,
+      outputType: mimeType
     };
   }
 }
@@ -93,7 +108,7 @@ serve(async (req) => {
     const originalSize = originalBuffer.byteLength;
 
     // Compress the image with aggressive settings
-    const { buffer: compressedBuffer, width, height } = await compressImage(
+    const { buffer: compressedBuffer, width, height, outputType } = await compressImage(
       originalBuffer,
       file.type,
       maxWidth,
@@ -103,9 +118,8 @@ serve(async (req) => {
     const compressedSize = compressedBuffer.byteLength;
     const reduction = Math.round((1 - compressedSize / originalSize) * 100);
 
-    // Always output JPEG for maximum compression
-    const outputMimeType = 'image/jpeg';
-    const outputExt = 'jpg';
+    // Determine output extension based on type
+    const outputExt = outputType === 'image/png' ? 'png' : 'jpg';
     
     // Sanitize filename - remove special characters that storage doesn't accept
     const sanitizedBaseName = fileName
@@ -124,7 +138,7 @@ serve(async (req) => {
     const { error: uploadError } = await supabase.storage
       .from('media')
       .upload(filePath, compressedBuffer, {
-        contentType: outputMimeType,
+        contentType: outputType,
         upsert: false
       });
 
@@ -143,7 +157,7 @@ serve(async (req) => {
     const { error: insertError } = await supabase.from('media').insert({
       file_name: optimizedFileName,
       file_path: filePath,
-      file_type: outputMimeType,
+      file_type: outputType,
       file_size: compressedSize,
       public_url: urlData.publicUrl,
       folder: folder,

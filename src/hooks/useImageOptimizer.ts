@@ -23,7 +23,8 @@ interface UseImageOptimizerOptions {
 }
 
 export function useImageOptimizer(options: UseImageOptimizerOptions = {}) {
-  const { maxWidth = 1920, quality = 0.8, folder = 'uploads' } = options;
+  // Aggressive defaults for 80%+ compression
+  const { maxWidth = 1200, quality = 0.5, folder = 'uploads' } = options;
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const { toast } = useToast();
