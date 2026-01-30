@@ -1,188 +1,229 @@
 
-# HTML Code Editor Tabs Feature
+# রেডিমেড কম্পোনেন্ট লাইব্রেরি
 
 ## বর্তমান অবস্থা
-- Single `html` field-এ সব HTML content সংরক্ষিত
-- একটি textarea-তে সম্পূর্ণ code edit হয়
+- Landing Pages একটা single menu item (`/admin/pages`)
+- সেকশন তৈরি করতে হলে blank section থেকে শুরু করতে হয়
+- কোনো pre-built component/template নেই
 
 ## প্রস্তাবিত সমাধান
 
-### UI Design
+### Navigation Structure
 
 ```text
-┌─────────────────────────────────────────────────────────┐
-│  [এডিটর]  [প্রিভিউ]  [HTML] ←── এটায় ক্লিক করলে নিচে ট্যাব আসবে │
-├─────────────────────────────────────────────────────────┤
-│  ┌──────────────┬────────┬────────┐                      │
-│  │  Full Code ✓ │  Head  │  Body  │ ←── Sub-tabs        │
-│  └──────────────┴────────┴────────┘                      │
-│  ┌─────────────────────────────────────────────────────┐ │
-│  │ 1 │ <style>                                         │ │
-│  │ 2 │   .hero { background: #fff; }                   │ │
-│  │ 3 │ </style>                                        │ │
-│  │ 4 │ <section class="hero">                          │ │
-│  │ 5 │   <h1>Welcome</h1>                              │ │
-│  │ 6 │ </section>                                      │ │
-│  └─────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────┘
+Content
+├── Products
+├── Landing Pages ▾
+│   ├── 📚 Library     ← রেডিমেড কম্পোনেন্ট
+│   └── 📄 Pages       ← বর্তমান page management
+└── Media
+```
+
+### Library Page UI
+
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│  Component Library                        [+ Add Component]     │
+├─────────────────────────────────────────────────────────────────┤
+│  Filter: [All ▾] [Hero ▾] [Features ▾] [CTA ▾] [FAQ ▾]          │
+├─────────────────────────────────────────────────────────────────┤
+│  ┌──────────────────┐  ┌──────────────────┐  ┌────────────────┐ │
+│  │   ┌─────────┐    │  │   ┌─────────┐    │  │   ┌─────────┐  │ │
+│  │   │ Preview │    │  │   │ Preview │    │  │   │ Preview │  │ │
+│  │   │  Image  │    │  │   │  Image  │    │  │   │  Image  │  │ │
+│  │   └─────────┘    │  │   └─────────┘    │  │   └─────────┘  │ │
+│  │   Hero Modern    │  │   Feature Grid   │  │   CTA Banner   │ │
+│  │   ───────────    │  │   ────────────   │  │   ──────────   │ │
+│  │   [👁 Preview]   │  │   [👁 Preview]   │  │   [👁 Preview] │ │
+│  │   [✏ Edit]       │  │   [✏ Edit]       │  │   [✏ Edit]     │ │
+│  │   [🗑 Delete]    │  │   [🗑 Delete]    │  │   [🗑 Delete]  │ │
+│  └──────────────────┘  └──────────────────┘  └────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ### কিভাবে কাজ করবে
 
-| Tab | বিষয়বস্তু | উদ্দেশ্য |
-|-----|-----------|----------|
-| **Full Code** | সম্পূর্ণ HTML | সব একসাথে edit করা (বর্তমান behavior) |
-| **Head** | শুধু `<style>`, `<script>` | CSS/JS আলাদাভাবে edit করা |
-| **Body** | শুধু main content | HTML structure আলাদাভাবে edit করা |
-
-### Technical Approach
-
-**Option A: Parse & Merge (Recommended)**
-- Database-এ কোনো change লাগবে না
-- Single `html` field-ই থাকবে
-- UI-তে parse করে আলাদা tabs-এ দেখাবে
-- Save করার সময় merge করে একটা html-এ রাখবে
-
-```typescript
-// Parse logic
-function parseHtml(fullHtml: string) {
-  // Extract <style>...</style> and <script>...</script> as "head"
-  // Remaining content as "body"
-  const styleRegex = /<style[^>]*>[\s\S]*?<\/style>/gi;
-  const scriptRegex = /<script[^>]*>[\s\S]*?<\/script>/gi;
-  
-  const styles = fullHtml.match(styleRegex) || [];
-  const scripts = fullHtml.match(scriptRegex) || [];
-  
-  const head = [...styles, ...scripts].join('\n');
-  const body = fullHtml
-    .replace(styleRegex, '')
-    .replace(scriptRegex, '')
-    .trim();
-  
-  return { head, body };
-}
-
-// Merge logic
-function mergeHtml(head: string, body: string) {
-  return `${head}\n\n${body}`;
-}
-```
+| Feature | Description |
+|---------|-------------|
+| **Add to Library** | Admin নিজের তৈরি section save করতে পারবে library-তে |
+| **Categories** | Hero, Features, CTA, FAQ, Testimonial, Footer ইত্যাদি |
+| **Preview** | Component এর live preview দেখা যাবে |
+| **Use in Page** | Section Builder থেকে library-র component insert করা যাবে |
+| **Edit/Clone** | Library component edit বা duplicate করা যাবে |
 
 ---
 
 ## Implementation Steps
 
-### Step 1: Update SectionEditor.tsx
+### Phase 1: Database Setup
 
-**Sub-tab state management:**
-```typescript
-const [codeTab, setCodeTab] = useState<'full' | 'head' | 'body'>('full');
-const [headCode, setHeadCode] = useState('');
-const [bodyCode, setBodyCode] = useState('');
-```
+**নতুন table: `component_library`**
 
-**Parse on tab switch:**
-- Full → Head/Body: Parse current `html` into parts
-- Head/Body → Full: Merge parts back
+| Column | Type | Description |
+|--------|------|-------------|
+| id | uuid | Primary key |
+| name | text | Component name |
+| category | text | Hero, Features, CTA, etc. |
+| html | text | HTML content |
+| thumbnail_url | text | Preview image (optional) |
+| created_by | uuid | User reference |
+| created_at | timestamp | Creation time |
+| updated_at | timestamp | Last update |
 
-### Step 2: Add Tab UI
+### Phase 2: Navigation Update
 
-```typescript
-{viewMode === 'code' && (
-  <div className="flex items-center gap-1 mb-2">
-    <Button 
-      variant={codeTab === 'full' ? 'default' : 'ghost'}
-      size="sm" 
-      onClick={() => setCodeTab('full')}
-    >
-      Full Code
-    </Button>
-    <Button 
-      variant={codeTab === 'head' ? 'default' : 'ghost'}
-      size="sm" 
-      onClick={() => setCodeTab('head')}
-    >
-      Head
-    </Button>
-    <Button 
-      variant={codeTab === 'body' ? 'default' : 'ghost'}
-      size="sm" 
-      onClick={() => setCodeTab('body')}
-    >
-      Body
-    </Button>
-  </div>
-)}
-```
-
-### Step 3: Textarea Switching
+**AdminSidebar.tsx পরিবর্তন:**
 
 ```typescript
-{codeTab === 'full' ? (
-  <textarea value={html} onChange={...} />
-) : codeTab === 'head' ? (
-  <textarea value={headCode} onChange={...} placeholder="<style>...</style>" />
-) : (
-  <textarea value={bodyCode} onChange={...} placeholder="<section>...</section>" />
-)}
+{
+  href: '/admin/pages',
+  label: 'Landing Pages',
+  icon: FileText,
+  children: [
+    { href: '/admin/pages/library', label: 'Library', icon: BookOpen },
+    { href: '/admin/pages/manage', label: 'Pages', icon: FileText },
+  ]
+}
 ```
 
-### Step 4: Update FullscreenCodeModal
+### Phase 3: New Pages
 
-Same 3-tab system FullscreenCodeModal-এও add করতে হবে।
+| Route | Component | Purpose |
+|-------|-----------|---------|
+| `/admin/pages` | Redirect | → `/admin/pages/manage` |
+| `/admin/pages/manage` | `LandingPages.tsx` | বর্তমান page management |
+| `/admin/pages/library` | `ComponentLibrary.tsx` | নতুন component library |
+
+### Phase 4: Component Library Page
+
+**নতুন file: `src/pages/admin/ComponentLibrary.tsx`**
+
+Features:
+- Grid view of all components
+- Category filter
+- Add new component (name, category, HTML editor)
+- Edit component
+- Delete component
+- Preview modal
+- Copy HTML to clipboard
+
+### Phase 5: Section Builder Integration
+
+**SectionList.tsx পরিবর্তন:**
+
+Add Section Dialog-এ নতুন option:
+- "From Library" button → Library modal open হবে
+- Component select করলে সেটার HTML দিয়ে section তৈরি হবে
+
+```text
+┌──────────────────────────────────────────┐
+│  Add New Section                         │
+├──────────────────────────────────────────┤
+│  ┌─────────────┐  ┌─────────────┐        │
+│  │  HTML       │  │  Checkout   │        │
+│  │  Section    │  │  Section    │        │
+│  └─────────────┘  └─────────────┘        │
+│                                          │
+│  ─────────── OR ───────────             │
+│                                          │
+│  [📚 Choose from Library]  ← নতুন        │
+└──────────────────────────────────────────┘
+```
 
 ---
 
-## Files to Modify
+## Files to Create/Modify
 
-| File | Change |
+| File | Action |
 |------|--------|
-| `src/components/admin/landing-page-editor/SectionEditor.tsx` | Sub-tabs + parse/merge logic |
-| `src/components/admin/landing-page-editor/FullscreenCodeModal.tsx` | Same sub-tabs |
+| `src/pages/admin/ComponentLibrary.tsx` | Create - Library page |
+| `src/components/admin/library/ComponentCard.tsx` | Create - Grid card |
+| `src/components/admin/library/ComponentEditor.tsx` | Create - Add/Edit dialog |
+| `src/components/admin/library/LibraryPickerModal.tsx` | Create - For Section Builder |
+| `src/components/admin/AdminSidebar.tsx` | Modify - Add dropdown |
+| `src/components/admin/landing-page-editor/SectionList.tsx` | Modify - Add "From Library" |
+| `src/App.tsx` | Modify - Add routes |
+
+---
+
+## Default Components (Pre-seeded)
+
+প্রথমবার deploy করার সময় কিছু default component seed করা হবে:
+
+| Category | Component Examples |
+|----------|-------------------|
+| **Hero** | Simple Hero, Video Hero, Split Hero |
+| **Features** | 3-Column Grid, Icon Features, Alternating |
+| **CTA** | Banner CTA, Inline CTA, Floating CTA |
+| **FAQ** | Accordion FAQ, Grid FAQ |
+| **Testimonial** | Slider, Grid, Single Quote |
+| **Footer** | Simple Footer, Multi-column |
 
 ---
 
 ## Technical Details
 
-### Parse Function
-```typescript
-function parseHtmlParts(fullHtml: string): { head: string; body: string } {
-  const styleMatches = fullHtml.match(/<style[^>]*>[\s\S]*?<\/style>/gi) || [];
-  const scriptMatches = fullHtml.match(/<script[^>]*>[\s\S]*?<\/script>/gi) || [];
-  
-  let bodyHtml = fullHtml;
-  [...styleMatches, ...scriptMatches].forEach(match => {
-    bodyHtml = bodyHtml.replace(match, '');
-  });
-  
-  return {
-    head: [...styleMatches, ...scriptMatches].join('\n\n'),
-    body: bodyHtml.trim()
-  };
-}
+### Database Migration
+
+```sql
+CREATE TABLE component_library (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  category TEXT NOT NULL DEFAULT 'general',
+  html TEXT NOT NULL DEFAULT '',
+  thumbnail_url TEXT,
+  created_by UUID REFERENCES auth.users(id),
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- RLS
+ALTER TABLE component_library ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Authenticated users can read components"
+  ON component_library FOR SELECT
+  TO authenticated
+  USING (true);
+
+CREATE POLICY "Authenticated users can insert components"
+  ON component_library FOR INSERT
+  TO authenticated
+  WITH CHECK (true);
+
+CREATE POLICY "Users can update own components"
+  ON component_library FOR UPDATE
+  TO authenticated
+  USING (created_by = auth.uid());
+
+CREATE POLICY "Users can delete own components"
+  ON component_library FOR DELETE
+  TO authenticated
+  USING (created_by = auth.uid());
 ```
 
-### Merge Function
+### Category Options
+
 ```typescript
-function mergeHtmlParts(head: string, body: string): string {
-  const trimmedHead = head.trim();
-  const trimmedBody = body.trim();
-  
-  if (!trimmedHead) return trimmedBody;
-  if (!trimmedBody) return trimmedHead;
-  return `${trimmedHead}\n\n${trimmedBody}`;
-}
+export const componentCategories = [
+  { value: 'hero', label: 'Hero' },
+  { value: 'features', label: 'Features' },
+  { value: 'cta', label: 'CTA' },
+  { value: 'faq', label: 'FAQ' },
+  { value: 'testimonial', label: 'Testimonial' },
+  { value: 'pricing', label: 'Pricing' },
+  { value: 'footer', label: 'Footer' },
+  { value: 'general', label: 'General' },
+];
 ```
 
 ---
 
 ## Expected Result
 
-- HTML button-এ ক্লিক করলে 3টা sub-tab দেখাবে
-- **Full Code**: বর্তমান behavior (সম্পূর্ণ HTML)
-- **Head**: শুধু `<style>` এবং `<script>` tags
-- **Body**: বাকি সব content
-- Tab switch করলে automatically parse/merge হবে
-- Database-এ কোনো পরিবর্তন লাগবে না
+- Landing Pages menu dropdown হবে Library ও Pages সহ
+- Library page-এ সব saved component দেখা যাবে
+- Category অনুযায়ী filter করা যাবে
+- নতুন component add/edit/delete করা যাবে
+- Section Builder থেকে library component use করা যাবে
+- কিছু default component pre-loaded থাকবে
 
