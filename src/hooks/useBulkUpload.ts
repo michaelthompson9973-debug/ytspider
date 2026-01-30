@@ -50,11 +50,24 @@ export function useBulkUpload(options: UseBulkUploadOptions = {}) {
 
         updateFile(id, { status: 'compressing', progress: 50 });
 
-        const { data, error } = await supabase.functions.invoke('optimize-image', {
-          body: formData,
-        });
+        // Use native fetch for proper FormData handling (SDK doesn't handle multipart/form-data correctly)
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/optimize-image`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            },
+            body: formData, // Browser auto-sets Content-Type to multipart/form-data with boundary
+          }
+        );
 
-        if (error) throw error;
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || `HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
 
         const savedBytes = data.original_size - data.compressed_size;
         const savedPercent = data.reduction_percent;
