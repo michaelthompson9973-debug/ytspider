@@ -23,21 +23,23 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useImageOptimizer } from '@/hooks/useImageOptimizer';
-import { Upload, Copy, Trash2, FolderPlus, Image, Video, File, Zap, Loader2 } from 'lucide-react';
+import { useBulkUpload } from '@/hooks/useBulkUpload';
+import { BulkUploadZone } from '@/components/admin/BulkUploadZone';
+import { UploadProgressList } from '@/components/admin/UploadProgressList';
+import { Copy, Trash2, FolderPlus, Image, Video, File, Zap, Loader2 } from 'lucide-react';
 
 export default function Media() {
   const [folder, setFolder] = useState('root');
   const [newFolder, setNewFolder] = useState('');
   const [folderDialogOpen, setFolderDialogOpen] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number; optimizing: boolean } | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [compressingId, setCompressingId] = useState<string | null>(null);
+  const [deleteItem, setDeleteItem] = useState<NonNullable<typeof media>[number] | null>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { user } = useAuth();
-  const [compressingId, setCompressingId] = useState<string | null>(null);
-  const [deleteItem, setDeleteItem] = useState<NonNullable<typeof media>[number] | null>(null);
   
-  const { uploadFiles, isOptimizing, optimizeImage } = useImageOptimizer({ folder });
+  const { optimizeImage } = useImageOptimizer({ folder });
+  const { files: uploadingFiles, isUploading, startUpload, cancelUpload, clearAll } = useBulkUpload({ folder });
 
   const { data: media, isLoading } = useQuery({
     queryKey: ['media', folder],
@@ -93,7 +95,6 @@ export default function Media() {
     
     setCompressingId(item.id);
     try {
-      // Download file directly from Supabase Storage (avoids CORS issues)
       const { data: blobData, error: downloadError } = await supabase.storage
         .from('media')
         .download(item.file_path);
@@ -106,10 +107,8 @@ export default function Media() {
       
       const result = await optimizeImage(file);
       if (result) {
-        // Delete old file from storage
         await supabase.storage.from('media').remove([item.file_path]);
         
-        // Update database record with new compressed file info
         await supabase
           .from('media')
           .update({
@@ -135,23 +134,10 @@ export default function Media() {
     }
   };
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    setUploadProgress({ current: 0, total: files.length, optimizing: false });
-
-    await uploadFiles(files, user?.id, (current, total, optimizing) => {
-      setUploadProgress({ current, total, optimizing });
-    });
-
+  const handleFilesSelected = async (files: File[]) => {
+    await startUpload(files, user?.id);
     queryClient.invalidateQueries({ queryKey: ['media'] });
     queryClient.invalidateQueries({ queryKey: ['media-folders'] });
-    
-    setUploadProgress(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
   };
 
   const copyUrl = (url: string) => {
@@ -173,53 +159,35 @@ export default function Media() {
     return File;
   };
 
-  const uploading = isOptimizing || uploadProgress !== null;
-
   return (
     <AdminLayout>
       <div className="space-y-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <h1 className="text-2xl font-bold">Media Library</h1>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setFolderDialogOpen(true)}>
-              <FolderPlus className="mr-2 h-4 w-4" />
-              New Folder
-            </Button>
-            <Button onClick={() => fileInputRef.current?.click()} disabled={uploading}>
-              {uploading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {uploadProgress?.optimizing ? (
-                    <span className="flex items-center gap-1">
-                      <Zap className="h-3 w-3 text-amber-400" />
-                      অপটিমাইজ হচ্ছে...
-                    </span>
-                  ) : (
-                    `আপলোড ${uploadProgress?.current}/${uploadProgress?.total}`
-                  )}
-                </>
-              ) : (
-                <>
-                  <Upload className="mr-2 h-4 w-4" />
-                  <Zap className="mr-1 h-3 w-3 text-amber-500" />
-                  Upload
-                </>
-              )}
-            </Button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              accept="image/*,video/*"
-              className="hidden"
-              onChange={handleUpload}
-            />
-          </div>
+          <Button variant="outline" onClick={() => setFolderDialogOpen(true)}>
+            <FolderPlus className="mr-2 h-4 w-4" />
+            New Folder
+          </Button>
         </div>
+
+        {/* Bulk Upload Zone */}
+        <BulkUploadZone 
+          onFilesSelected={handleFilesSelected} 
+          disabled={isUploading}
+        />
+
+        {/* Upload Progress */}
+        {uploadingFiles.length > 0 && (
+          <UploadProgressList 
+            files={uploadingFiles}
+            onCancel={cancelUpload}
+            onClear={clearAll}
+          />
+        )}
 
         {/* Optimization info banner */}
         <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
-          <Zap className="h-4 w-4 text-amber-500" />
+          <Zap className="h-4 w-4 text-primary" />
           <span>ইমেজ অটোমেটিক অপটিমাইজ হয় - ফাইল সাইজ কমে, কোয়ালিটি থাকে!</span>
         </div>
 
@@ -290,7 +258,7 @@ export default function Media() {
                           {compressingId === item.id ? (
                             <Loader2 className="h-3 w-3 animate-spin" />
                           ) : (
-                            <Zap className="h-3 w-3 text-amber-500" />
+                            <Zap className="h-3 w-3 text-primary" />
                           )}
                         </Button>
                       )}
