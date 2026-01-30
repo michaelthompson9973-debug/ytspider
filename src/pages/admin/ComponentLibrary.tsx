@@ -111,7 +111,7 @@ export default function ComponentLibrary() {
       <div className="flex h-full">
         {/* Desktop Sidebar */}
         {!isMobile && (
-          <div className="w-56 shrink-0 border-r bg-muted/30 p-4">
+          <div className="w-56 shrink-0 border-r bg-muted/30 p-4 sticky top-0 h-screen overflow-y-auto">
             <CategorySidebar />
           </div>
         )}
