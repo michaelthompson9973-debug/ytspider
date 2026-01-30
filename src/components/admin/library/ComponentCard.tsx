@@ -38,23 +38,28 @@ export function ComponentCard({ component, onPreview, onEdit, onDelete }: Compon
   const previewHtml = `<!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="preload" href="${origin}/fonts/hind-siliguri-400.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="preload" href="${origin}/fonts/hind-siliguri-600.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="preload" href="${origin}/fonts/anek-bangla-400.woff2" as="font" type="font/woff2" crossorigin>
-  <style>
-    @font-face { font-family: 'Hind Siliguri'; font-weight: 400; font-display: swap; src: url('${origin}/fonts/hind-siliguri-400.woff2') format('woff2'); }
-    @font-face { font-family: 'Hind Siliguri'; font-weight: 600; font-display: swap; src: url('${origin}/fonts/hind-siliguri-600.woff2') format('woff2'); }
-    @font-face { font-family: 'Hind Siliguri'; font-weight: 700; font-display: swap; src: url('${origin}/fonts/hind-siliguri-700.woff2') format('woff2'); }
-    @font-face { font-family: 'Anek Bangla'; font-weight: 400; font-display: swap; src: url('${origin}/fonts/anek-bangla-400.woff2') format('woff2'); }
-    @font-face { font-family: 'Anek Bangla'; font-weight: 500; font-display: swap; src: url('${origin}/fonts/anek-bangla-500.woff2') format('woff2'); }
-    @font-face { font-family: 'Anek Bangla'; font-weight: 600; font-display: swap; src: url('${origin}/fonts/anek-bangla-600.woff2') format('woff2'); }
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Anek Bangla', sans-serif; transform: scale(0.25); transform-origin: top left; width: 400%; height: 400%; overflow: hidden; }
-    h1, h2, h3, h4, h5, h6 { font-family: 'Hind Siliguri', sans-serif; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preload" href="${origin}/fonts/hind-siliguri-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="${origin}/fonts/hind-siliguri-600.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="${origin}/fonts/hind-siliguri-700.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="${origin}/fonts/anek-bangla-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="${origin}/fonts/anek-bangla-500.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="${origin}/fonts/anek-bangla-600.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+@font-face { font-family: "Hind Siliguri"; font-weight: 400; font-display: swap; src: url("${origin}/fonts/hind-siliguri-400.woff2") format("woff2"); }
+@font-face { font-family: "Hind Siliguri"; font-weight: 500; font-display: swap; src: url("${origin}/fonts/hind-siliguri-500.woff2") format("woff2"); }
+@font-face { font-family: "Hind Siliguri"; font-weight: 600; font-display: swap; src: url("${origin}/fonts/hind-siliguri-600.woff2") format("woff2"); }
+@font-face { font-family: "Hind Siliguri"; font-weight: 700; font-display: swap; src: url("${origin}/fonts/hind-siliguri-700.woff2") format("woff2"); }
+@font-face { font-family: "Anek Bangla"; font-weight: 400; font-display: swap; src: url("${origin}/fonts/anek-bangla-400.woff2") format("woff2"); }
+@font-face { font-family: "Anek Bangla"; font-weight: 500; font-display: swap; src: url("${origin}/fonts/anek-bangla-500.woff2") format("woff2"); }
+@font-face { font-family: "Anek Bangla"; font-weight: 600; font-display: swap; src: url("${origin}/fonts/anek-bangla-600.woff2") format("woff2"); }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: "Anek Bangla", sans-serif !important; transform: scale(0.25); transform-origin: top left; width: 400%; height: 400%; overflow: hidden; }
+h1, h2, h3, h4, h5, h6 { font-family: "Hind Siliguri", sans-serif !important; }
+p, span, div, button, a, li, td, th, label, input, textarea { font-family: "Anek Bangla", sans-serif !important; }
+</style>
 </head>
 <body>${component.html}</body>
 </html>`;
