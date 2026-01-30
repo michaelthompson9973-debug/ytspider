@@ -42,6 +42,7 @@ export function ComponentPreviewModal({ open, onOpenChange, component }: Compone
           @font-face { font-family: 'Anek Bangla'; font-weight: 600; font-display: swap; src: url('${origin}/fonts/anek-bangla-600.woff2') format('woff2'); }
           * { margin: 0; padding: 0; box-sizing: border-box; }
           body { font-family: 'Anek Bangla', sans-serif; }
+          h1, h2, h3, h4, h5, h6 { font-family: 'Hind Siliguri', sans-serif; }
         </style>
       </head>
       <body>${component.html}</body>
