@@ -7,6 +7,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { AiEnhanceButton } from './AiEnhanceButton';
+import { parseHtmlParts, mergeHtmlParts } from './htmlParseUtils';
 
 interface FullscreenCodeModalProps {
   open: boolean;
@@ -15,6 +16,8 @@ interface FullscreenCodeModalProps {
   onHtmlChange: (html: string) => void;
   sectionName: string;
 }
+
+type CodeTab = 'full' | 'head' | 'body';
 
 export function FullscreenCodeModal({
   open,
@@ -25,6 +28,9 @@ export function FullscreenCodeModal({
 }: FullscreenCodeModalProps) {
   const [localHtml, setLocalHtml] = useState(html);
   const [copied, setCopied] = useState(false);
+  const [codeTab, setCodeTab] = useState<CodeTab>('full');
+  const [headCode, setHeadCode] = useState('');
+  const [bodyCode, setBodyCode] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const lineNumbersRef = useRef<HTMLDivElement>(null);
 
@@ -32,13 +38,60 @@ export function FullscreenCodeModal({
   useEffect(() => {
     if (open) {
       setLocalHtml(html);
+      setCodeTab('full');
+      const parts = parseHtmlParts(html);
+      setHeadCode(parts.head);
+      setBodyCode(parts.body);
     }
   }, [open, html]);
 
-  const lines = localHtml.split('\n');
+  // Get current content based on active tab
+  const getCurrentContent = useCallback(() => {
+    switch (codeTab) {
+      case 'head': return headCode;
+      case 'body': return bodyCode;
+      default: return localHtml;
+    }
+  }, [codeTab, localHtml, headCode, bodyCode]);
+
+  const lines = getCurrentContent().split('\n');
+
+  // Handle tab switching with parse/merge
+  const handleCodeTabChange = useCallback((newTab: CodeTab) => {
+    if (newTab === codeTab) return;
+    
+    if (codeTab === 'full') {
+      // Switching from full → head/body: parse
+      const parts = parseHtmlParts(localHtml);
+      setHeadCode(parts.head);
+      setBodyCode(parts.body);
+    } else if (newTab === 'full') {
+      // Switching from head/body → full: merge
+      const merged = mergeHtmlParts(headCode, bodyCode);
+      setLocalHtml(merged);
+    }
+    
+    setCodeTab(newTab);
+  }, [codeTab, localHtml, headCode, bodyCode]);
+
+  // Handle content change based on current tab
+  const handleContentChange = useCallback((value: string) => {
+    switch (codeTab) {
+      case 'head':
+        setHeadCode(value);
+        setLocalHtml(mergeHtmlParts(value, bodyCode));
+        break;
+      case 'body':
+        setBodyCode(value);
+        setLocalHtml(mergeHtmlParts(headCode, value));
+        break;
+      default:
+        setLocalHtml(value);
+    }
+  }, [codeTab, headCode, bodyCode]);
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(localHtml);
+    await navigator.clipboard.writeText(getCurrentContent());
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -54,6 +107,15 @@ export function FullscreenCodeModal({
       lineNumbersRef.current.scrollTop = textareaRef.current.scrollTop;
     }
   }, []);
+
+  // Get placeholder based on current tab
+  const getPlaceholder = () => {
+    switch (codeTab) {
+      case 'head': return '<style>\n  /* CSS styles here */\n</style>\n\n<script>\n  // JavaScript here\n</script>';
+      case 'body': return '<section>\n  Your HTML content here...\n</section>';
+      default: return '<section>Your HTML content here...</section>';
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -87,7 +149,12 @@ export function FullscreenCodeModal({
             </Button>
             <AiEnhanceButton
               html={localHtml}
-              onEnhanced={setLocalHtml}
+              onEnhanced={(enhanced) => {
+                setLocalHtml(enhanced);
+                const parts = parseHtmlParts(enhanced);
+                setHeadCode(parts.head);
+                setBodyCode(parts.body);
+              }}
               disabled={false}
             />
             <Button
@@ -99,6 +166,34 @@ export function FullscreenCodeModal({
               <X className="h-4 w-4" />
             </Button>
           </div>
+        </div>
+
+        {/* Code Sub-tabs */}
+        <div className="flex items-center gap-1 px-4 py-2 border-b border-zinc-700 bg-zinc-800 shrink-0">
+          <Button
+            variant={codeTab === 'full' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => handleCodeTabChange('full')}
+            className={`h-7 px-3 text-xs ${codeTab !== 'full' ? 'text-zinc-300 hover:text-white hover:bg-zinc-700' : ''}`}
+          >
+            Full Code
+          </Button>
+          <Button
+            variant={codeTab === 'head' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => handleCodeTabChange('head')}
+            className={`h-7 px-3 text-xs ${codeTab !== 'head' ? 'text-zinc-300 hover:text-white hover:bg-zinc-700' : ''}`}
+          >
+            Head
+          </Button>
+          <Button
+            variant={codeTab === 'body' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => handleCodeTabChange('body')}
+            className={`h-7 px-3 text-xs ${codeTab !== 'body' ? 'text-zinc-300 hover:text-white hover:bg-zinc-700' : ''}`}
+          >
+            Body
+          </Button>
         </div>
         
         {/* VS Code style editor */}
@@ -119,11 +214,11 @@ export function FullscreenCodeModal({
           <textarea
             ref={textareaRef}
             className="flex-1 p-4 bg-transparent text-zinc-100 font-mono text-sm resize-none focus:outline-none leading-6"
-            value={localHtml}
-            onChange={(e) => setLocalHtml(e.target.value)}
+            value={getCurrentContent()}
+            onChange={(e) => handleContentChange(e.target.value)}
             onScroll={handleScroll}
             spellCheck={false}
-            placeholder="<section>Your HTML content here...</section>"
+            placeholder={getPlaceholder()}
           />
         </div>
         

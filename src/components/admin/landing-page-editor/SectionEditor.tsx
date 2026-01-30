@@ -1,4 +1,4 @@
-import { useState, useEffect, forwardRef, useRef } from 'react';
+import { useState, useEffect, forwardRef, useRef, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,7 @@ import { Section, ThemeConfig, defaultThemeConfig } from './types';
 import { AiEnhanceButton } from './AiEnhanceButton';
 import { FullscreenCodeModal } from './FullscreenCodeModal';
 import { generatePreviewHTML } from './themeUtils';
+import { parseHtmlParts, mergeHtmlParts } from './htmlParseUtils';
 
 interface SectionEditorProps {
   section: Section | null;
@@ -23,13 +24,53 @@ export const SectionEditor = forwardRef<HTMLDivElement, SectionEditorProps>(
     const [isDirty, setIsDirty] = useState(false);
     const [viewMode, setViewMode] = useState<'preview' | 'richtext' | 'code'>('richtext');
     const [codeFullscreenOpen, setCodeFullscreenOpen] = useState(false);
+    const [codeTab, setCodeTab] = useState<'full' | 'head' | 'body'>('full');
+    const [headCode, setHeadCode] = useState('');
+    const [bodyCode, setBodyCode] = useState('');
     const iframeRef = useRef<HTMLIFrameElement>(null);
+
+    // Handle code tab switching with parse/merge
+    const handleCodeTabChange = useCallback((newTab: 'full' | 'head' | 'body') => {
+      if (newTab === codeTab) return;
+      
+      if (codeTab === 'full') {
+        // Switching from full → head/body: parse
+        const parts = parseHtmlParts(html);
+        setHeadCode(parts.head);
+        setBodyCode(parts.body);
+      } else if (newTab === 'full') {
+        // Switching from head/body → full: merge
+        const merged = mergeHtmlParts(headCode, bodyCode);
+        setHtml(merged);
+        setIsDirty(true);
+      }
+      
+      setCodeTab(newTab);
+    }, [codeTab, html, headCode, bodyCode]);
+
+    // Sync head/body changes back to full html when editing in split mode
+    const handleHeadChange = useCallback((newHead: string) => {
+      setHeadCode(newHead);
+      setHtml(mergeHtmlParts(newHead, bodyCode));
+      setIsDirty(true);
+    }, [bodyCode]);
+
+    const handleBodyChange = useCallback((newBody: string) => {
+      setBodyCode(newBody);
+      setHtml(mergeHtmlParts(headCode, newBody));
+      setIsDirty(true);
+    }, [headCode]);
 
     useEffect(() => {
       if (section) {
         setName(section.name);
         setHtml(section.html);
         setIsDirty(false);
+        setCodeTab('full');
+        // Parse for head/body views
+        const parts = parseHtmlParts(section.html);
+        setHeadCode(parts.head);
+        setBodyCode(parts.body);
       }
     }, [section]);
 
@@ -120,6 +161,9 @@ export const SectionEditor = forwardRef<HTMLDivElement, SectionEditorProps>(
                 html={html}
                 onEnhanced={(enhancedHtml) => {
                   setHtml(enhancedHtml);
+                  const parts = parseHtmlParts(enhancedHtml);
+                  setHeadCode(parts.head);
+                  setBodyCode(parts.body);
                   setIsDirty(true);
                 }}
                 disabled={isSaving}
@@ -136,6 +180,36 @@ export const SectionEditor = forwardRef<HTMLDivElement, SectionEditorProps>(
             </div>
           )}
         </div>
+
+        {/* Code Sub-tabs */}
+        {viewMode === 'code' && (
+          <div className="flex items-center gap-1 mb-2">
+            <Button
+              variant={codeTab === 'full' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => handleCodeTabChange('full')}
+              className="h-7 px-3 text-xs"
+            >
+              Full Code
+            </Button>
+            <Button
+              variant={codeTab === 'head' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => handleCodeTabChange('head')}
+              className="h-7 px-3 text-xs"
+            >
+              Head
+            </Button>
+            <Button
+              variant={codeTab === 'body' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => handleCodeTabChange('body')}
+              className="h-7 px-3 text-xs"
+            >
+              Body
+            </Button>
+          </div>
+        )}
 
         {/* Content Area */}
         <div className="flex-1 min-h-0 overflow-auto">
@@ -158,7 +232,7 @@ export const SectionEditor = forwardRef<HTMLDivElement, SectionEditorProps>(
                 title="Section Preview"
               />
             </div>
-          ) : (
+          ) : codeTab === 'full' ? (
             <textarea
               className="flex-1 w-full h-full font-mono text-sm p-4 border rounded-md bg-muted/50 resize-none focus:outline-none focus:ring-2 focus:ring-ring"
               value={html}
@@ -167,6 +241,22 @@ export const SectionEditor = forwardRef<HTMLDivElement, SectionEditorProps>(
                 setIsDirty(true);
               }}
               placeholder="<section>Your HTML content here...</section>"
+              spellCheck={false}
+            />
+          ) : codeTab === 'head' ? (
+            <textarea
+              className="flex-1 w-full h-full font-mono text-sm p-4 border rounded-md bg-muted/50 resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+              value={headCode}
+              onChange={(e) => handleHeadChange(e.target.value)}
+              placeholder="<style>&#10;  /* CSS styles here */&#10;</style>&#10;&#10;<script>&#10;  // JavaScript here&#10;</script>"
+              spellCheck={false}
+            />
+          ) : (
+            <textarea
+              className="flex-1 w-full h-full font-mono text-sm p-4 border rounded-md bg-muted/50 resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+              value={bodyCode}
+              onChange={(e) => handleBodyChange(e.target.value)}
+              placeholder="<section>&#10;  Your HTML content here...&#10;</section>"
               spellCheck={false}
             />
           )}
