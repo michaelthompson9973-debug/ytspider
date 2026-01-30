@@ -46,18 +46,25 @@ export function ComponentCard({ component, onPreview, onEdit, onDelete }: Compon
           </div>
         </CardHeader>
         <CardContent className="pb-2">
-          <div className="aspect-video bg-muted rounded-md overflow-hidden border">
-            {component.thumbnail_url ? (
-              <img
-                src={component.thumbnail_url}
-                alt={component.name}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm">
-                No preview
-              </div>
-            )}
+          <div className="aspect-video bg-white rounded-md overflow-hidden border">
+            <iframe
+              srcDoc={`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; transform: scale(0.25); transform-origin: top left; width: 400%; height: 400%; overflow: hidden; }
+  </style>
+</head>
+<body>${component.html}</body>
+</html>`}
+              className="w-full h-full border-0 pointer-events-none"
+              title={`Preview: ${component.name}`}
+              sandbox="allow-scripts"
+            />
           </div>
         </CardContent>
         <CardFooter className="flex gap-2 pt-2">
