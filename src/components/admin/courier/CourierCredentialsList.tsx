@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Eye, EyeOff, Trash2, Plus, Loader2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Eye, EyeOff, Trash2, Loader2, Save, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,82 +10,102 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { CourierCredential, useCourierCredentials } from '@/hooks/useCourierCredentials';
+import { useCourierCredentials } from '@/hooks/useCourierCredentials';
 
 interface CredentialsListProps {
   provider: 'steadfast' | 'pathao';
 }
 
-const CREDENTIAL_TYPES = {
-  steadfast: [
-    { value: 'api_key', label: 'API Key' },
-    { value: 'secret_key', label: 'Secret Key' },
-  ],
-  pathao: [
-    { value: 'client_id', label: 'Client ID' },
-    { value: 'client_secret', label: 'Client Secret' },
-    { value: 'username', label: 'Username (Email)' },
-    { value: 'password', label: 'Password' },
-    { value: 'store_id', label: 'Store ID' },
-  ],
-};
+const STEADFAST_FIELDS = [
+  { key: 'api_key', label: 'API Key', placeholder: 'Enter your Steadfast API Key', isPassword: false },
+  { key: 'secret_key', label: 'Secret Key', placeholder: 'Enter your Steadfast Secret Key', isPassword: true },
+];
+
+const PATHAO_FIELDS = [
+  { key: 'client_id', label: 'Client ID', placeholder: 'Enter Pathao Client ID' },
+  { key: 'client_secret', label: 'Client Secret', placeholder: 'Enter Pathao Client Secret', isPassword: true },
+  { key: 'username', label: 'Username (Email)', placeholder: 'Enter your Pathao email' },
+  { key: 'password', label: 'Password', placeholder: 'Enter your Pathao password', isPassword: true },
+  { key: 'store_id', label: 'Store ID', placeholder: 'Enter your Store ID' },
+];
 
 export function CourierCredentialsList({ provider }: CredentialsListProps) {
-  const { credentials, isLoading, addCredential, deleteCredential } = useCourierCredentials(provider);
+  const { credentials, isLoading, addCredential, updateCredential, deleteCredential } = useCourierCredentials(provider);
+  const [formValues, setFormValues] = useState<Record<string, string>>({});
   const [showValues, setShowValues] = useState<Record<string, boolean>>({});
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [newCredType, setNewCredType] = useState('');
-  const [newCredValue, setNewCredValue] = useState('');
-  const [isAdding, setIsAdding] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [savedFields, setSavedFields] = useState<Record<string, boolean>>({});
 
-  const toggleShowValue = (id: string) => {
-    setShowValues(prev => ({ ...prev, [id]: !prev[id] }));
+  const fields = provider === 'steadfast' ? STEADFAST_FIELDS : PATHAO_FIELDS;
+
+  // Initialize form values from existing credentials
+  useEffect(() => {
+    const initialValues: Record<string, string> = {};
+    credentials.forEach(cred => {
+      if (!['access_token', 'refresh_token'].includes(cred.credential_type)) {
+        initialValues[cred.credential_type] = cred.credential_value;
+      }
+    });
+    setFormValues(initialValues);
+  }, [credentials]);
+
+  const toggleShowValue = (key: string) => {
+    setShowValues(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const handleAdd = async () => {
-    if (!newCredType || !newCredValue) return;
-    
-    setIsAdding(true);
-    const success = await addCredential(newCredType, newCredValue);
-    setIsAdding(false);
-    
-    if (success) {
-      setIsAddDialogOpen(false);
-      setNewCredType('');
-      setNewCredValue('');
+  const handleInputChange = (key: string, value: string) => {
+    setFormValues(prev => ({ ...prev, [key]: value }));
+    // Clear saved indicator when user types
+    setSavedFields(prev => ({ ...prev, [key]: false }));
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    const newSavedFields: Record<string, boolean> = {};
+
+    for (const field of fields) {
+      const value = formValues[field.key]?.trim();
+      if (!value) continue;
+
+      const existingCred = credentials.find(c => c.credential_type === field.key);
+      
+      if (existingCred) {
+        if (existingCred.credential_value !== value) {
+          await updateCredential(existingCred.id, { credential_value: value });
+          newSavedFields[field.key] = true;
+        }
+      } else {
+        await addCredential(field.key, value, field.label);
+        newSavedFields[field.key] = true;
+      }
+    }
+
+    setSavedFields(newSavedFields);
+    setIsSaving(false);
+
+    // Clear saved indicators after 2 seconds
+    setTimeout(() => setSavedFields({}), 2000);
+  };
+
+  const handleDelete = async (key: string) => {
+    const cred = credentials.find(c => c.credential_type === key);
+    if (cred) {
+      await deleteCredential(cred.id);
+      setFormValues(prev => {
+        const newValues = { ...prev };
+        delete newValues[key];
+        return newValues;
+      });
     }
   };
 
-  const maskValue = (value: string) => {
-    if (value.length <= 4) return '****';
-    return value.slice(0, 4) + '*'.repeat(Math.min(value.length - 4, 16));
-  };
-
-  const getCredentialLabel = (type: string) => {
-    const types = CREDENTIAL_TYPES[provider];
-    return types.find(t => t.value === type)?.label || type;
-  };
-
-  // Filter out access_token and refresh_token from display
-  const displayCredentials = credentials.filter(
-    c => !['access_token', 'refresh_token'].includes(c.credential_type)
-  );
+  const hasAnyValue = fields.some(f => formValues[f.key]?.trim());
+  const hasChanges = fields.some(f => {
+    const existingCred = credentials.find(c => c.credential_type === f.key);
+    const currentValue = formValues[f.key]?.trim() || '';
+    const savedValue = existingCred?.credential_value || '';
+    return currentValue !== savedValue;
+  });
 
   if (isLoading) {
     return (
@@ -102,104 +122,84 @@ export function CourierCredentialsList({ provider }: CredentialsListProps) {
       <CardHeader>
         <CardTitle className="text-lg">API Credentials</CardTitle>
         <CardDescription>
-          Manage your {provider === 'steadfast' ? 'Steadfast' : 'Pathao'} API credentials
+          Enter your {provider === 'steadfast' ? 'Steadfast' : 'Pathao'} API credentials
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {displayCredentials.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-4">
-            No credentials configured yet
-          </p>
-        ) : (
-          <div className="space-y-3">
-            {displayCredentials.map((cred) => (
-              <div
-                key={cred.id}
-                className="flex items-center justify-between p-3 border rounded-lg"
-              >
-                <div className="flex-1">
-                  <p className="text-sm font-medium">{getCredentialLabel(cred.credential_type)}</p>
-                  <p className="text-sm text-muted-foreground font-mono">
-                    {showValues[cred.id] ? cred.credential_value : maskValue(cred.credential_value)}
-                  </p>
+        {fields.map((field) => {
+          const existingCred = credentials.find(c => c.credential_type === field.key);
+          const isPasswordField = field.isPassword || field.key.includes('secret') || field.key.includes('password');
+          const showValue = showValues[field.key];
+          const isSaved = savedFields[field.key];
+
+          return (
+            <div key={field.key} className="space-y-2">
+              <Label htmlFor={field.key} className="text-sm font-medium">
+                {field.label}
+              </Label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Input
+                    id={field.key}
+                    type={isPasswordField && !showValue ? 'password' : 'text'}
+                    value={formValues[field.key] || ''}
+                    onChange={(e) => handleInputChange(field.key, e.target.value)}
+                    placeholder={field.placeholder}
+                    className="pr-10"
+                  />
+                  {isPasswordField && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                      onClick={() => toggleShowValue(field.key)}
+                    >
+                      {showValue ? (
+                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </Button>
+                  )}
                 </div>
-                <div className="flex items-center gap-2">
+                {existingCred && (
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => toggleShowValue(cred.id)}
-                  >
-                    {showValues[cred.id] ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-destructive hover:text-destructive"
-                    onClick={() => deleteCredential(cred.id)}
+                    className="text-destructive hover:text-destructive shrink-0"
+                    onClick={() => handleDelete(field.key)}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button variant="outline" className="w-full">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Credential
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add Credential</DialogTitle>
-              <DialogDescription>
-                Add a new API credential for {provider === 'steadfast' ? 'Steadfast' : 'Pathao'}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label>Credential Type</Label>
-                <Select value={newCredType} onValueChange={setNewCredType}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CREDENTIAL_TYPES[provider].map((type) => (
-                      <SelectItem key={type.value} value={type.value}>
-                        {type.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Value</Label>
-                <Input
-                  type={newCredType === 'password' ? 'password' : 'text'}
-                  value={newCredValue}
-                  onChange={(e) => setNewCredValue(e.target.value)}
-                  placeholder="Enter credential value"
-                />
+                )}
+                {isSaved && (
+                  <div className="flex items-center text-green-600">
+                    <Check className="h-4 w-4" />
+                  </div>
+                )}
               </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleAdd} disabled={isAdding || !newCredType || !newCredValue}>
-                {isAdding && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Add
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+          );
+        })}
+
+        <Button 
+          onClick={handleSave} 
+          disabled={isSaving || !hasChanges}
+          className="w-full mt-4"
+        >
+          {isSaving ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            <>
+              <Save className="h-4 w-4 mr-2" />
+              Save Credentials
+            </>
+          )}
+        </Button>
       </CardContent>
     </Card>
   );
