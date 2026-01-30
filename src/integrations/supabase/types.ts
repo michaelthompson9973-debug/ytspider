@@ -447,6 +447,152 @@ export type Database = {
         }
         Relationships: []
       }
+      messenger_connections: {
+        Row: {
+          app_id: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          page_access_token: string
+          page_id: string
+          page_name: string
+          token_expires_at: string | null
+          updated_at: string
+          user_access_token: string | null
+          webhook_verify_token: string
+        }
+        Insert: {
+          app_id?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          page_access_token: string
+          page_id: string
+          page_name: string
+          token_expires_at?: string | null
+          updated_at?: string
+          user_access_token?: string | null
+          webhook_verify_token?: string
+        }
+        Update: {
+          app_id?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          page_access_token?: string
+          page_id?: string
+          page_name?: string
+          token_expires_at?: string | null
+          updated_at?: string
+          user_access_token?: string | null
+          webhook_verify_token?: string
+        }
+        Relationships: []
+      }
+      messenger_conversations: {
+        Row: {
+          connection_id: string
+          created_at: string
+          id: string
+          last_message_at: string
+          sender_name: string | null
+          sender_profile_pic: string | null
+          sender_psid: string
+          unread_count: number
+          updated_at: string
+        }
+        Insert: {
+          connection_id: string
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          sender_name?: string | null
+          sender_profile_pic?: string | null
+          sender_psid: string
+          unread_count?: number
+          updated_at?: string
+        }
+        Update: {
+          connection_id?: string
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          sender_name?: string | null
+          sender_profile_pic?: string | null
+          sender_psid?: string
+          unread_count?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messenger_conversations_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "messenger_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messenger_messages: {
+        Row: {
+          attachments: Json | null
+          connection_id: string
+          conversation_id: string
+          created_at: string
+          id: string
+          is_from_page: boolean
+          message_id: string | null
+          message_text: string | null
+          read_at: string | null
+          sender_name: string | null
+          sender_psid: string
+          timestamp: string
+        }
+        Insert: {
+          attachments?: Json | null
+          connection_id: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          is_from_page?: boolean
+          message_id?: string | null
+          message_text?: string | null
+          read_at?: string | null
+          sender_name?: string | null
+          sender_psid: string
+          timestamp?: string
+        }
+        Update: {
+          attachments?: Json | null
+          connection_id?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          is_from_page?: boolean
+          message_id?: string | null
+          message_text?: string | null
+          read_at?: string | null
+          sender_name?: string | null
+          sender_psid?: string
+          timestamp?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messenger_messages_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "messenger_connections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messenger_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "messenger_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           created_at: string
