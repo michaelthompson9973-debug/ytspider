@@ -1,39 +1,42 @@
+import React, { useState } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Truck, Construction } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { CourierCredentialsList, PathaoStoreConfig, WebhookStatusCard } from '@/components/admin/courier';
+import { Truck } from 'lucide-react';
 
 export default function ApiCourier() {
+  const [activeTab, setActiveTab] = useState<'steadfast' | 'pathao'>('steadfast');
+
   return (
     <AdminLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold">Courier API</h1>
-          <p className="text-muted-foreground">Configure courier and shipping service integrations.</p>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <Truck className="h-6 w-6" />
+            Courier API
+          </h1>
+          <p className="text-muted-foreground">
+            Configure Steadfast and Pathao courier integrations for order delivery.
+          </p>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Truck className="h-5 w-5" />
-              Shipping Services
-            </CardTitle>
-            <CardDescription>
-              Connect courier APIs for automated shipping and tracking.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="rounded-full bg-muted p-4 mb-4">
-                <Construction className="h-8 w-8 text-muted-foreground" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2">Coming Soon</h3>
-              <p className="text-muted-foreground max-w-sm">
-                Courier API integration will be available in a future update. 
-                This will enable automated shipping label generation and order tracking.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'steadfast' | 'pathao')}>
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="steadfast">Steadfast</TabsTrigger>
+            <TabsTrigger value="pathao">Pathao</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="steadfast" className="space-y-6 mt-6">
+            <CourierCredentialsList provider="steadfast" />
+            <WebhookStatusCard provider="steadfast" />
+          </TabsContent>
+
+          <TabsContent value="pathao" className="space-y-6 mt-6">
+            <CourierCredentialsList provider="pathao" />
+            <PathaoStoreConfig />
+            <WebhookStatusCard provider="pathao" />
+          </TabsContent>
+        </Tabs>
       </div>
     </AdminLayout>
   );
