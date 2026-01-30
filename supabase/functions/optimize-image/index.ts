@@ -6,12 +6,13 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Image compression using canvas in Deno
+// Aggressive image compression using canvas API
+// Converts to JPEG with very low quality for maximum compression
 async function compressImage(
   imageBuffer: ArrayBuffer, 
   mimeType: string,
-  maxWidth: number = 1920,
-  quality: number = 0.8
+  maxWidth: number = 1200,
+  quality: number = 0.5
 ): Promise<{ buffer: Uint8Array; width: number; height: number }> {
   const { Image } = await import("https://deno.land/x/imagescript@1.3.0/mod.ts");
   
@@ -21,7 +22,7 @@ async function compressImage(
     let width = image.width;
     let height = image.height;
     
-    // Resize if larger than maxWidth
+    // Aggressive resize for web - max 1200px width
     if (width > maxWidth) {
       const ratio = maxWidth / width;
       width = maxWidth;
@@ -29,15 +30,12 @@ async function compressImage(
       image.resize(width, height);
     }
     
-    // Encode based on mime type
-    let outputBuffer: Uint8Array;
+    // Use JPEG with very aggressive quality for maximum compression (80%+ reduction)
+    // Quality 40-50% gives excellent compression while maintaining acceptable visual quality
+    const jpegQuality = Math.round(quality * 100);
+    const outputBuffer = await image.encodeJPEG(jpegQuality);
     
-    if (mimeType === 'image/png') {
-      outputBuffer = await image.encode(1); // PNG compression level
-    } else {
-      // Default to JPEG for better compression
-      outputBuffer = await image.encodeJPEG(Math.round(quality * 100));
-    }
+    console.log(`Compressed to JPEG: ${width}x${height}, quality: ${jpegQuality}%`);
     
     return {
       buffer: outputBuffer,
@@ -70,8 +68,9 @@ serve(async (req) => {
     const file = formData.get('file') as File;
     const fileName = formData.get('fileName') as string || file.name;
     const folder = formData.get('folder') as string || 'uploads';
-    const maxWidth = parseInt(formData.get('maxWidth') as string) || 1920;
-    const quality = parseFloat(formData.get('quality') as string) || 0.8;
+    // Aggressive defaults: max 1200px width, 50% quality for 80%+ size reduction
+    const maxWidth = parseInt(formData.get('maxWidth') as string) || 1200;
+    const quality = parseFloat(formData.get('quality') as string) || 0.5;
 
     if (!file) {
       return new Response(
@@ -93,7 +92,7 @@ serve(async (req) => {
     const originalBuffer = await file.arrayBuffer();
     const originalSize = originalBuffer.byteLength;
 
-    // Compress the image
+    // Compress the image with aggressive settings
     const { buffer: compressedBuffer, width, height } = await compressImage(
       originalBuffer,
       file.type,
@@ -104,10 +103,9 @@ serve(async (req) => {
     const compressedSize = compressedBuffer.byteLength;
     const reduction = Math.round((1 - compressedSize / originalSize) * 100);
 
-    // Determine output file type (convert to JPEG for better compression unless PNG)
-    const isPng = file.type === 'image/png';
-    const outputMimeType = isPng ? 'image/png' : 'image/jpeg';
-    const outputExt = isPng ? 'png' : 'jpg';
+    // Always output JPEG for maximum compression
+    const outputMimeType = 'image/jpeg';
+    const outputExt = 'jpg';
     
     // Sanitize filename - remove special characters that storage doesn't accept
     const sanitizedBaseName = fileName
@@ -119,6 +117,8 @@ serve(async (req) => {
     const randomSuffix = Math.random().toString(36).substring(2, 8);
     const optimizedFileName = `${Date.now()}-${randomSuffix}-${sanitizedBaseName}.${outputExt}`;
     const filePath = `${folder}/${optimizedFileName}`;
+    
+    console.log(`Original: ${originalSize} bytes, Compressed: ${compressedSize} bytes, Reduction: ${reduction}%`);
 
     // Upload compressed image to storage
     const { error: uploadError } = await supabase.storage
