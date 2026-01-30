@@ -268,16 +268,30 @@ export function generatePreviewHTML(
 ): string {
   const fontImports = getGoogleFontsImports(themeConfig);
   const themeCSS = generateThemeCSS(themeConfig, baseUrl);
+  
+  // Use provided baseUrl or get from window
+  const origin = baseUrl || (typeof window !== 'undefined' ? window.location.origin : '');
 
   const fontLinks = fontImports
     .map(url => `<link href="${url}" rel="stylesheet">`)
     .join('\n  ');
+
+  // Preload local fonts for faster loading in iframe
+  const localFontPreloads = `
+  <link rel="preload" href="${origin}/fonts/hind-siliguri-400.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="${origin}/fonts/hind-siliguri-600.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="${origin}/fonts/anek-bangla-400.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="${origin}/fonts/inter-400.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="${origin}/fonts/inter-500.woff2" as="font" type="font/woff2" crossorigin>`;
 
   return `<!DOCTYPE html>
 <html lang="bn">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Preload local fonts -->
+  ${localFontPreloads}
+  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   ${fontLinks}
