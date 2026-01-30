@@ -26,7 +26,7 @@ import { useImageOptimizer } from '@/hooks/useImageOptimizer';
 import { useBulkUpload } from '@/hooks/useBulkUpload';
 import { BulkUploadZone } from '@/components/admin/BulkUploadZone';
 import { UploadProgressList } from '@/components/admin/UploadProgressList';
-import { Copy, Trash2, FolderPlus, Image, Video, File, Zap, Loader2 } from 'lucide-react';
+import { Copy, Trash2, FolderPlus, Image, Video, File, Zap, Loader2, CheckSquare, Square, X } from 'lucide-react';
 
 export default function Media() {
   const [folder, setFolder] = useState('root');
@@ -34,12 +34,29 @@ export default function Media() {
   const [folderDialogOpen, setFolderDialogOpen] = useState(false);
   const [compressingId, setCompressingId] = useState<string | null>(null);
   const [deleteItem, setDeleteItem] = useState<NonNullable<typeof media>[number] | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { user } = useAuth();
   
   const { optimizeImage } = useImageOptimizer({ folder });
   const { files: uploadingFiles, isUploading, startUpload, cancelUpload, clearAll } = useBulkUpload({ folder });
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const selectAll = () => {
+    if (media) setSelectedIds(new Set(media.map(m => m.id)));
+  };
+
+  const clearSelection = () => setSelectedIds(new Set());
 
   const { data: media, isLoading } = useQuery({
     queryKey: ['media', folder],
@@ -87,6 +104,37 @@ export default function Media() {
     },
     onError: (error) => {
       toast({ title: 'Delete failed', description: error.message, variant: 'destructive' });
+    },
+  });
+
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const itemsToDelete = media?.filter(m => ids.includes(m.id)) || [];
+      const filePaths = itemsToDelete.map(m => m.file_path);
+      
+      // Delete from storage
+      const { error: storageError } = await supabase.storage
+        .from('media')
+        .remove(filePaths);
+      
+      if (storageError) console.error('Bulk storage delete error:', storageError);
+      
+      // Delete from database
+      const { error: dbError } = await supabase
+        .from('media')
+        .delete()
+        .in('id', ids);
+      
+      if (dbError) throw dbError;
+      return ids.length;
+    },
+    onSuccess: (count) => {
+      queryClient.invalidateQueries({ queryKey: ['media'] });
+      clearSelection();
+      toast({ title: `${count}টি ফাইল ডিলিট হয়েছে` });
+    },
+    onError: (error) => {
+      toast({ title: 'Bulk delete failed', description: error.message, variant: 'destructive' });
     },
   });
 
@@ -191,20 +239,52 @@ export default function Media() {
           <span>ইমেজ অটোমেটিক অপটিমাইজ হয় - ফাইল সাইজ কমে, কোয়ালিটি থাকে!</span>
         </div>
 
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-muted-foreground">Folder:</span>
-          <Select value={folder} onValueChange={setFolder}>
-            <SelectTrigger className="w-48">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Files</SelectItem>
-              <SelectItem value="root">Root</SelectItem>
-              {folders?.filter(f => f !== 'root').map((f) => (
-                <SelectItem key={f} value={f}>{f}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-muted-foreground">Folder:</span>
+            <Select value={folder} onValueChange={setFolder}>
+              <SelectTrigger className="w-48">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Files</SelectItem>
+                <SelectItem value="root">Root</SelectItem>
+                {folders?.filter(f => f !== 'root').map((f) => (
+                  <SelectItem key={f} value={f}>{f}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          {/* Selection controls */}
+          {media && media.length > 0 && (
+            <div className="flex items-center gap-2">
+              {selectedIds.size > 0 ? (
+                <>
+                  <span className="text-sm text-muted-foreground">
+                    {selectedIds.size}টি সিলেক্ট
+                  </span>
+                  <Button variant="outline" size="sm" onClick={clearSelection}>
+                    <X className="mr-1 h-3 w-3" />
+                    বাতিল
+                  </Button>
+                  <Button 
+                    variant="destructive" 
+                    size="sm" 
+                    onClick={() => setBulkDeleteOpen(true)}
+                  >
+                    <Trash2 className="mr-1 h-3 w-3" />
+                    ডিলিট করুন
+                  </Button>
+                </>
+              ) : (
+                <Button variant="outline" size="sm" onClick={selectAll}>
+                  <CheckSquare className="mr-1 h-3 w-3" />
+                  সব সিলেক্ট
+                </Button>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
@@ -222,8 +302,20 @@ export default function Media() {
               const isImage = item.file_type.startsWith('image/');
               
               return (
-                <Card key={item.id} className="overflow-hidden">
-                  <div className="aspect-video bg-muted flex items-center justify-center">
+                <Card 
+                  key={item.id} 
+                  className={`overflow-hidden cursor-pointer transition-all ${selectedIds.has(item.id) ? 'ring-2 ring-primary' : ''}`}
+                  onClick={() => toggleSelect(item.id)}
+                >
+                  <div className="aspect-video bg-muted flex items-center justify-center relative">
+                    {/* Selection indicator */}
+                    <div className="absolute top-2 left-2 z-10">
+                      {selectedIds.has(item.id) ? (
+                        <CheckSquare className="h-5 w-5 text-primary bg-background rounded" />
+                      ) : (
+                        <Square className="h-5 w-5 text-muted-foreground/50" />
+                      )}
+                    </div>
                     {isImage && item.public_url ? (
                       <img
                         src={item.public_url}
@@ -234,7 +326,7 @@ export default function Media() {
                       <Icon className="h-12 w-12 text-muted-foreground" />
                     )}
                   </div>
-                  <CardContent className="p-3">
+                  <CardContent className="p-3" onClick={(e) => e.stopPropagation()}>
                     <p className="truncate text-sm font-medium">{item.file_name}</p>
                     <p className="text-xs text-muted-foreground">
                       {item.file_size ? `${(item.file_size / 1024).toFixed(1)} KB` : ''}
@@ -342,6 +434,56 @@ export default function Media() {
                   <Trash2 className="mr-2 h-4 w-4" />
                 )}
                 ডিলিট করুন
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Bulk Delete Confirmation Dialog */}
+        <Dialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>বাল্ক ডিলিট করুন?</DialogTitle>
+              <DialogDescription>
+                আপনি কি নিশ্চিত যে {selectedIds.size}টি ফাইল ডিলিট করতে চান? এই কাজটি আর ফেরানো যাবে না।
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid grid-cols-4 gap-2 max-h-40 overflow-y-auto py-4">
+              {media?.filter(m => selectedIds.has(m.id)).slice(0, 8).map(item => (
+                <div key={item.id} className="aspect-square bg-muted rounded overflow-hidden">
+                  {item.file_type.startsWith('image/') && item.public_url ? (
+                    <img src={item.public_url} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="h-full w-full flex items-center justify-center">
+                      <File className="h-6 w-6 text-muted-foreground" />
+                    </div>
+                  )}
+                </div>
+              ))}
+              {selectedIds.size > 8 && (
+                <div className="aspect-square bg-muted rounded flex items-center justify-center text-sm text-muted-foreground">
+                  +{selectedIds.size - 8}
+                </div>
+              )}
+            </div>
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button variant="outline" onClick={() => setBulkDeleteOpen(false)}>
+                বাতিল
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  bulkDeleteMutation.mutate([...selectedIds]);
+                  setBulkDeleteOpen(false);
+                }}
+                disabled={bulkDeleteMutation.isPending}
+              >
+                {bulkDeleteMutation.isPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="mr-2 h-4 w-4" />
+                )}
+                {selectedIds.size}টি ডিলিট করুন
               </Button>
             </DialogFooter>
           </DialogContent>
