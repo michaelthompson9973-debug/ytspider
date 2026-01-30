@@ -271,15 +271,13 @@ export default function Media() {
                     <p className="text-xs text-muted-foreground">
                       {item.file_size ? `${(item.file_size / 1024).toFixed(1)} KB` : ''}
                     </p>
-                    <div className="mt-2 flex gap-1">
+                    <div className="mt-2 flex flex-wrap gap-1">
                       <Button
                         variant="outline"
                         size="sm"
-                        className="flex-1"
                         onClick={() => item.public_url && copyUrl(item.public_url)}
                       >
-                        <Copy className="mr-1 h-3 w-3" />
-                        Copy URL
+                        <Copy className="h-3 w-3" />
                       </Button>
                       {isImage && (
                         <Button
@@ -300,6 +298,7 @@ export default function Media() {
                         variant="outline"
                         size="sm"
                         onClick={() => setDeleteItem(item)}
+                        title="ডিলিট করুন"
                       >
                         <Trash2 className="h-3 w-3 text-destructive" />
                       </Button>
