@@ -20,6 +20,9 @@ import {
   Bot,
   ShieldAlert,
   Truck,
+  Inbox,
+  MessageCircle,
+  MessageSquare,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -92,6 +95,15 @@ const navGroups: NavGroup[] = [
     items: [
       { href: '/admin/orders', label: 'Orders', icon: ShoppingCart },
       { href: '/admin/tracking', label: 'Tracking', icon: Activity },
+      { 
+        href: '/admin/inbox', 
+        label: 'Inbox', 
+        icon: Inbox,
+        children: [
+          { href: '/admin/inbox/messenger', label: 'Messenger', icon: MessageCircle },
+          { href: '/admin/inbox/whatsapp', label: 'WhatsApp', icon: MessageSquare },
+        ]
+      },
     ],
   },
   {
