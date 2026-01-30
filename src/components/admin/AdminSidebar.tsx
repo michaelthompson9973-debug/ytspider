@@ -119,6 +119,8 @@ const navGroups: NavGroup[] = [
           { href: '/admin/api/ai', label: 'AI', icon: Bot, badge: 'available' },
           { href: '/admin/api/fraud-check', label: 'Fraud Check', icon: ShieldAlert, badge: 'available' },
           { href: '/admin/api/courier', label: 'Courier', icon: Truck, badge: 'N/A' },
+          { href: '/admin/api/messaging/messenger', label: 'Messenger', icon: MessageCircle },
+          { href: '/admin/api/messaging/whatsapp', label: 'WhatsApp', icon: MessageSquare },
         ]
       },
     ],

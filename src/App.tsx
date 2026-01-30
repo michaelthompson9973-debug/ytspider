@@ -17,6 +17,8 @@ import AllowedDomains from "./pages/admin/AllowedDomains";
 import ApiAi from "./pages/admin/ApiAi";
 import ApiFraudCheck from "./pages/admin/ApiFraudCheck";
 import ApiCourier from "./pages/admin/ApiCourier";
+import ApiMessenger from "./pages/admin/ApiMessenger";
+import ApiWhatsapp from "./pages/admin/ApiWhatsapp";
 import InboxMessenger from "./pages/admin/InboxMessenger";
 import InboxWhatsapp from "./pages/admin/InboxWhatsapp";
 import LandingPage from "./pages/LandingPage";
@@ -49,6 +51,8 @@ const App = () => (
             <Route path="/admin/api/ai" element={<ProtectedRoute requireAdmin><ApiAi /></ProtectedRoute>} />
             <Route path="/admin/api/fraud-check" element={<ProtectedRoute requireAdmin><ApiFraudCheck /></ProtectedRoute>} />
             <Route path="/admin/api/courier" element={<ProtectedRoute requireAdmin><ApiCourier /></ProtectedRoute>} />
+            <Route path="/admin/api/messaging/messenger" element={<ProtectedRoute requireAdmin><ApiMessenger /></ProtectedRoute>} />
+            <Route path="/admin/api/messaging/whatsapp" element={<ProtectedRoute requireAdmin><ApiWhatsapp /></ProtectedRoute>} />
             <Route path="/p/:slug" element={<LandingPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
