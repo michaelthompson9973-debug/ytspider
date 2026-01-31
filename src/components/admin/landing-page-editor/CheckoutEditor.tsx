@@ -1,4 +1,4 @@
-import { useState, useEffect, forwardRef, useRef } from 'react';
+import { useState, useEffect, forwardRef, useRef, useImperativeHandle } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -16,11 +16,17 @@ interface CheckoutEditorProps {
   section: Section | null;
   themeConfig?: ThemeConfig;
   landingPageId: string;
-  onSave: (data: { id: string; name: string; config: CheckoutConfig }) => void;
+  onSave: (data: { id: string; name: string; config: CheckoutConfig }) => Promise<void>;
   isSaving: boolean;
 }
 
-export const CheckoutEditor = forwardRef<HTMLDivElement, CheckoutEditorProps>(
+export interface CheckoutEditorHandle {
+  /** Saves if dirty. Returns true if a save was performed. */
+  save: () => Promise<boolean>;
+  isDirty: () => boolean;
+}
+
+export const CheckoutEditor = forwardRef<CheckoutEditorHandle, CheckoutEditorProps>(
   function CheckoutEditor({ section, themeConfig = defaultThemeConfig, landingPageId, onSave, isSaving }, ref) {
     const [name, setName] = useState('');
     const [config, setConfig] = useState<CheckoutConfig>(defaultCheckoutConfig);
@@ -70,11 +76,18 @@ export const CheckoutEditor = forwardRef<HTMLDivElement, CheckoutEditorProps>(
       }
     }, [section]);
 
-    const handleSave = () => {
-      if (!section) return;
-      onSave({ id: section.id, name, config });
+    const handleSave = async (): Promise<boolean> => {
+      if (!section) return false;
+      if (!isDirty) return false;
+      await onSave({ id: section.id, name, config });
       setIsDirty(false);
+      return true;
     };
+
+    useImperativeHandle(ref, () => ({
+      save: handleSave,
+      isDirty: () => isDirty,
+    }), [handleSave, isDirty]);
 
     const handleFieldChange = (index: number, updatedField: CheckoutField) => {
       const newFields = [...config.fields];
@@ -126,7 +139,7 @@ export const CheckoutEditor = forwardRef<HTMLDivElement, CheckoutEditorProps>(
 
     if (!section) {
       return (
-        <div ref={ref} className="h-full flex flex-col items-center justify-center text-muted-foreground p-6">
+        <div className="h-full flex flex-col items-center justify-center text-muted-foreground p-6">
           <ShoppingCart className="h-12 w-12 mb-4 opacity-50" />
           <p className="text-sm text-center">
             Select a checkout section to configure
@@ -136,7 +149,7 @@ export const CheckoutEditor = forwardRef<HTMLDivElement, CheckoutEditorProps>(
     }
 
     return (
-      <div ref={ref} className="h-full flex flex-col">
+      <div className="h-full flex flex-col">
         {/* Header */}
         <div className="flex items-center gap-3 mb-4 pb-3 border-b">
           <div className="flex-1 space-y-1">
@@ -155,7 +168,7 @@ export const CheckoutEditor = forwardRef<HTMLDivElement, CheckoutEditorProps>(
             />
           </div>
           <Button
-            onClick={handleSave}
+            onClick={() => void handleSave()}
             disabled={isSaving || !isDirty}
             size="sm"
             className="mt-5"
@@ -340,7 +353,7 @@ export const CheckoutEditor = forwardRef<HTMLDivElement, CheckoutEditorProps>(
         {isDirty && (
           <div className="lg:hidden fixed bottom-4 left-4 right-4 z-50">
             <Button
-              onClick={handleSave}
+              onClick={() => void handleSave()}
               disabled={isSaving}
               className="w-full shadow-lg"
               size="lg"

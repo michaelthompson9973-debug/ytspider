@@ -261,6 +261,7 @@ export function useSections(landingPageId: string | null) {
     addSection: addSectionMutation.mutate,
     addMultipleSections: addMultipleSectionsMutation.mutate,
     updateSection: updateSectionMutation.mutate,
+    updateSectionAsync: updateSectionMutation.mutateAsync,
     deleteSection: deleteSectionMutation.mutate,
     duplicateSection: duplicateSectionMutation.mutate,
     reorderSections: reorderSectionsMutation.mutate,
