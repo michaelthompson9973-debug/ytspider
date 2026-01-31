@@ -23,6 +23,7 @@ import ApiWhatsapp from "./pages/admin/ApiWhatsapp";
 import InboxMessenger from "./pages/admin/InboxMessenger";
 import InboxWhatsapp from "./pages/admin/InboxWhatsapp";
 import LandingPage from "./pages/LandingPage";
+import ThankYou from "./pages/ThankYou";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -56,6 +57,7 @@ const App = () => (
             <Route path="/admin/api/courier" element={<ProtectedRoute requireAdmin><ApiCourier /></ProtectedRoute>} />
             <Route path="/admin/api/messaging/messenger" element={<ProtectedRoute requireAdmin><ApiMessenger /></ProtectedRoute>} />
             <Route path="/admin/api/messaging/whatsapp" element={<ProtectedRoute requireAdmin><ApiWhatsapp /></ProtectedRoute>} />
+            <Route path="/thank-you" element={<ThankYou />} />
             <Route path="/p/:slug" element={<LandingPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

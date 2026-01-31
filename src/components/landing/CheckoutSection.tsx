@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery } from '@tanstack/react-query';
@@ -99,9 +99,9 @@ export function CheckoutSection({
   onOrderSuccess,
 }: CheckoutSectionProps) {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
-  const [orderSuccess, setOrderSuccess] = useState(false);
   const [selectedZone, setSelectedZone] = useState<'inside' | 'outside'>('inside');
   
   // Initialize cart from products with default quantities
@@ -369,7 +369,8 @@ export function CheckoutSection({
         console.error('Webhook error:', webhookError);
       }
 
-      setOrderSuccess(true);
+      // Redirect to thank you page
+      navigate(`/thank-you?orderId=${orderData?.id}`);
       onOrderSuccess?.(orderData?.id);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'An error occurred';
@@ -382,30 +383,6 @@ export function CheckoutSection({
       setSubmitting(false);
     }
   };
-
-  if (orderSuccess) {
-    return (
-      <section className="py-12 px-4" id="checkout">
-        <div className="container max-w-2xl mx-auto">
-          <div className="rounded-theme bg-primary/5 border border-primary/20 p-8 text-center">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
-              <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <h3 className="font-heading text-2xl text-primary mb-2">ধন্যবাদ!</h3>
-            <p className="font-body text-muted-foreground mb-4">
-              আপনার অর্ডার সফলভাবে গ্রহণ করা হয়েছে। শীঘ্রই আমরা আপনার সাথে যোগাযোগ করব।
-            </p>
-            <div className="font-body text-sm">
-              <p className="font-medium">{form.customer_name}</p>
-              <p className="text-muted-foreground">{form.customer_phone}</p>
-            </div>
-          </div>
-        </div>
-      </section>
-    );
-  }
 
   // Helper to render appropriate input based on field type
   const renderField = (field: CheckoutField) => {
