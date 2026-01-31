@@ -1,4 +1,4 @@
-import { useState, useEffect, forwardRef, useRef, useCallback } from 'react';
+import { useState, useEffect, forwardRef, useRef, useCallback, useImperativeHandle } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -10,14 +10,20 @@ import { FullscreenCodeModal } from './FullscreenCodeModal';
 import { generatePreviewHTML } from './themeUtils';
 import { parseHtmlParts, mergeHtmlParts } from './htmlParseUtils';
 
+export interface SectionEditorHandle {
+  /** Saves if dirty. Returns true if a save was performed. */
+  save: () => Promise<boolean>;
+  isDirty: () => boolean;
+}
+
 interface SectionEditorProps {
   section: Section | null;
   themeConfig?: ThemeConfig;
-  onSave: (data: { id: string; name: string; html: string }) => void;
+  onSave: (data: { id: string; name: string; html: string }) => Promise<void>;
   isSaving: boolean;
 }
 
-export const SectionEditor = forwardRef<HTMLDivElement, SectionEditorProps>(
+export const SectionEditor = forwardRef<SectionEditorHandle, SectionEditorProps>(
   function SectionEditor({ section, themeConfig = defaultThemeConfig, onSave, isSaving }, ref) {
     const [name, setName] = useState('');
     const [html, setHtml] = useState('');
@@ -74,18 +80,25 @@ export const SectionEditor = forwardRef<HTMLDivElement, SectionEditorProps>(
       }
     }, [section]);
 
-    const handleSave = () => {
-      if (!section) return;
-      onSave({ id: section.id, name, html });
+    const handleSave = async (): Promise<boolean> => {
+      if (!section) return false;
+      if (!isDirty) return false;
+      await onSave({ id: section.id, name, html });
       setIsDirty(false);
+      return true;
     };
+
+    useImperativeHandle(ref, () => ({
+      save: handleSave,
+      isDirty: () => isDirty,
+    }), [handleSave, isDirty]);
 
     // Generate preview HTML for this single section
     const previewHtml = generatePreviewHTML(html, themeConfig, window.location.origin);
 
     if (!section) {
       return (
-        <div ref={ref} className="h-full flex flex-col items-center justify-center text-muted-foreground p-6">
+        <div className="h-full flex flex-col items-center justify-center text-muted-foreground p-6">
           <FileCode className="h-12 w-12 mb-4 opacity-50" />
           <p className="text-sm text-center">
             Select a section from the list to edit its HTML content
@@ -95,7 +108,7 @@ export const SectionEditor = forwardRef<HTMLDivElement, SectionEditorProps>(
     }
 
     return (
-      <div ref={ref} className="h-full flex flex-col">
+      <div className="h-full flex flex-col">
         {/* Header */}
         <div className="flex items-center gap-3 mb-4 pb-3 border-b">
           <div className="flex-1 space-y-1">
@@ -114,7 +127,7 @@ export const SectionEditor = forwardRef<HTMLDivElement, SectionEditorProps>(
             />
           </div>
           <Button
-            onClick={handleSave}
+            onClick={() => void handleSave()}
             disabled={isSaving || !isDirty}
             size="sm"
             className="mt-5"
@@ -266,7 +279,7 @@ export const SectionEditor = forwardRef<HTMLDivElement, SectionEditorProps>(
         {isDirty && (
           <div className="lg:hidden fixed bottom-4 left-4 right-4 z-50">
             <Button
-              onClick={handleSave}
+              onClick={() => void handleSave()}
               disabled={isSaving}
               className="w-full shadow-lg"
               size="lg"

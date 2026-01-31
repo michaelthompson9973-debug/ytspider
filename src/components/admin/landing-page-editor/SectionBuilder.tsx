@@ -1,12 +1,12 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { ArrowLeft, Settings, Eye, ShoppingCart, Package, Save, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSections } from './useSections';
 import { useTheme } from './useTheme';
 import { useCheckoutSettings } from './useCheckoutSettings';
 import { SectionList } from './SectionList';
-import { SectionEditor } from './SectionEditor';
-import { CheckoutEditor } from './CheckoutEditor';
+import { SectionEditor, type SectionEditorHandle } from './SectionEditor';
+import { CheckoutEditor, type CheckoutEditorHandle } from './CheckoutEditor';
 import { CheckoutSettingsPanel } from './CheckoutSettingsPanel';
 import { ThemePanel } from './ThemePanel';
 import { FullPagePreview } from './FullPagePreview';
@@ -14,6 +14,7 @@ import { MobileNavigation, MobileTab } from './MobileNavigation';
 import { ProductsPanel } from './ProductsPanel';
 import { Section, SectionType, CheckoutConfig } from './types';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 interface SectionBuilderProps {
   landingPageId: string;
@@ -31,14 +32,16 @@ export function SectionBuilder({ landingPageId, gtmId, slug, onBack }: SectionBu
   const [mobileTab, setMobileTab] = useState<MobileTab>('sections');
   const [isSavingAll, setIsSavingAll] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
-  const editorRef = useRef<{ triggerSave: () => void } | null>(null);
+  const htmlEditorRef = useRef<SectionEditorHandle | null>(null);
+  const checkoutEditorRef = useRef<CheckoutEditorHandle | null>(null);
+  const { toast } = useToast();
 
   const {
     sections,
     isLoading,
     addSection,
     addMultipleSections,
-    updateSection,
+    updateSectionAsync,
     deleteSection,
     duplicateSection,
     reorderSections,
@@ -113,6 +116,35 @@ export function SectionBuilder({ landingPageId, gtmId, slug, onBack }: SectionBu
   // Get visible sections for preview
   const visibleSections = sections.filter(s => previewingSections.has(s.id));
 
+  const flashSaved = useCallback(() => {
+    setSaveSuccess(true);
+    window.setTimeout(() => setSaveSuccess(false), 1500);
+  }, []);
+
+  const handleSaveAction = useCallback(async () => {
+    if (!activeSection) {
+      toast({ title: 'No section selected', description: 'Select a section and try again.' });
+      return;
+    }
+
+    setIsSavingAll(true);
+    try {
+      const didSave = activeSection.type === 'checkout'
+        ? await checkoutEditorRef.current?.save()
+        : await htmlEditorRef.current?.save();
+
+      if (didSave) {
+        flashSaved();
+      } else {
+        toast({ title: 'Nothing to save', description: 'No changes detected in the current section.' });
+      }
+    } catch (e) {
+      // mutations already toast; keep dirty state intact
+    } finally {
+      setIsSavingAll(false);
+    }
+  }, [activeSection, flashSaved, toast]);
+
   if (isLoading) {
     return (
       <div className="h-full flex items-center justify-center">
@@ -152,6 +184,16 @@ export function SectionBuilder({ landingPageId, gtmId, slug, onBack }: SectionBu
               </a>
             </Button>
           )}
+
+          {/* Reliable Save Action */}
+          <Button
+            size="sm"
+            onClick={() => void handleSaveAction()}
+            disabled={isSavingAll || isUpdating}
+          >
+            <Save className="h-4 w-4 mr-1" />
+            {isSavingAll ? 'Saving...' : 'Save'}
+          </Button>
           
           {/* Desktop Panel Toggle */}
           <div className="hidden lg:flex gap-2">
@@ -214,17 +256,25 @@ export function SectionBuilder({ landingPageId, gtmId, slug, onBack }: SectionBu
         <div className="col-span-5 border rounded-lg p-4 overflow-hidden">
           {activeSection?.type === 'checkout' ? (
             <CheckoutEditor
+              ref={checkoutEditorRef}
               section={activeSection}
               themeConfig={themeConfig}
               landingPageId={landingPageId}
-              onSave={(data) => updateSection({ id: data.id, name: data.name, config: data.config })}
+              onSave={async (data) => {
+                await updateSectionAsync({ id: data.id, name: data.name, config: data.config });
+                flashSaved();
+              }}
               isSaving={isUpdating}
             />
           ) : (
             <SectionEditor
+              ref={htmlEditorRef}
               section={activeSection}
               themeConfig={themeConfig}
-              onSave={updateSection}
+              onSave={async (data) => {
+                await updateSectionAsync({ id: data.id, name: data.name, html: data.html });
+                flashSaved();
+              }}
               isSaving={isUpdating}
             />
           )}
@@ -280,17 +330,25 @@ export function SectionBuilder({ landingPageId, gtmId, slug, onBack }: SectionBu
         )}>
           {activeSection?.type === 'checkout' ? (
             <CheckoutEditor
+              ref={checkoutEditorRef}
               section={activeSection}
               themeConfig={themeConfig}
               landingPageId={landingPageId}
-              onSave={(data) => updateSection({ id: data.id, name: data.name, config: data.config })}
+              onSave={async (data) => {
+                await updateSectionAsync({ id: data.id, name: data.name, config: data.config });
+                flashSaved();
+              }}
               isSaving={isUpdating}
             />
           ) : (
             <SectionEditor
+              ref={htmlEditorRef}
               section={activeSection}
               themeConfig={themeConfig}
-              onSave={updateSection}
+              onSave={async (data) => {
+                await updateSectionAsync({ id: data.id, name: data.name, html: data.html });
+                flashSaved();
+              }}
               isSaving={isUpdating}
             />
           )}
