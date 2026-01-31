@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -104,16 +104,23 @@ export function CheckoutSection({
   const [submitting, setSubmitting] = useState(false);
   const [selectedZone, setSelectedZone] = useState<'inside' | 'outside'>('inside');
   
-  // Initialize cart from products with default quantities
-  const [cart, setCart] = useState<CartItem[]>(() =>
-    products.map(p => ({
-      productId: p.id,
-      productName: p.name,
-      unitPrice: p.price,
-      quantity: p.defaultQuantity ?? 1,
-      images: p.images,
-    }))
-  );
+  // Initialize cart state
+  const [cart, setCart] = useState<CartItem[]>([]);
+  
+  // Sync cart when products load/change
+  useEffect(() => {
+    if (products.length > 0 && cart.length === 0) {
+      setCart(
+        products.map(p => ({
+          productId: p.id,
+          productName: p.name,
+          unitPrice: p.price,
+          quantity: p.defaultQuantity ?? 1,
+          images: p.images,
+        }))
+      );
+    }
+  }, [products, cart.length]);
 
   // Get fields from config or use defaults
   const fields = config.fields?.length > 0 ? config.fields : defaultCheckoutFields;
