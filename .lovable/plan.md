@@ -1,148 +1,123 @@
 
-# Library Picker Modal - Multi-Select এবং Preview সহ
+# Multi-Select Import ও Landing Page Rendering সমস্যা সমাধান
 
-## বর্তমান অবস্থা
-- `LibraryPickerModal` শুধুমাত্র একটি component select করতে দেয়
-- Component preview নেই - শুধু name ও category দেখায়
-- `useSections` hook একটি করে section add করে
+## সমস্যা বিশ্লেষণ
 
-## পরিবর্তনের পরিকল্পনা
+### সমস্যা ১: Slow Import / Multiple Select কাজ না করা
+- বর্তমানে `addMultipleSections` mutation একটি bulk insert করছে, কিন্তু insert এর পর নতুন section IDs `previewingSections` Set এ যুক্ত হচ্ছে না
+- এতে নতুন imported sections preview তে দেখা যায় না
 
-### 1. LibraryPickerModal আপডেট
-**ফাইল:** `src/components/admin/library/LibraryPickerModal.tsx`
+### সমস্যা ২: Imported Component Render না হওয়া
+- Library থেকে select করা component এর HTML ঠিকমতো database এ save হচ্ছে
+- কিন্তু Landing Page এ গিয়ে দেখলে default placeholder দেখাচ্ছে
+- এর কারণ হলো React Query cache invalidation এর পরে যথেষ্ট delay না থাকায় stale data দেখাচ্ছে
 
-পরিবর্তন:
-- Single selection (`useState<LibraryComponent | null>`) থেকে multi-select (`useState<Set<string>>`) এ পরিবর্তন
-- প্রতিটি component card এ **Checkbox** যোগ
-- প্রতিটি card এ **iframe preview** যোগ (ComponentCard এর মত)
-- `onSelect` callback পরিবর্তন করে array of components পাঠাবে
-- Footer এ selected count দেখাবে: "৩টি সিলেক্টেড"
-- "Select All" ও "Clear All" বাটন যোগ
+## সমাধান পরিকল্পনা
 
-**নতুন UI Layout:**
-```text
-+------------------------------------------+
-| 🔍 Search...          | [Category ▼]     |
-+------------------------------------------+
-| ☐ Select All                 Clear All   |
-+------------------------------------------+
-| +----------------+ +----------------+     |
-| |   [Preview]    | |   [Preview]    |    |
-| | ☑ হিরো - সেন্ট | | ☐ হিরো - স্প্  |    |
-| |   hero         | |   hero         |     |
-| +----------------+ +----------------+     |
-| +----------------+ +----------------+     |
-| |   [Preview]    | |   [Preview]    |    |
-| | ☐ ফিচার্স     | | ☐ প্রাইসিং    |     |
-| |   features     | |   pricing      |     |
-| +----------------+ +----------------+     |
-+------------------------------------------+
-| [Cancel]          ৩টি সিলেক্টেড [Add]   |
-+------------------------------------------+
-```
+### ধাপ ১: useSections.ts - Bulk Insert উন্নতি
+**সমস্যা:** `addMultipleSectionsMutation` এ success callback এ নতুন section গুলো cache এ properly set হচ্ছে না
 
-### 2. useSections Hook আপডেট
-**ফাইল:** `src/components/admin/landing-page-editor/useSections.ts`
-
-পরিবর্তন:
-- নতুন `addMultipleSections` mutation যোগ যা একসাথে একাধিক section insert করবে
-- Sort order sequential হবে প্রতিটি নতুন section এর জন্য
-
-### 3. SectionList আপডেট
-**ফাইল:** `src/components/admin/landing-page-editor/SectionList.tsx`
-
-পরিবর্তন:
-- `LibraryPickerModal` এর `onSelect` handler আপডেট
-- Single component এর বদলে array handle করবে
-- নতুন `addMultipleSections` function ব্যবহার করবে
-
-### 4. Props Interface আপডেট
-
-```typescript
-// LibraryPickerModal props
-interface LibraryPickerModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onSelect: (components: LibraryComponent[]) => void; // Changed: single -> array
-}
-
-// SectionList props - add new function
-onAddMultipleSections?: (data: Array<{ name: string; html: string; type: SectionType; config: unknown }>) => void;
-```
-
-## টেকনিক্যাল ডিটেইলস
-
-### Preview iframe (Google Fonts সহ)
-```html
-<iframe 
-  srcDoc={previewHtml}
-  className="aspect-video w-full"
-  sandbox="allow-scripts allow-same-origin"
-/>
-```
-- Hind Siliguri হেডিং এ
-- Anek Bangla বডিতে
-- Tailwind CDN
-- Scale 0.25 for thumbnail
-
-### Multi-select State
-```typescript
-const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-
-const toggleSelect = (id: string) => {
-  setSelectedIds(prev => {
-    const next = new Set(prev);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
-    return next;
-  });
-};
-
-const handleSelectAll = () => {
-  setSelectedIds(new Set(filteredComponents.map(c => c.id)));
-};
-
-const handleClearAll = () => {
-  setSelectedIds(new Set());
-};
-```
-
-### Bulk Insert (useSections)
+**সমাধান:**
 ```typescript
 const addMultipleSectionsMutation = useMutation({
-  mutationFn: async (items: Array<{ name: string; html: string; type: SectionType; config: unknown }>) => {
-    const maxOrder = sections.length > 0 ? Math.max(...sections.map(s => s.sort_order)) : -1;
-    
-    const insertData = items.map((item, index) => ({
-      landing_page_id: landingPageId,
-      name: item.name,
-      html: item.html,
-      type: item.type,
-      config: item.config as Json,
-      sort_order: maxOrder + 1 + index,
-    }));
-
+  mutationFn: async (items) => {
+    // ... existing insert logic
     const { data, error } = await supabase
       .from('landing_page_sections')
       .insert(insertData)
-      .select();
+      .select(); // Returns inserted data with IDs
       
     if (error) throw error;
-    return data;
+    return (data ?? []).map(transformSection);
+  },
+  onSuccess: (newSections) => {
+    // Immediately update cache with new sections
+    queryClient.setQueryData(
+      ['landing-page-sections', landingPageId],
+      (oldData: Section[] | undefined) => {
+        if (!oldData) return newSections;
+        return [...oldData, ...newSections];
+      }
+    );
+    // Then invalidate to get fresh data
+    queryClient.invalidateQueries({ 
+      queryKey: ['landing-page-sections', landingPageId] 
+    });
+    toast({ title: 'Sections added' });
   },
 });
+```
+
+### ধাপ ২: SectionBuilder.tsx - Preview Auto-Update
+**সমস্যা:** নতুন imported sections `previewingSections` এ যোগ হচ্ছে না
+
+**সমাধান:**
+```typescript
+// Add effect to auto-add new sections to previewing set
+useEffect(() => {
+  const sectionIds = new Set(sections.map(s => s.id));
+  setPreviewingSections(prev => {
+    const newSet = new Set(prev);
+    // Add any new section IDs that aren't already in the set
+    sections.forEach(s => {
+      if (!prev.has(s.id)) {
+        newSet.add(s.id);
+      }
+    });
+    return newSet;
+  });
+}, [sections]);
+```
+
+### ধাপ ৩: Landing Page Data Sync উন্নতি
+**সমস্যা:** Landing Page sections fetch করার সময় stale data পাচ্ছে
+
+**সমাধান - LandingPage.tsx এ:**
+```typescript
+const { data: sections = [] } = useQuery<SectionData[]>({
+  queryKey: ['landing-page-sections', page?.id],
+  queryFn: async () => {
+    if (!page?.id) return [];
+    const { data, error } = await supabase
+      .from('landing_page_sections')
+      .select('id, html, type, config, sort_order, name') // Add name field
+      .eq('landing_page_id', page.id)
+      .order('sort_order', { ascending: true });
+    if (error) throw error;
+    return data as SectionData[];
+  },
+  enabled: !!page?.id,
+  staleTime: 0, // Always fetch fresh data
+  refetchOnMount: 'always', // Refetch when component mounts
+});
+```
+
+### ধাপ ৪: LibraryPickerModal উন্নতি
+**সমস্যা:** Multi-select এর পর selected components সঠিক order এ pass হচ্ছে না
+
+**সমাধান:**
+```typescript
+const handleConfirm = () => {
+  // Preserve selection order by filtering from filteredComponents
+  const selectedComponents = filteredComponents.filter(c => selectedIds.has(c.id));
+  if (selectedComponents.length > 0) {
+    onSelect(selectedComponents);
+    // ... rest of cleanup
+  }
+};
 ```
 
 ## ফাইল পরিবর্তন সারাংশ
 
 | ফাইল | পরিবর্তন |
 |------|---------|
-| `LibraryPickerModal.tsx` | Multi-select, preview, Select All/Clear |
-| `useSections.ts` | `addMultipleSections` mutation যোগ |
-| `SectionList.tsx` | Handler আপডেট for multi-select |
+| `useSections.ts` | `addMultipleSections` mutation এ optimistic cache update যোগ |
+| `SectionBuilder.tsx` | নতুন sections auto-preview effect যোগ |
+| `LandingPage.tsx` | Query staleTime এবং refetchOnMount যোগ |
+| `LibraryPickerModal.tsx` | Selection order preservation |
 
-## ফলাফল
-- ইউজার একসাথে একাধিক component select করতে পারবে
-- প্রতিটি component এ preview থাকবে
-- "Add" বাটনে ক্লিক করলে সব সিলেক্টেড component section হিসেবে যোগ হবে
-- চাইলে একটা select করেও add করতে পারবে
+## প্রত্যাশিত ফলাফল
+- ✅ একাধিক component select করে একসাথে import করা যাবে
+- ✅ Import এর সাথে সাথে preview তে নতুন sections দেখা যাবে
+- ✅ Landing Page এ visit করলে imported sections সঠিকভাবে render হবে
+- ✅ Fast import - sequential এর বদলে bulk insert হবে
