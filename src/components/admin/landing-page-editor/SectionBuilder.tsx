@@ -56,12 +56,26 @@ export function SectionBuilder({ landingPageId, gtmId, onBack }: SectionBuilderP
     }
   }, [sections, activeSection]);
 
-  // Initialize all sections as previewing by default
+  // Auto-add new sections to previewingSections when sections array changes
   useEffect(() => {
-    if (sections.length > 0 && previewingSections.size === 0) {
-      setPreviewingSections(new Set(sections.map(s => s.id)));
-    }
-  }, [sections, previewingSections.size]);
+    if (sections.length === 0) return;
+    
+    setPreviewingSections(prev => {
+      const newSet = new Set(prev);
+      let hasNewSections = false;
+      
+      // Add any new section IDs that aren't already in the set
+      sections.forEach(s => {
+        if (!prev.has(s.id)) {
+          newSet.add(s.id);
+          hasNewSections = true;
+        }
+      });
+      
+      // Only update state if there are new sections
+      return hasNewSections ? newSet : prev;
+    });
+  }, [sections]);
 
   const toggleSectionPreview = (sectionId: string) => {
     setPreviewingSections((prev) => {

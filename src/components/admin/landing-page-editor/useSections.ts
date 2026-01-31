@@ -237,9 +237,18 @@ export function useSections(landingPageId: string | null) {
       if (error) throw error;
       return (data ?? []).map(transformSection);
     },
-    onSuccess: () => {
+    onSuccess: (newSections) => {
+      // Immediately update cache with new sections for instant UI update
+      queryClient.setQueryData(
+        ['landing-page-sections', landingPageId],
+        (oldData: Section[] | undefined) => {
+          if (!oldData) return newSections;
+          return [...oldData, ...newSections];
+        }
+      );
+      // Then invalidate to ensure sync with server
       queryClient.invalidateQueries({ queryKey: ['landing-page-sections', landingPageId] });
-      toast({ title: 'Sections added' });
+      toast({ title: `${newSections.length}টি section যোগ হয়েছে` });
     },
     onError: (error) => {
       toast({ title: 'Error adding sections', description: error.message, variant: 'destructive' });

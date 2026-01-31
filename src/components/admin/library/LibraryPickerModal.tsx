@@ -174,7 +174,8 @@ export function LibraryPickerModal({ open, onOpenChange, onSelect }: LibraryPick
   };
 
   const handleConfirm = () => {
-    const selectedComponents = components.filter(c => selectedIds.has(c.id));
+    // Preserve selection order by filtering from filteredComponents (maintains display order)
+    const selectedComponents = filteredComponents.filter(c => selectedIds.has(c.id));
     if (selectedComponents.length > 0) {
       onSelect(selectedComponents);
       onOpenChange(false);
