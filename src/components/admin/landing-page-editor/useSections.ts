@@ -218,7 +218,17 @@ export function useSections(landingPageId: string | null) {
   const addMultipleSectionsMutation = useMutation({
     mutationFn: async (items: Array<{ name: string; html: string; type: SectionType; config: unknown }>) => {
       if (!landingPageId) throw new Error('No landing page selected');
-      const maxOrder = sections.length > 0 ? Math.max(...sections.map(s => s.sort_order)) : -1;
+      
+      // Fresh query to get the latest sort_order from DB (fixes stale closure issue)
+      const { data: lastSection } = await supabase
+        .from('landing_page_sections')
+        .select('sort_order')
+        .eq('landing_page_id', landingPageId)
+        .order('sort_order', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      const maxOrder = lastSection?.sort_order ?? -1;
       
       const insertData = items.map((item, index) => ({
         landing_page_id: landingPageId,
