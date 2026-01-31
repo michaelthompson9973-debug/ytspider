@@ -404,16 +404,6 @@ export default function LandingPages() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="gtm">GTM Container ID</Label>
-                <Input
-                  id="gtm"
-                  placeholder="GTM-XXXXXXX"
-                  value={form.gtm_id}
-                  onChange={(e) => setForm({ ...form, gtm_id: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
                 <Label htmlFor="tracking_profile" className="flex items-center gap-2">
                   <Target className="h-4 w-4" />
                   Tracking Profile
