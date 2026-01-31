@@ -63,6 +63,7 @@ export default function LandingPages() {
   const [form, setForm] = useState<PageForm>(defaultForm);
   const [builderPageId, setBuilderPageId] = useState<string | null>(null);
   const [builderGtmId, setBuilderGtmId] = useState<string | undefined>();
+  const [builderSlug, setBuilderSlug] = useState<string | undefined>();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingPageId, setDeletingPageId] = useState<string | null>(null);
   const queryClient = useQueryClient();
@@ -223,6 +224,7 @@ export default function LandingPages() {
   const openBuilder = (page: LandingPage) => {
     setBuilderPageId(page.id);
     setBuilderGtmId(page.gtm_id ?? undefined);
+    setBuilderSlug(page.slug);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -246,6 +248,7 @@ export default function LandingPages() {
         <SectionBuilder
           landingPageId={builderPageId}
           gtmId={builderGtmId}
+          slug={builderSlug}
           onBack={() => setBuilderPageId(null)}
         />
       </AdminLayout>

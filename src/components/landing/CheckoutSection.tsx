@@ -430,9 +430,10 @@ export function CheckoutSection({
     <section className="py-12 px-4 bg-muted/50" id="checkout">
       <div className="container max-w-4xl mx-auto">
         <div className="rounded-theme bg-background border shadow-sm p-6">
-          <h2 className="font-heading text-2xl text-primary mb-6 text-center">
-            {config.title}
-          </h2>
+          <h2 
+            className="font-heading text-2xl text-primary mb-6 text-center"
+            dangerouslySetInnerHTML={{ __html: config.title }}
+          />
 
           {/* 2-Column Grid: Product List (Left) + Form (Right) on desktop */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { ArrowLeft, Settings, Eye, ShoppingCart, Package } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { ArrowLeft, Settings, Eye, ShoppingCart, Package, Save, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSections } from './useSections';
 import { useTheme } from './useTheme';
@@ -18,16 +18,20 @@ import { cn } from '@/lib/utils';
 interface SectionBuilderProps {
   landingPageId: string;
   gtmId?: string;
+  slug?: string;
   onBack: () => void;
 }
 
 type RightPanel = 'preview' | 'theme' | 'checkout' | 'products';
 
-export function SectionBuilder({ landingPageId, gtmId, onBack }: SectionBuilderProps) {
+export function SectionBuilder({ landingPageId, gtmId, slug, onBack }: SectionBuilderProps) {
   const [activeSection, setActiveSection] = useState<Section | null>(null);
   const [previewingSections, setPreviewingSections] = useState<Set<string>>(new Set());
   const [rightPanel, setRightPanel] = useState<RightPanel>('preview');
   const [mobileTab, setMobileTab] = useState<MobileTab>('sections');
+  const [isSavingAll, setIsSavingAll] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const editorRef = useRef<{ triggerSave: () => void } | null>(null);
 
   const {
     sections,
@@ -120,48 +124,70 @@ export function SectionBuilder({ landingPageId, gtmId, onBack }: SectionBuilderP
   return (
     <div className="h-[calc(100vh-8rem)] lg:h-[calc(100vh-8rem)] flex flex-col pb-14 lg:pb-0">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" onClick={onBack}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <h2 className="font-semibold">Section Builder</h2>
+          {saveSuccess && (
+            <span className="text-sm text-primary font-medium animate-in fade-in">
+              ✓ Saved
+            </span>
+          )}
         </div>
         
-        {/* Desktop Panel Toggle */}
-        <div className="hidden lg:flex gap-2">
-          <Button
-            variant={rightPanel === 'preview' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setRightPanel('preview')}
-          >
-            <Eye className="h-4 w-4 mr-1" />
-            Preview
-          </Button>
-          <Button
-            variant={rightPanel === 'theme' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setRightPanel('theme')}
-          >
-            <Settings className="h-4 w-4 mr-1" />
-            Theme
-          </Button>
-          <Button
-            variant={rightPanel === 'products' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setRightPanel('products')}
-          >
-            <Package className="h-4 w-4 mr-1" />
-            Products
-          </Button>
-          <Button
-            variant={rightPanel === 'checkout' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setRightPanel('checkout')}
-          >
-            <ShoppingCart className="h-4 w-4 mr-1" />
-            Checkout
-          </Button>
+        {/* Action Buttons */}
+        <div className="flex items-center gap-2">
+          {/* View Live Button */}
+          {slug && (
+            <Button
+              variant="outline"
+              size="sm"
+              asChild
+            >
+              <a href={`/p/${slug}?preview=true`} target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="h-4 w-4 mr-1" />
+                <span className="hidden sm:inline">Preview</span>
+              </a>
+            </Button>
+          )}
+          
+          {/* Desktop Panel Toggle */}
+          <div className="hidden lg:flex gap-2">
+            <Button
+              variant={rightPanel === 'preview' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setRightPanel('preview')}
+            >
+              <Eye className="h-4 w-4 mr-1" />
+              Preview
+            </Button>
+            <Button
+              variant={rightPanel === 'theme' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setRightPanel('theme')}
+            >
+              <Settings className="h-4 w-4 mr-1" />
+              Theme
+            </Button>
+            <Button
+              variant={rightPanel === 'products' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setRightPanel('products')}
+            >
+              <Package className="h-4 w-4 mr-1" />
+              Products
+            </Button>
+            <Button
+              variant={rightPanel === 'checkout' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setRightPanel('checkout')}
+            >
+              <ShoppingCart className="h-4 w-4 mr-1" />
+              Checkout
+            </Button>
+          </div>
         </div>
       </div>
 
