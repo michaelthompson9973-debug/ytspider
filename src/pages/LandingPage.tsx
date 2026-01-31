@@ -138,6 +138,8 @@ export default function LandingPage() {
       return data as SectionData[];
     },
     enabled: !!page?.id,
+    staleTime: 0, // Always fetch fresh data
+    refetchOnMount: 'always', // Refetch when component mounts
   });
 
   // Fetch theme for the landing page
