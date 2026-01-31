@@ -22,12 +22,14 @@ export function ComponentPreviewModal({ open, onOpenChange, component }: Compone
 
   if (!component) return null;
 
-  const origin = window.location.origin;
   const fullHtml = `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anek+Bangla:wght@400;500;600;700&family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
 tailwind.config = {
@@ -41,21 +43,7 @@ tailwind.config = {
   }
 }
 </script>
-<link rel="preload" href="${origin}/fonts/hind-siliguri-400.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="${origin}/fonts/hind-siliguri-500.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="${origin}/fonts/hind-siliguri-600.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="${origin}/fonts/hind-siliguri-700.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="${origin}/fonts/anek-bangla-400.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="${origin}/fonts/anek-bangla-500.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="${origin}/fonts/anek-bangla-600.woff2" as="font" type="font/woff2" crossorigin>
 <style>
-@font-face { font-family: "Hind Siliguri"; font-weight: 400; font-display: swap; src: url("${origin}/fonts/hind-siliguri-400.woff2") format("woff2"); }
-@font-face { font-family: "Hind Siliguri"; font-weight: 500; font-display: swap; src: url("${origin}/fonts/hind-siliguri-500.woff2") format("woff2"); }
-@font-face { font-family: "Hind Siliguri"; font-weight: 600; font-display: swap; src: url("${origin}/fonts/hind-siliguri-600.woff2") format("woff2"); }
-@font-face { font-family: "Hind Siliguri"; font-weight: 700; font-display: swap; src: url("${origin}/fonts/hind-siliguri-700.woff2") format("woff2"); }
-@font-face { font-family: "Anek Bangla"; font-weight: 400; font-display: swap; src: url("${origin}/fonts/anek-bangla-400.woff2") format("woff2"); }
-@font-face { font-family: "Anek Bangla"; font-weight: 500; font-display: swap; src: url("${origin}/fonts/anek-bangla-500.woff2") format("woff2"); }
-@font-face { font-family: "Anek Bangla"; font-weight: 600; font-display: swap; src: url("${origin}/fonts/anek-bangla-600.woff2") format("woff2"); }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { font-family: "Anek Bangla", sans-serif !important; }
 h1, h2, h3, h4, h5, h6, .heading, [class*="text-2xl"], [class*="text-3xl"], [class*="text-4xl"], [class*="text-5xl"] { font-family: "Hind Siliguri", sans-serif !important; }
@@ -101,7 +89,7 @@ p, span, div, button, a, li, td, th, label, input, textarea, select, option, art
               className="w-full border-0"
               style={{ height: '500px' }}
               title={`Preview: ${component.name}`}
-              sandbox="allow-scripts"
+              sandbox="allow-scripts allow-same-origin"
             />
           </div>
         </div>
