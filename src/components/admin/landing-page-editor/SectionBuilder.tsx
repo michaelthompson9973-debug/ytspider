@@ -129,17 +129,15 @@ export function SectionBuilder({ landingPageId, gtmId, slug, onBack }: SectionBu
 
     setIsSavingAll(true);
     try {
-      const didSave = activeSection.type === 'checkout'
-        ? await checkoutEditorRef.current?.save()
-        : await htmlEditorRef.current?.save();
-
-      if (didSave) {
-        flashSaved();
+      // Always save, regardless of dirty state
+      if (activeSection.type === 'checkout') {
+        await checkoutEditorRef.current?.save();
       } else {
-        toast({ title: 'Nothing to save', description: 'No changes detected in the current section.' });
+        await htmlEditorRef.current?.save();
       }
+      flashSaved();
     } catch (e) {
-      // mutations already toast; keep dirty state intact
+      // mutations already toast on error
     } finally {
       setIsSavingAll(false);
     }
