@@ -284,6 +284,23 @@ export default function LandingPage() {
     };
   }, [page?.gtm_id, products, slug]);
 
+  // Inject Tailwind CDN for landing page content
+  useEffect(() => {
+    const scriptId = 'tailwind-cdn';
+    let script = document.getElementById(scriptId) as HTMLScriptElement | null;
+    
+    if (!script) {
+      script = document.createElement('script');
+      script.id = scriptId;
+      script.src = 'https://cdn.tailwindcss.com';
+      document.head.appendChild(script);
+    }
+    
+    return () => {
+      script?.remove();
+    };
+  }, []);
+
   // Inject theme styles
   useEffect(() => {
     const styleId = 'landing-theme-styles';
@@ -295,8 +312,8 @@ export default function LandingPage() {
       document.head.appendChild(styleEl);
     }
     
-    // Use the new generateThemeCSS from themeUtils
-    const themeStyles = generateThemeCSS(themeConfig);
+    // Use the new generateThemeCSS from themeUtils with baseUrl for fonts
+    const themeStyles = generateThemeCSS(themeConfig, window.location.origin);
     
     // Add scoping for landing content
     const scopedStyles = `
