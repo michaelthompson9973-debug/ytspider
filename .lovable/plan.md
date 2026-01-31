@@ -1,71 +1,220 @@
 
-# Landing Page CSS ও Section Rendering সমস্যা সমাধান
+# ল্যান্ডিং পেজ পারফরম্যান্স অপটিমাইজেশন ও স্কেলেটন লোডার প্ল্যান
 
-## সমস্যা সনাক্তকরণ
+## সমস্যা বিশ্লেষণ
 
-### সমস্যা ১: Local Fonts লোড হচ্ছে না
-**কারণ:** `LandingPage.tsx` এ `generateThemeCSS()` ফাংশন call করার সময় `baseUrl` argument পাস করা হচ্ছে না। এর ফলে font `@font-face` এর URLs relative path হয়ে যাচ্ছে এবং fonts সঠিকভাবে load হচ্ছে না।
+বর্তমান কোডে যে পারফরম্যান্স সমস্যাগুলো আছে:
 
-```typescript
-// বর্তমান কোড (Line 299)
-const themeStyles = generateThemeCSS(themeConfig);
+### ১. **ব্লকিং লোডার (DomainGuard + LandingPage)**
+- `DomainGuard.tsx` এ সাধারণ `animate-pulse` দিয়ে একটাই ছোট box দেখায়
+- `LandingPage.tsx` এ শুধু "Loading..." টেক্সট দেখায়
+- এতে User Experience খারাপ হয় - পেজ ফাঁকা লাগে
 
-// সমাধান
-const themeStyles = generateThemeCSS(themeConfig, window.location.origin);
-```
+### ২. **Sequential Data Loading (Waterfall)**
+- প্রথমে landing page fetch করে
+- তারপর products fetch করে
+- তারপর sections fetch করে
+- তারপর theme fetch করে
+- এই waterfall প্যাটার্ন slow করে
 
-### সমস্যা ২: Tailwind CSS Classes কাজ করছে না
-**কারণ:** Live landing page এ sections যেগুলোতে Tailwind utility classes আছে (`py-12`, `px-4`, `bg-gradient-to-r`, `text-white`, etc.) সেগুলো render হচ্ছে না। Admin preview তে iframe এ Tailwind CDN include আছে কিন্তু live page এ এটি নেই।
+### ৩. **Heavy useEffect Scripts**
+- Tailwind CDN script প্রতিবার inject হচ্ছে
+- Google Fonts dynamically load হচ্ছে
+- GTM script inject হচ্ছে
+- এগুলো First Paint ব্লক করে
 
-**সমাধান:** Landing page এ dynamically Tailwind CDN inject করতে হবে।
-
-### সেভ বাটন সম্পর্কে
-**খবর:** SectionEditor.tsx এ Save বাটন মিসিং নয়। এটি দুই জায়গায় আছে:
-- Header এ (Line 116-124) - সবসময় দেখায়
-- Mobile sticky button (Line 265-278) - শুধু পরিবর্তন করলে দেখায়
+### ৪. **Missing Image Optimization**
+- Images-এ proper width/height নেই
+- Layout shift হয়
 
 ---
 
 ## সমাধান পরিকল্পনা
 
-### ধাপ ১: LandingPage.tsx এ baseUrl যোগ
-```typescript
-// Line 299 পরিবর্তন করতে হবে
-const themeStyles = generateThemeCSS(themeConfig, window.location.origin);
+### ধাপ ১: Landing Page Skeleton Loader তৈরি
+নতুন কম্পোনেন্ট `LandingPageSkeleton.tsx` তৈরি করব যেটা:
+- Hero section skeleton
+- Content sections skeleton
+- Checkout form skeleton
+- Smooth fade-in animation দিয়ে show করবে
+
+```text
++------------------------------------------+
+|  [███████████████] Hero Image Skeleton   |
+|  ████████████████████████                |
+|  ████████████  ████████                  |
++------------------------------------------+
+|                                          |
+|  ████████  ████████████████████████      |
+|  ████████████████  ████████              |
+|                                          |
++------------------------------------------+
+|  Checkout Section Skeleton               |
+|  +------------------+  +---------------+ |
+|  | Product Skeleton |  | Form Skeleton | |
+|  | ████  ████████   |  | ████████████  | |
+|  +------------------+  +---------------+ |
++------------------------------------------+
 ```
 
-### ধাপ ২: Tailwind CDN Inject করা
-Landing page এ একটি useEffect যোগ করতে হবে যা Tailwind CDN script inject করবে:
+### ধাপ ২: DomainGuard Skeleton উন্নতি
+`DomainGuard.tsx` এ নতুন skeleton loader add করব যাতে domain check এর সময় সুন্দর skeleton দেখায়
 
+### ধাপ ৩: LandingPage.tsx Optimization
+
+**A. Parallel Data Fetching:**
 ```typescript
-// Inject Tailwind CDN for landing page content
-useEffect(() => {
-  const scriptId = 'tailwind-cdn';
-  let script = document.getElementById(scriptId) as HTMLScriptElement | null;
-  
-  if (!script) {
-    script = document.createElement('script');
-    script.id = scriptId;
-    script.src = 'https://cdn.tailwindcss.com';
-    document.head.appendChild(script);
+// একসাথে সব queries run করব
+const queries = useQueries({
+  queries: [
+    { queryKey: ['landing-page', slug], ... },
+    { queryKey: ['sections', pageId], enabled: !!pageId, ... },
+    { queryKey: ['theme', pageId], enabled: !!pageId, ... },
+  ]
+});
+```
+
+**B. Skeleton → Content Transition:**
+- `isLoading` state এ skeleton দেখাব
+- Data load হলে smooth fade-in দিয়ে content দেখাব
+
+**C. Script Loading Optimization:**
+- Tailwind CDN `async` attribute add করব
+- GTM script lazy load করব (after first paint)
+
+### ধাপ ৪: CSS Animations যোগ
+`src/index.css` এ smooth fade-in animation add করব:
+```css
+.fade-in-up {
+  animation: fadeInUp 0.4s ease-out forwards;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
   }
-  
-  return () => {
-    script?.remove();
-  };
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+```
+
+### ধাপ ৫: Image Lazy Loading Enhancement
+`ProductList.tsx` এবং `ProductImageGallery.tsx` এ:
+- Skeleton placeholder before image loads
+- `onLoad` event দিয়ে fade-in
+
+---
+
+## ফাইল পরিবর্তন
+
+| ফাইল | পরিবর্তন |
+|------|----------|
+| `src/components/landing/LandingPageSkeleton.tsx` | **নতুন** - Full page skeleton component |
+| `src/components/landing/DomainGuard.tsx` | Improved skeleton loader |
+| `src/pages/LandingPage.tsx` | Skeleton integration + parallel fetch + fade animation |
+| `src/index.css` | Fade animation classes |
+| `src/components/landing/ProductList.tsx` | Image loading state + skeleton |
+| `src/components/landing/ProductImageGallery.tsx` | Image loading state + skeleton |
+
+---
+
+## টেকনিক্যাল বিবরণ
+
+### LandingPageSkeleton Component Structure:
+```typescript
+export function LandingPageSkeleton() {
+  return (
+    <div className="min-h-screen animate-pulse">
+      {/* Hero Section Skeleton */}
+      <div className="w-full h-64 md:h-96 bg-muted" />
+      
+      {/* Content Sections */}
+      <div className="container mx-auto py-8 space-y-4">
+        <Skeleton className="h-8 w-3/4" />
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-5/6" />
+      </div>
+      
+      {/* Checkout Skeleton */}
+      <div className="bg-muted/50 py-12">
+        <div className="container max-w-4xl mx-auto grid md:grid-cols-2 gap-6">
+          {/* Product skeleton */}
+          <div className="space-y-3">
+            <Skeleton className="h-14 w-full rounded-lg" />
+            <Skeleton className="h-14 w-full rounded-lg" />
+          </div>
+          {/* Form skeleton */}
+          <div className="space-y-4">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-12 w-full" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+### Fade-in Transition Logic:
+```typescript
+const [showContent, setShowContent] = useState(false);
+
+useEffect(() => {
+  if (!isLoading && page) {
+    // Small delay for smooth transition
+    const timer = setTimeout(() => setShowContent(true), 50);
+    return () => clearTimeout(timer);
+  }
+}, [isLoading, page]);
+
+return isLoading || !showContent ? (
+  <LandingPageSkeleton />
+) : (
+  <div className="fade-in-up">
+    {/* Actual content */}
+  </div>
+);
+```
+
+### Script Loading Optimization:
+```typescript
+// Defer Tailwind CDN
+useEffect(() => {
+  const script = document.createElement('script');
+  script.src = 'https://cdn.tailwindcss.com';
+  script.async = true;  // Non-blocking
+  script.defer = true;  // After HTML parse
+  document.head.appendChild(script);
 }, []);
+
+// Defer GTM until after first paint
+useEffect(() => {
+  if (!page?.gtm_id) return;
+  
+  // Wait for first paint
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      // Inject GTM
+    });
+  });
+}, [page?.gtm_id]);
 ```
 
 ---
 
-## ফাইল পরিবর্তন সারাংশ
-
-| ফাইল | পরিবর্তন |
-|------|---------|
-| `src/pages/LandingPage.tsx` | `generateThemeCSS` এ `baseUrl` যোগ + Tailwind CDN inject |
-
 ## প্রত্যাশিত ফলাফল
-- ✅ Local fonts (Hind Siliguri, Anek Bangla, Inter) সঠিকভাবে load হবে
-- ✅ Tailwind CSS classes (py-12, bg-gradient-to-r, etc.) render হবে
-- ✅ Sections সঠিক styling সহ দেখাবে
-- ✅ CSS এবং theme ঠিকমতো apply হবে
+
+| মেট্রিক | আগে | পরে |
+|---------|------|------|
+| First Paint | ধীর (blank page) | দ্রুত (skeleton) |
+| Time to Interactive | Waterfall delays | Parallel loading |
+| User Experience | "Loading..." টেক্সট | সুন্দর skeleton animation |
+| Layout Shift (CLS) | Image jumps | Stable skeleton placeholders |
+| Scroll Behavior | No smooth scroll | `scroll-behavior: smooth` |
+
+এই পরিবর্তনগুলো করলে ল্যান্ডিং পেজ অনেক দ্রুত এবং smooth লোড হবে, বিশেষ করে paid traffic এর জন্য first impression অনেক ভালো হবে।
