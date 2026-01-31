@@ -319,48 +319,58 @@ export function CheckoutSection({
         }
       }
 
+      // Normalize phone number for Enhanced Conversions (E.164 format)
+      const normalizedPhone = form.customer_phone 
+        ? '+880' + form.customer_phone.replace(/^0+/, '').replace(/\D/g, '')
+        : undefined;
+
       // Push purchase event (GA4 ecommerce standard for Google Ads)
       pushDataLayer('purchase', {
         ecommerce: {
           transaction_id: orderData.id,
+          affiliation: landingPageSlug,
           value: total,
           tax: 0,
           shipping: delivery,
           currency: settings.currency,
           items: ga4Items,
         },
-        // Enhanced Conversions user data (hashed by GTM if configured)
+        // Enhanced Conversions user data (properly formatted for Google Ads)
         user_data: {
-          phone_number: form.customer_phone || undefined,
+          phone_number: normalizedPhone,
           address: {
-            city: form.customer_city || undefined,
+            city: form.customer_city?.trim() || undefined,
+            region: form.customer_city?.trim() || undefined,
             country: 'BD',
           },
         },
-        // Legacy format for backward compatibility  
+        // Root level properties for Google Ads conversion tracking
         transaction_id: orderData.id,
         event_id: eventId,
         value: total,
-        subtotal,
-        shipping: delivery,
         currency: settings.currency,
-        items: ga4Items,
+        // Conversion label for Google Ads (set in GTM)
+        conversion_value: total,
       });
 
-      // Call server-side tracking
+      // Call server-side tracking for deduplication and backup
       try {
         await supabase.functions.invoke('track-conversion', {
           body: {
             eventId,
-            orderId: orderData?.id,
-            productName: cart.filter(i => i.quantity > 0).map(i => i.productName).join(', '),
+            orderId: orderData.id,
+            transactionId: orderData.id,
+            productName: activeItems.map(i => i.productName).join(', '),
+            productIds: activeItems.map(i => i.productId),
+            customerPhone: normalizedPhone,
             customerCity: form.customer_city,
             landingPageSlug,
-            quantity: cart.reduce((sum, item) => sum + item.quantity, 0),
+            quantity: activeItems.reduce((sum, item) => sum + item.quantity, 0),
             subtotal,
             shipping: delivery,
             total,
             currency: settings.currency,
+            items: ga4Items,
           },
         });
       } catch (trackError) {
