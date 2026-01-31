@@ -13,6 +13,7 @@ import ComponentLibrary from "./pages/admin/ComponentLibrary";
 import Orders from "./pages/admin/Orders";
 import Media from "./pages/admin/Media";
 import Tracking from "./pages/admin/Tracking";
+import TrackingProfiles from "./pages/admin/TrackingProfiles";
 import Webhooks from "./pages/admin/Webhooks";
 import AllowedDomains from "./pages/admin/AllowedDomains";
 import ApiAi from "./pages/admin/ApiAi";
@@ -46,6 +47,7 @@ const App = () => (
             <Route path="/admin/orders" element={<ProtectedRoute requireAdmin><Orders /></ProtectedRoute>} />
             <Route path="/admin/media" element={<ProtectedRoute requireAdmin><Media /></ProtectedRoute>} />
             <Route path="/admin/tracking" element={<ProtectedRoute requireAdmin><Tracking /></ProtectedRoute>} />
+            <Route path="/admin/tracking/profiles" element={<ProtectedRoute requireAdmin><TrackingProfiles /></ProtectedRoute>} />
             <Route path="/admin/inbox" element={<Navigate to="/admin/inbox/messenger" replace />} />
             <Route path="/admin/inbox/messenger" element={<ProtectedRoute requireAdmin><InboxMessenger /></ProtectedRoute>} />
             <Route path="/admin/inbox/whatsapp" element={<ProtectedRoute requireAdmin><InboxWhatsapp /></ProtectedRoute>} />

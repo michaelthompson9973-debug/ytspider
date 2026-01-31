@@ -410,6 +410,7 @@ export type Database = {
           product_id: string | null
           published: boolean
           slug: string
+          tracking_profile_id: string | null
           updated_at: string
         }
         Insert: {
@@ -421,6 +422,7 @@ export type Database = {
           product_id?: string | null
           published?: boolean
           slug: string
+          tracking_profile_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -432,6 +434,7 @@ export type Database = {
           product_id?: string | null
           published?: boolean
           slug?: string
+          tracking_profile_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -440,6 +443,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "landing_pages_tracking_profile_id_fkey"
+            columns: ["tracking_profile_id"]
+            isOneToOne: false
+            referencedRelation: "tracking_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -913,6 +923,114 @@ export type Database = {
           key?: string
           updated_at?: string
           value?: string | null
+        }
+        Relationships: []
+      }
+      tracking_event_logs: {
+        Row: {
+          event_id: string
+          event_name: string
+          id: string
+          order_id: string | null
+          platform: string
+          profile_id: string | null
+          request_payload: Json | null
+          response_body: string | null
+          response_status: number | null
+          sent_at: string
+        }
+        Insert: {
+          event_id: string
+          event_name: string
+          id?: string
+          order_id?: string | null
+          platform: string
+          profile_id?: string | null
+          request_payload?: Json | null
+          response_body?: string | null
+          response_status?: number | null
+          sent_at?: string
+        }
+        Update: {
+          event_id?: string
+          event_name?: string
+          id?: string
+          order_id?: string | null
+          platform?: string
+          profile_id?: string | null
+          request_payload?: Json | null
+          response_body?: string | null
+          response_status?: number | null
+          sent_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracking_event_logs_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tracking_event_logs_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "tracking_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tracking_profiles: {
+        Row: {
+          created_at: string
+          description: string | null
+          facebook_access_token: string | null
+          facebook_pixel_id: string | null
+          facebook_test_event_code: string | null
+          google_ga4_id: string | null
+          google_ga4_secret: string | null
+          google_gtm_id: string | null
+          id: string
+          is_active: boolean
+          name: string
+          tiktok_access_token: string | null
+          tiktok_pixel_id: string | null
+          tiktok_test_event_code: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          facebook_access_token?: string | null
+          facebook_pixel_id?: string | null
+          facebook_test_event_code?: string | null
+          google_ga4_id?: string | null
+          google_ga4_secret?: string | null
+          google_gtm_id?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          tiktok_access_token?: string | null
+          tiktok_pixel_id?: string | null
+          tiktok_test_event_code?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          facebook_access_token?: string | null
+          facebook_pixel_id?: string | null
+          facebook_test_event_code?: string | null
+          google_ga4_id?: string | null
+          google_ga4_secret?: string | null
+          google_gtm_id?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          tiktok_access_token?: string | null
+          tiktok_pixel_id?: string | null
+          tiktok_test_event_code?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
