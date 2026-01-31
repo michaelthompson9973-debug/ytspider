@@ -160,6 +160,23 @@ export default function LandingPage() {
     enabled: !!page?.id,
   });
 
+  // Fetch checkout settings (for currency in dataLayer)
+  const { data: checkoutSettingsData } = useQuery({
+    queryKey: ['checkout-settings-datalayer', page?.id],
+    queryFn: async () => {
+      if (!page?.id) return null;
+      const { data, error } = await supabase
+        .from('landing_page_checkout_settings')
+        .select('currency')
+        .eq('landing_page_id', page.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!page?.id,
+  });
+
+  const currency = checkoutSettingsData?.currency || 'BDT';
   const themeConfig = (themeData?.config as unknown as ThemeConfig) ?? defaultThemeConfig;
 
   // Transform landing page products to the format CheckoutSection expects
@@ -261,7 +278,7 @@ export default function LandingPage() {
       
       pushDataLayer('view_item', {
         ecommerce: {
-          currency: 'BDT',
+          currency: currency,
           value: totalValue,
           items: products.map((p, index) => ({
             item_id: p.id,
@@ -269,14 +286,13 @@ export default function LandingPage() {
             price: p.price,
             quantity: 1,
             index: index,
+            affiliation: slug,
           })),
         },
-        // Legacy format for backward compatibility
-        content_type: 'product',
-        content_ids: products.map(p => p.id),
-        content_name: products.map(p => p.name).join(', '),
+        // Root level for Google Ads
         value: totalValue,
-        currency: 'BDT',
+        currency: currency,
+        item_list_name: slug,
       });
     }
 
@@ -284,7 +300,7 @@ export default function LandingPage() {
       script.remove();
       noscript.remove();
     };
-  }, [page?.gtm_id, products, slug]);
+  }, [page?.gtm_id, products, slug, currency]);
 
   // Inject Tailwind CDN for landing page content - async/deferred for performance
   useEffect(() => {
