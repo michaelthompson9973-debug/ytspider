@@ -24,6 +24,8 @@ import {
   MessageCircle,
   MessageSquare,
   BookOpen,
+  Target,
+  BarChart3,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -103,7 +105,15 @@ const navGroups: NavGroup[] = [
     label: 'Operations',
     items: [
       { href: '/admin/orders', label: 'Orders', icon: ShoppingCart },
-      { href: '/admin/tracking', label: 'Tracking', icon: Activity },
+      { 
+        href: '/admin/tracking', 
+        label: 'Tracking', 
+        icon: Activity,
+        children: [
+          { href: '/admin/tracking', label: 'Events', icon: BarChart3 },
+          { href: '/admin/tracking/profiles', label: 'Profiles', icon: Target },
+        ]
+      },
       { 
         href: '/admin/inbox', 
         label: 'Inbox', 

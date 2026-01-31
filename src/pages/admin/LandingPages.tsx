@@ -24,14 +24,16 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Pencil, Trash2, Copy, ExternalLink, Layers } from 'lucide-react';
+import { Plus, Pencil, Trash2, Copy, ExternalLink, Layers, Target } from 'lucide-react';
 import { z } from 'zod';
 import { SectionBuilder } from '@/components/admin/landing-page-editor';
+import { useTrackingProfilesSelect } from '@/hooks/useTrackingProfiles';
 
 const pageSchema = z.object({
   slug: z.string().min(1, 'Slug is required').max(100).regex(/^[a-z0-9-]+$/, 'Slug must be lowercase alphanumeric with dashes'),
   product_id: z.string().nullable(),
   gtm_id: z.string().max(50).optional(),
+  tracking_profile_id: z.string().nullable(),
   published: z.boolean(),
 });
 
@@ -41,6 +43,7 @@ const defaultForm: PageForm = {
   slug: '',
   product_id: null,
   gtm_id: '',
+  tracking_profile_id: null,
   published: false,
 };
 
@@ -49,12 +52,14 @@ interface LandingPage {
   slug: string;
   product_id: string | null;
   gtm_id: string | null;
+  tracking_profile_id: string | null;
   published: boolean;
   html_content: string;
   created_at: string;
   updated_at: string;
   created_by: string | null;
   products: { name: string } | null;
+  tracking_profiles: { name: string } | null;
 }
 
 export default function LandingPages() {
@@ -69,6 +74,7 @@ export default function LandingPages() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { user } = useAuth();
+  const { profiles: trackingProfiles } = useTrackingProfilesSelect();
 
   const { data: pages, isLoading } = useQuery({
     queryKey: ['landing-pages'],
@@ -77,7 +83,8 @@ export default function LandingPages() {
         .from('landing_pages')
         .select(`
           *,
-          products (name)
+          products (name),
+          tracking_profiles (name)
         `)
         .order('created_at', { ascending: false });
       if (error) throw error;
@@ -107,6 +114,7 @@ export default function LandingPages() {
             slug: data.slug,
             product_id: data.product_id || null,
             gtm_id: data.gtm_id || null,
+            tracking_profile_id: data.tracking_profile_id || null,
             published: data.published,
           })
           .eq('id', editingId);
@@ -116,8 +124,9 @@ export default function LandingPages() {
           slug: data.slug,
           product_id: data.product_id || null,
           gtm_id: data.gtm_id || null,
+          tracking_profile_id: data.tracking_profile_id || null,
           published: data.published,
-          html_content: '', // Legacy field, sections are now used
+          html_content: '',
           created_by: user?.id,
         }]);
         if (error) throw error;
@@ -215,6 +224,7 @@ export default function LandingPages() {
       slug: page.slug,
       product_id: page.product_id,
       gtm_id: page.gtm_id ?? '',
+      tracking_profile_id: page.tracking_profile_id,
       published: page.published,
     });
     setEditingId(page.id);
@@ -401,6 +411,30 @@ export default function LandingPages() {
                   value={form.gtm_id}
                   onChange={(e) => setForm({ ...form, gtm_id: e.target.value })}
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="tracking_profile" className="flex items-center gap-2">
+                  <Target className="h-4 w-4" />
+                  Tracking Profile
+                </Label>
+                <Select
+                  value={form.tracking_profile_id ?? 'none'}
+                  onValueChange={(val) => setForm({ ...form, tracking_profile_id: val === 'none' ? null : val })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a tracking profile" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No tracking profile</SelectItem>
+                    {trackingProfiles?.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Events (purchase, add_to_cart) will be sent to this profile's configured platforms
+                </p>
               </div>
 
               <div className="flex items-center gap-2">
