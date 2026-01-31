@@ -215,15 +215,47 @@ export function useSections(landingPageId: string | null) {
     },
   });
 
+  const addMultipleSectionsMutation = useMutation({
+    mutationFn: async (items: Array<{ name: string; html: string; type: SectionType; config: unknown }>) => {
+      if (!landingPageId) throw new Error('No landing page selected');
+      const maxOrder = sections.length > 0 ? Math.max(...sections.map(s => s.sort_order)) : -1;
+      
+      const insertData = items.map((item, index) => ({
+        landing_page_id: landingPageId,
+        name: item.name,
+        html: item.html,
+        type: item.type,
+        config: item.config as Json,
+        sort_order: maxOrder + 1 + index,
+      }));
+
+      const { data, error } = await supabase
+        .from('landing_page_sections')
+        .insert(insertData)
+        .select();
+        
+      if (error) throw error;
+      return (data ?? []).map(transformSection);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['landing-page-sections', landingPageId] });
+      toast({ title: 'Sections added' });
+    },
+    onError: (error) => {
+      toast({ title: 'Error adding sections', description: error.message, variant: 'destructive' });
+    },
+  });
+
   return {
     sections,
     isLoading,
     addSection: addSectionMutation.mutate,
+    addMultipleSections: addMultipleSectionsMutation.mutate,
     updateSection: updateSectionMutation.mutate,
     deleteSection: deleteSectionMutation.mutate,
     duplicateSection: duplicateSectionMutation.mutate,
     reorderSections: reorderSectionsMutation.mutate,
-    isAdding: addSectionMutation.isPending,
+    isAdding: addSectionMutation.isPending || addMultipleSectionsMutation.isPending,
     isUpdating: updateSectionMutation.isPending,
   };
 }
