@@ -198,9 +198,14 @@ export function LibraryPickerModal({ open, onOpenChange, onSelect }: LibraryPick
     setPreviewMode('desktop');
   };
 
+  // When expanded, hide the main dialog
+  const isPickerVisible = open && !expandedComponent;
+
   return (
     <>
-      <Dialog open={open} onOpenChange={handleClose}>
+      <Dialog open={isPickerVisible} onOpenChange={(newOpen) => {
+        if (!newOpen) handleClose();
+      }}>
         <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
