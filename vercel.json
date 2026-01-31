@@ -3,6 +3,10 @@
     {
       "source": "/api/courier-webhook",
       "destination": "https://otibsrdecgygoeshfoho.supabase.co/functions/v1/courier-webhook"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/"
     }
   ]
 }
