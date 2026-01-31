@@ -38,6 +38,7 @@ interface SectionListProps {
   onSelectSection: (section: Section) => void;
   onTogglePreview: (sectionId: string) => void;
   onAddSection: (data: { name: string; html: string; type: SectionType; config: unknown }) => void;
+  onAddMultipleSections?: (data: Array<{ name: string; html: string; type: SectionType; config: unknown }>) => void;
   onDuplicateSection: (section: Section) => void;
   onDeleteSection: (id: string) => void;
   onReorderSections: (newOrder: { id: string; sort_order: number }[]) => void;
@@ -60,6 +61,7 @@ export function SectionList({
   onSelectSection,
   onTogglePreview,
   onAddSection,
+  onAddMultipleSections,
   onDuplicateSection,
   onDeleteSection,
   onReorderSections,
@@ -145,13 +147,25 @@ export function SectionList({
     setDialogOpen(false);
   };
 
-  const handleLibrarySelect = (component: LibraryComponent) => {
-    onAddSection({
-      name: component.name,
-      html: component.html,
-      type: 'html',
-      config: null,
-    });
+  const handleLibrarySelect = (components: LibraryComponent[]) => {
+    if (components.length === 1) {
+      // Single selection - use existing onAddSection
+      onAddSection({
+        name: components[0].name,
+        html: components[0].html,
+        type: 'html',
+        config: null,
+      });
+    } else if (components.length > 1 && onAddMultipleSections) {
+      // Multiple selection - use bulk insert
+      const sectionsData = components.map(c => ({
+        name: c.name,
+        html: c.html,
+        type: 'html' as SectionType,
+        config: null,
+      }));
+      onAddMultipleSections(sectionsData);
+    }
   };
 
   return (

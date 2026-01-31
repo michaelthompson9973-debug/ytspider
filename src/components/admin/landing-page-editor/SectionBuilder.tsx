@@ -33,6 +33,7 @@ export function SectionBuilder({ landingPageId, gtmId, onBack }: SectionBuilderP
     sections,
     isLoading,
     addSection,
+    addMultipleSections,
     updateSection,
     deleteSection,
     duplicateSection,
@@ -161,6 +162,7 @@ export function SectionBuilder({ landingPageId, gtmId, onBack }: SectionBuilderP
             onSelectSection={handleSelectSection}
             onTogglePreview={toggleSectionPreview}
             onAddSection={(data: { name: string; html: string; type: SectionType; config: unknown }) => addSection(data)}
+            onAddMultipleSections={addMultipleSections}
             onDuplicateSection={duplicateSection}
             onDeleteSection={handleDeleteSection}
             onReorderSections={reorderSections}
@@ -224,6 +226,7 @@ export function SectionBuilder({ landingPageId, gtmId, onBack }: SectionBuilderP
             onSelectSection={handleSelectSection}
             onTogglePreview={toggleSectionPreview}
             onAddSection={(data: { name: string; html: string; type: SectionType; config: unknown }) => addSection(data)}
+            onAddMultipleSections={addMultipleSections}
             onDuplicateSection={duplicateSection}
             onDeleteSection={handleDeleteSection}
             onReorderSections={reorderSections}
