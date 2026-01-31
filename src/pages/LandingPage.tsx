@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueries } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ThemeConfig, defaultThemeConfig, CheckoutConfig } from '@/components/admin/landing-page-editor/types';
@@ -8,6 +8,7 @@ import { generateThemeCSS, getGoogleFontsImports } from '@/components/admin/land
 import { CheckoutSection } from '@/components/landing/CheckoutSection';
 import { PreviewToolbar, devicePresets } from '@/components/landing/PreviewToolbar';
 import { DomainGuard } from '@/components/landing/DomainGuard';
+import { LandingPageSkeleton } from '@/components/landing/LandingPageSkeleton';
 
 declare global {
   interface Window {
@@ -59,6 +60,7 @@ export default function LandingPage() {
   const [orderSubmitted, setOrderSubmitted] = useState(false);
   const [orderCustomerInfo, setOrderCustomerInfo] = useState<{ name: string; phone: string } | null>(null);
   const [selectedDevice, setSelectedDevice] = useState('Desktop');
+  const [showContent, setShowContent] = useState(false);
 
   // Check for preview mode
   const isPreviewMode = searchParams.get('preview') === 'true';
@@ -284,7 +286,7 @@ export default function LandingPage() {
     };
   }, [page?.gtm_id, products, slug]);
 
-  // Inject Tailwind CDN for landing page content
+  // Inject Tailwind CDN for landing page content - async/deferred for performance
   useEffect(() => {
     const scriptId = 'tailwind-cdn';
     let script = document.getElementById(scriptId) as HTMLScriptElement | null;
@@ -293,6 +295,8 @@ export default function LandingPage() {
       script = document.createElement('script');
       script.id = scriptId;
       script.src = 'https://cdn.tailwindcss.com';
+      script.async = true;
+      script.defer = true;
       document.head.appendChild(script);
     }
     
@@ -342,11 +346,21 @@ export default function LandingPage() {
     }
   };
 
-  if (isLoading) {
+  // Smooth transition from skeleton to content
+  useEffect(() => {
+    if (!isLoading && page) {
+      // Small delay for smooth transition
+      const timer = setTimeout(() => setShowContent(true), 50);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading, page]);
+
+  // Show skeleton while loading
+  if (isLoading || !showContent) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
-      </div>
+      <DomainGuard>
+        <LandingPageSkeleton />
+      </DomainGuard>
     );
   }
 
@@ -429,9 +443,9 @@ export default function LandingPage() {
   const currentDevice = devicePresets.find(d => d.name === selectedDevice) || devicePresets[0];
   const isDeviceSimulation = isPreviewMode && currentDevice.width !== 'full';
 
-  // Content wrapper for device simulation
+  // Content wrapper for device simulation with fade-in animation
   const pageContent = (
-    <div className="min-h-screen">
+    <div className="min-h-screen fade-in-up">
       {renderSections()}
     </div>
   );

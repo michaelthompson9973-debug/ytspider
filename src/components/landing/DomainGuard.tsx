@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { DomainNotAuthorized } from './DomainNotAuthorized';
+import { LandingPageSkeleton } from './LandingPageSkeleton';
 
 interface DomainGuardProps {
   children: ReactNode;
@@ -85,15 +86,9 @@ export function DomainGuard({ children }: DomainGuardProps) {
     return <>{children}</>;
   }
 
-  // Loading state
+  // Loading state - show full skeleton
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-pulse">
-          <div className="h-8 w-32 bg-muted rounded"></div>
-        </div>
-      </div>
-    );
+    return <LandingPageSkeleton />;
   }
 
   // Error or not allowed

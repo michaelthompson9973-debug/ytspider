@@ -1,4 +1,7 @@
+import { useState } from 'react';
 import { Minus, Plus } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 
 export interface CartItem {
   productId: string;
@@ -12,6 +15,33 @@ interface ProductListProps {
   items: CartItem[];
   currencySymbol: string;
   onQuantityChange: (productId: string, newQuantity: number) => void;
+}
+
+function ProductImage({ src, alt }: { src: string; alt: string }) {
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [hasError, setHasError] = useState(false);
+
+  return (
+    <div className="w-14 h-14 rounded-lg border overflow-hidden flex-shrink-0 bg-muted">
+      {!isLoaded && !hasError && (
+        <Skeleton className="w-full h-full" />
+      )}
+      <img
+        src={hasError ? '/placeholder.svg' : src}
+        alt={alt}
+        className={cn(
+          'w-full h-full object-cover transition-opacity duration-300',
+          isLoaded ? 'opacity-100' : 'opacity-0'
+        )}
+        loading="lazy"
+        onLoad={() => setIsLoaded(true)}
+        onError={() => {
+          setHasError(true);
+          setIsLoaded(true);
+        }}
+      />
+    </div>
+  );
 }
 
 export function ProductList({ items, currencySymbol, onQuantityChange }: ProductListProps) {
@@ -28,17 +58,10 @@ export function ProductList({ items, currencySymbol, onQuantityChange }: Product
         return (
           <div
             key={item.productId}
-            className="flex items-center gap-3 p-3 bg-muted/30 rounded-theme border"
+            className="flex items-center gap-3 p-3 bg-muted/30 rounded-theme border fade-in"
           >
-            {/* Product Image */}
-            <div className="w-14 h-14 rounded-lg border overflow-hidden flex-shrink-0 bg-background">
-              <img
-                src={imageUrl}
-                alt={item.productName}
-                className="w-full h-full object-cover"
-                loading="lazy"
-              />
-            </div>
+            {/* Product Image with loading state */}
+            <ProductImage src={imageUrl} alt={item.productName} />
 
             {/* Product Info */}
             <div className="flex-1 min-w-0">

@@ -1,10 +1,41 @@
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface ProductImageGalleryProps {
   images: string[];
   productName: string;
+}
+
+function GalleryImage({ 
+  src, 
+  alt, 
+  className 
+}: { 
+  src: string; 
+  alt: string; 
+  className?: string;
+}) {
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  return (
+    <div className={cn('relative bg-muted', className)}>
+      {!isLoaded && (
+        <Skeleton className="absolute inset-0" />
+      )}
+      <img
+        src={src}
+        alt={alt}
+        className={cn(
+          'w-full h-full object-cover transition-opacity duration-300',
+          isLoaded ? 'opacity-100' : 'opacity-0'
+        )}
+        loading="lazy"
+        onLoad={() => setIsLoaded(true)}
+      />
+    </div>
+  );
 }
 
 export function ProductImageGallery({ images, productName }: ProductImageGalleryProps) {
@@ -29,12 +60,11 @@ export function ProductImageGallery({ images, productName }: ProductImageGallery
   return (
     <div className="w-full space-y-3">
       {/* Main Image */}
-      <div className="relative aspect-square rounded-theme overflow-hidden bg-muted">
-        <img
+      <div className="relative aspect-square rounded-theme overflow-hidden">
+        <GalleryImage
           src={images[currentIndex]}
           alt={`${productName} - ${currentIndex + 1}`}
-          className="w-full h-full object-cover"
-          loading="lazy"
+          className="w-full h-full"
         />
 
         {/* Navigation Arrows - Only show if more than 1 image */}
@@ -83,11 +113,10 @@ export function ProductImageGallery({ images, productName }: ProductImageGallery
               )}
               aria-label={`View image ${index + 1}`}
             >
-              <img
+              <GalleryImage
                 src={image}
                 alt={`${productName} thumbnail ${index + 1}`}
-                className="w-full h-full object-cover"
-                loading="lazy"
+                className="w-full h-full"
               />
             </button>
           ))}
