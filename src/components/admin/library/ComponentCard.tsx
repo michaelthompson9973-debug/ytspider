@@ -41,7 +41,20 @@ export function ComponentCard({ component, onPreview, onEdit, onDelete }: Compon
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      fontFamily: {
+        'heading': ['"Hind Siliguri"', 'sans-serif'],
+        'body': ['"Anek Bangla"', 'sans-serif'],
+      }
+    }
+  }
+}
+</script>
 <link rel="preload" href="${origin}/fonts/hind-siliguri-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="${origin}/fonts/hind-siliguri-500.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="${origin}/fonts/hind-siliguri-600.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="${origin}/fonts/hind-siliguri-700.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="${origin}/fonts/anek-bangla-400.woff2" as="font" type="font/woff2" crossorigin>
@@ -55,10 +68,10 @@ export function ComponentCard({ component, onPreview, onEdit, onDelete }: Compon
 @font-face { font-family: "Anek Bangla"; font-weight: 400; font-display: swap; src: url("${origin}/fonts/anek-bangla-400.woff2") format("woff2"); }
 @font-face { font-family: "Anek Bangla"; font-weight: 500; font-display: swap; src: url("${origin}/fonts/anek-bangla-500.woff2") format("woff2"); }
 @font-face { font-family: "Anek Bangla"; font-weight: 600; font-display: swap; src: url("${origin}/fonts/anek-bangla-600.woff2") format("woff2"); }
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: "Anek Bangla", sans-serif !important; transform: scale(0.25); transform-origin: top left; width: 400%; height: 400%; overflow: hidden; }
-h1, h2, h3, h4, h5, h6 { font-family: "Hind Siliguri", sans-serif !important; }
-p, span, div, button, a, li, td, th, label, input, textarea { font-family: "Anek Bangla", sans-serif !important; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { font-family: "Anek Bangla", sans-serif !important; transform: scale(0.25); transform-origin: top left; width: 400%; height: 400%; overflow: hidden; }
+h1, h2, h3, h4, h5, h6, .heading, [class*="text-2xl"], [class*="text-3xl"], [class*="text-4xl"], [class*="text-5xl"] { font-family: "Hind Siliguri", sans-serif !important; }
+p, span, div, button, a, li, td, th, label, input, textarea, select, option, article, section, nav, header, footer, aside, main, form, fieldset { font-family: "Anek Bangla", sans-serif !important; }
 </style>
 </head>
 <body>${component.html}</body>
