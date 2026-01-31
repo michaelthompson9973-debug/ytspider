@@ -432,7 +432,7 @@ export function CheckoutSection({
         <div className="rounded-theme bg-background border shadow-sm p-6">
           <h2 
             className="font-heading text-2xl text-primary mb-6 text-center"
-            dangerouslySetInnerHTML={{ __html: config.title }}
+            dangerouslySetInnerHTML={{ __html: config.title || 'অর্ডার করুন' }}
           />
 
           {/* 2-Column Grid: Product List (Left) + Form (Right) on desktop */}
