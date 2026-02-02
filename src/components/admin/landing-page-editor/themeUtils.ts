@@ -375,26 +375,27 @@ export function generateCheckoutPreviewHTML(
   
   // Calculate totals (assuming quantity = 1, inside zone for preview)
   const subtotal = productPrice;
-  const previewDelivery = deliveryMode === 'zoned' ? insideCityAmount : deliveryAmount;
+  const isFreeDelivery = deliveryMode === 'free';
+  const previewDelivery = deliveryMode === 'free' ? 0 : (deliveryMode === 'zoned' ? insideCityAmount : deliveryAmount);
   const total = subtotal + previewDelivery;
 
   // Get enabled fields
   const fields = config.fields?.filter(f => f.enabled) || defaultCheckoutFields;
   
-  // Generate form fields HTML with proper labels (matching CheckoutSection.tsx)
+  // Generate form fields HTML
   const formFieldsHtml = fields.map(field => `
-    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-      <label style="font-family: var(--font-body); font-size: 0.875rem; font-weight: 500; display: block;">
-        ${field.label}${field.required ? '<span style="color: #ef4444; margin-left: 0.25rem;">*</span>' : ''}
+    <div>
+      <label style="display: block; font-weight: 600; color: #374151; margin-bottom: 0.375rem; font-family: var(--font-body);">
+        ${field.label}${field.required ? '<span style="color: #ef4444;"> *</span>' : ''}
       </label>
       ${field.type === 'textarea' 
         ? `<textarea 
-            style="width: 100%; border-radius: ${themeConfig.borderRadius}; border: 1px solid #e5e7eb; padding: 0.5rem 0.75rem; font-family: var(--font-body); background: white; font-size: 1rem; resize: vertical; min-height: 4.5rem;" 
+            style="display: block; width: 100%; border-radius: 0.5rem; border: 1px solid #d1d5db; background: #f9fafb; padding: 0.75rem 1rem; font-size: 15px; color: #374151; font-family: var(--font-body); min-height: 4.5rem; resize: vertical;" 
             placeholder="${field.placeholder}" 
             disabled
           ></textarea>`
         : `<input 
-            style="width: 100%; border-radius: ${themeConfig.borderRadius}; border: 1px solid #e5e7eb; padding: 0.5rem 0.75rem; font-family: var(--font-body); background: white; font-size: 1rem; height: 2.5rem;" 
+            style="display: block; width: 100%; border-radius: 0.5rem; border: 1px solid #d1d5db; background: #f9fafb; padding: 0.75rem 1rem; font-size: 15px; color: #374151; font-family: var(--font-body); height: 2.75rem;" 
             placeholder="${field.placeholder}" 
             type="${field.type || 'text'}"
             disabled 
@@ -403,153 +404,165 @@ export function generateCheckoutPreviewHTML(
     </div>
   `).join('\n');
 
-  // Generate image gallery HTML (matching ProductImageGallery.tsx)
-  const hasMultipleImages = productImages.length > 1;
   const firstImage = productImages[0] || null;
   
-  const imageGalleryHtml = firstImage 
-    ? `
-      <div style="width: 100%; display: flex; flex-direction: column; gap: 0.75rem;">
-        <!-- Main Image with aspect-square -->
-        <div style="position: relative; width: 100%; padding-bottom: 100%; border-radius: ${themeConfig.borderRadius}; overflow: hidden; background: #f3f4f6;">
-          <img 
-            src="${firstImage}" 
-            alt="${productName}" 
-            style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;" 
-          />
-          ${hasMultipleImages ? `
-            <!-- Navigation arrows -->
-            <button 
-              type="button" 
-              style="position: absolute; left: 0.5rem; top: 50%; transform: translateY(-50%); width: 2rem; height: 2rem; border-radius: 9999px; background: rgba(255,255,255,0.8); backdrop-filter: blur(4px); border: 1px solid #e5e7eb; display: flex; align-items: center; justify-content: center; cursor: pointer;"
-              disabled
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
-            </button>
-            <button 
-              type="button" 
-              style="position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); width: 2rem; height: 2rem; border-radius: 9999px; background: rgba(255,255,255,0.8); backdrop-filter: blur(4px); border: 1px solid #e5e7eb; display: flex; align-items: center; justify-content: center; cursor: pointer;"
-              disabled
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
-            </button>
-            <!-- Image counter -->
-            <div style="position: absolute; bottom: 0.5rem; right: 0.5rem; padding: 0.25rem 0.5rem; border-radius: 9999px; background: rgba(255,255,255,0.8); backdrop-filter: blur(4px); font-size: 0.75rem; font-family: var(--font-digit);">
-              1 / ${productImages.length}
-            </div>
-          ` : ''}
-        </div>
-        ${hasMultipleImages ? `
-          <!-- Thumbnail Navigation -->
-          <div style="display: flex; gap: 0.5rem; overflow-x: auto; padding-bottom: 0.25rem;">
-            ${productImages.map((img, idx) => `
-              <button 
-                type="button" 
-                style="flex-shrink: 0; width: 4rem; height: 4rem; border-radius: ${themeConfig.borderRadius}; overflow: hidden; border: 2px solid ${idx === 0 ? themeConfig.primaryColor : 'transparent'}; cursor: pointer;"
-                disabled
-              >
-                <img src="${img}" alt="Thumbnail ${idx + 1}" style="width: 100%; height: 100%; object-fit: cover;" />
-              </button>
-            `).join('')}
-          </div>
-        ` : ''}
-      </div>
-    `
-    : `<div style="width: 100%; padding-bottom: 100%; position: relative; background: #e5e7eb; border-radius: ${themeConfig.borderRadius}; overflow: hidden;">
-        <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #9ca3af; font-family: var(--font-body);">
-          Product Image
-        </div>
-      </div>`;
-
   // Zone selection HTML for zoned delivery mode
   const zoneSelectionHtml = deliveryMode === 'zoned' ? `
-    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-      <span style="font-family: var(--font-body); font-size: 0.875rem; color: #6b7280;">ডেলিভারি এলাকা:</span>
-      <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-        <label style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem; border-radius: ${themeConfig.borderRadius}; border: 2px solid ${themeConfig.primaryColor}; background: ${themeConfig.primaryColor}10; cursor: pointer;">
-          <div style="display: flex; align-items: center; gap: 0.75rem;">
-            <input type="radio" name="zone-preview" checked disabled style="width: 1rem; height: 1rem;" />
+    <div style="margin-top: 1.5rem;">
+      <h4 style="font-weight: 600; margin-bottom: 0.5rem; color: #374151; font-size: 15px; font-family: var(--font-body);">ডেলিভারি এলাকা</h4>
+      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+        <label style="display: flex; align-items: center; gap: 0.75rem; padding: 1rem; border: 2px solid ${themeConfig.primaryColor}; border-radius: 0.75rem; background: ${themeConfig.primaryColor}10; cursor: pointer;">
+          <input type="radio" name="zone-preview" checked disabled style="width: 1rem; height: 1rem;" />
+          <div style="display: flex; justify-content: space-between; width: 100%; font-weight: 500; font-size: 15px; color: #374151;">
             <span style="font-family: var(--font-body);">${insideCityLabel}</span>
+            <span style="font-weight: 600; color: #1f2937; font-family: var(--font-digit);">${currencySymbol}${insideCityAmount.toLocaleString()}</span>
           </div>
-          <span style="font-family: var(--font-digit); color: ${themeConfig.primaryColor}; font-weight: 500;">${currencySymbol}${insideCityAmount.toLocaleString()}</span>
         </label>
-        <label style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem; border-radius: ${themeConfig.borderRadius}; border: 1px solid #e5e7eb; cursor: pointer;">
-          <div style="display: flex; align-items: center; gap: 0.75rem;">
-            <input type="radio" name="zone-preview" disabled style="width: 1rem; height: 1rem;" />
+        <label style="display: flex; align-items: center; gap: 0.75rem; padding: 1rem; border: 1px solid #e5e7eb; border-radius: 0.75rem; cursor: pointer;">
+          <input type="radio" name="zone-preview" disabled style="width: 1rem; height: 1rem;" />
+          <div style="display: flex; justify-content: space-between; width: 100%; font-weight: 500; font-size: 15px; color: #374151;">
             <span style="font-family: var(--font-body);">${outsideCityLabel}</span>
+            <span style="font-weight: 600; color: #1f2937; font-family: var(--font-digit);">${currencySymbol}${outsideCityAmount.toLocaleString()}</span>
           </div>
-          <span style="font-family: var(--font-digit); color: ${themeConfig.primaryColor}; font-weight: 500;">${currencySymbol}${outsideCityAmount.toLocaleString()}</span>
         </label>
       </div>
     </div>
   ` : '';
 
+  // Free delivery banner
+  const freeDeliveryBanner = isFreeDelivery ? `
+    <div style="margin-top: 1.5rem; text-align: center; font-size: 1.125rem; font-weight: 700; color: white; background: linear-gradient(to right, #22c55e, #16a34a); border-radius: 0.75rem; padding: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+      <strong>সারা বাংলাদেশে ফ্রি ডেলিভারি! 🎉</strong>
+    </div>
+  ` : '';
+
   return `
-    <section class="py-12 px-4" style="background-color: hsl(var(--muted) / 0.5);" id="checkout">
-      <div class="container" style="max-width: 56rem; margin: 0 auto;">
-        <div style="border-radius: ${themeConfig.borderRadius}; background: white; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 1.5rem;">
-          <h2 style="font-family: var(--font-heading); color: ${themeConfig.primaryColor}; font-size: 1.5rem; font-weight: 600; text-align: center; margin-bottom: 1.5rem;">
-            ${config.title || 'অর্ডার করুন'}
-          </h2>
-          
-          <!-- Responsive Grid Layout: 1-col mobile, 2-col desktop -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Left Column: Product Info -->
-            <div style="padding: 1rem; border-radius: ${themeConfig.borderRadius}; background: hsl(var(--muted) / 0.5); border: 1px solid #e5e7eb; display: flex; flex-direction: column; gap: 1rem;">
-              <!-- Image Gallery -->
-              ${imageGalleryHtml}
-              
-              <!-- Product name + price -->
-              <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                <p style="font-family: var(--font-body); font-size: 1.125rem; font-weight: 500; margin: 0;">${productName}</p>
-                <p style="font-family: var(--font-digit); font-size: 1.125rem; color: ${themeConfig.primaryColor}; font-weight: 700; margin: 0;">${currencySymbol}${productPrice.toLocaleString()}</p>
+    <section style="background: var(--theme-bg);" id="checkout">
+      <div style="max-width: 72rem; margin: 0 auto; padding: 2rem 1rem;">
+        <!-- Header Title -->
+        <div style="text-align: center; margin-bottom: 2rem;">
+          <h1 style="font-size: 1.5rem; font-weight: 700; color: #1f2937; font-family: var(--font-heading);">
+            ${config.title || 'অর্ডার করতে নিচের ফর্মে আপনার নাম, পূর্ণ ঠিকানা এবং মোবাইল নাম্বার লিখুন।'}
+          </h1>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <!-- Left Column: Product Selection & Form -->
+          <div class="lg:col-span-2" style="display: flex; flex-direction: column; gap: 1.5rem;">
+            
+            <!-- Package Selection Card -->
+            <div style="position: relative; padding: 0.75rem; background: white; border: 2px solid ${themeConfig.primaryColor}; border-radius: 0.75rem; display: flex; align-items: center; gap: 0.75rem;">
+              <!-- Radio Indicator -->
+              <div style="position: absolute; left: 0.5rem; top: 0.5rem; width: 1.25rem; height: 1.25rem; background: white; border: 2px solid ${themeConfig.primaryColor}; border-radius: 9999px; display: flex; align-items: center; justify-content: center; z-index: 10;">
+                <div style="width: 0.75rem; height: 0.75rem; border-radius: 9999px; background: ${themeConfig.primaryColor};"></div>
               </div>
               
-              <!-- Quantity selector -->
-              <div style="display: flex; align-items: center; justify-content: space-between;">
-                <span style="font-family: var(--font-body); font-size: 0.875rem; color: #6b7280;">পরিমাণ:</span>
-                <div style="display: flex; align-items: center; gap: 0.75rem;">
-                  <button type="button" style="width: 2rem; height: 2rem; border-radius: ${themeConfig.borderRadius}; border: 1px solid #e5e7eb; background: white; display: flex; align-items: center; justify-content: center; cursor: pointer;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/></svg>
-                  </button>
-                  <span style="font-family: var(--font-digit); font-size: 1.125rem; width: 2rem; text-align: center;">1</span>
-                  <button type="button" style="width: 2rem; height: 2rem; border-radius: ${themeConfig.borderRadius}; border: 1px solid #e5e7eb; background: white; display: flex; align-items: center; justify-content: center; cursor: pointer;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
-                  </button>
-                </div>
+              <!-- Product Image -->
+              <div style="width: 5rem; height: 5rem; border: 2px solid ${themeConfig.primaryColor}; border-radius: 0.75rem; overflow: hidden; background: white; flex-shrink: 0;">
+                ${firstImage 
+                  ? `<img src="${firstImage}" style="width: 100%; height: 100%; object-fit: cover;" />`
+                  : `<div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: #9ca3af;">Image</div>`
+                }
               </div>
               
-              <!-- Zone Selection (for zoned mode) -->
-              ${zoneSelectionHtml}
-              
-              <!-- Price breakdown -->
-              <div style="border-top: 1px solid #e5e7eb; padding-top: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.875rem;">
-                <div style="display: flex; justify-content: space-between; font-family: var(--font-body);">
-                  <span style="color: #6b7280;">সাবটোটাল:</span>
-                  <span style="font-family: var(--font-digit);">${currencySymbol}${subtotal.toLocaleString()}</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; font-family: var(--font-body);">
-                  <span style="color: #6b7280;">ডেলিভারি চার্জ:</span>
-                  <span style="font-family: var(--font-digit);">${currencySymbol}${previewDelivery.toLocaleString()}</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; font-family: var(--font-body); font-weight: 600; font-size: 1rem; border-top: 1px solid #e5e7eb; padding-top: 0.5rem;">
-                  <span>সর্বমোট:</span>
-                  <span style="font-family: var(--font-digit); color: ${themeConfig.primaryColor};">${currencySymbol}${total.toLocaleString()}</span>
+              <!-- Content -->
+              <div style="flex-grow: 1; min-width: 0;">
+                <h3 style="font-weight: 600; color: #374151; font-size: 1rem; line-height: 1.25; font-family: var(--font-body);">
+                  ${productName}
+                </h3>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 0.5rem;">
+                  <!-- Price Badge -->
+                  <span style="background: #ef4444; color: white; font-weight: 700; font-size: 1.25rem; padding: 0.125rem 0.5rem; border-radius: 0.375rem; font-family: var(--font-digit);">
+                    ${currencySymbol}${productPrice.toLocaleString()}
+                  </span>
+                  
+                  <!-- Quantity Controls -->
+                  <div style="display: flex; align-items: center;">
+                    <span style="color: #4b5563; font-weight: 600; margin-right: 0.25rem; font-size: 0.75rem; font-family: var(--font-body);">Qty:</span>
+                    <button type="button" style="width: 1.5rem; height: 1.5rem; display: flex; align-items: center; justify-content: center; border-radius: 9999px; border: 1px solid #e5e7eb; background: white; cursor: pointer;">-</button>
+                    <span style="width: 2.5rem; height: 1.75rem; display: flex; align-items: center; justify-content: center; font-size: 0.875rem; color: #374151; font-family: var(--font-digit);">1</span>
+                    <button type="button" style="width: 1.5rem; height: 1.5rem; display: flex; align-items: center; justify-content: center; border-radius: 9999px; border: 1px solid #e5e7eb; background: white; cursor: pointer;">+</button>
+                  </div>
                 </div>
               </div>
             </div>
-            
-            <!-- Right Column: Form fields -->
-            <form style="display: flex; flex-direction: column; gap: 1rem;">
-              ${formFieldsHtml}
-              
-              <button 
-                type="button" 
-                style="width: 100%; background: ${themeConfig.primaryColor}; color: white; padding: 0.75rem; border-radius: ${buttonRadius}; font-family: var(--font-button); font-size: 1.125rem; font-weight: 600; border: none; cursor: pointer;"
-              >
-                ${config.ctaText || 'অর্ডার সম্পন্ন করুন'}
-              </button>
-            </form>
+
+            <!-- Delivery Information Card -->
+            <div style="background: white; border: 1px solid #e5e7eb; border-radius: 1rem; padding: 1.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+              <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.25rem;">
+                <div style="width: 0.5rem; height: 1.5rem; background: ${themeConfig.primaryColor}; border-radius: 0.25rem;"></div>
+                <h3 style="font-size: 1.5rem; font-weight: 600; color: #1f2937; font-family: var(--font-heading);">ডেলিভারি তথ্য</h3>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+                ${formFieldsHtml}
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column (Sticky Summary) -->
+          <div>
+            <div style="background: white; border: 1px solid #e5e7eb; border-radius: 1rem; padding: 1.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+              <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+                <div style="width: 0.5rem; height: 1.5rem; background: ${themeConfig.primaryColor}; border-radius: 0.25rem;"></div>
+                <h3 style="font-size: 1.5rem; font-weight: 600; color: #1f2937; font-family: var(--font-heading);">Order Summary</h3>
+              </div>
+
+              <div style="margin-top: 0.75rem; display: flex; flex-direction: column; gap: 0.75rem;">
+                <!-- Selected Product -->
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; border-bottom: 1px dashed #e5e7eb;">
+                  <div style="display: flex; align-items: center; gap: 1rem;">
+                    <div style="width: 4rem; height: 4rem; border-radius: 0.5rem; overflow: hidden; border: 1px solid #e5e7eb; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                      ${firstImage 
+                        ? `<img src="${firstImage}" style="width: 100%; height: 100%; object-fit: cover;" />`
+                        : `<div style="width: 100%; height: 100%; background: #e5e7eb;"></div>`
+                      }
+                    </div>
+                    <div>
+                      <span style="font-weight: 600; color: #1f2937; display: block; line-height: 1.25; font-family: var(--font-body);">${productName}</span>
+                      <small style="color: #6b7280; font-family: var(--font-body);">× 1</small>
+                    </div>
+                  </div>
+                  <span style="font-weight: 600; color: #1f2937; font-size: 1.125rem; font-family: var(--font-digit);">${currencySymbol}${subtotal.toLocaleString()}</span>
+                </div>
+
+                <!-- Subtotal -->
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; color: #374151;">
+                  <span style="font-family: var(--font-body);">Subtotal</span>
+                  <span style="font-weight: 500; font-family: var(--font-digit);">${currencySymbol}${subtotal.toLocaleString()}</span>
+                </div>
+
+                <!-- Delivery Charge -->
+                ${!isFreeDelivery ? `
+                  <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px dashed #e5e7eb;">
+                    <span style="font-family: var(--font-body);">ডেলিভারি চার্জ</span>
+                    <span style="font-weight: 500; font-family: var(--font-digit);">${currencySymbol}${previewDelivery.toLocaleString()}</span>
+                  </div>
+                ` : ''}
+
+                <!-- Total -->
+                <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 1rem; font-size: 1.25rem; font-weight: 700; color: ${themeConfig.primaryColor};">
+                  <span style="font-family: var(--font-heading);">সর্বমোট</span>
+                  <span style="font-family: var(--font-digit);">${currencySymbol}${total.toLocaleString()}</span>
+                </div>
+              </div>
+
+              ${zoneSelectionHtml}
+              ${freeDeliveryBanner}
+
+              <!-- Submit Button -->
+              <div style="margin-top: 1.75rem;">
+                <button 
+                  type="button" 
+                  style="width: 100%; display: flex; justify-content: space-between; align-items: center; background: ${themeConfig.primaryColor}; color: white; font-size: 1.125rem; font-weight: 700; padding: 1rem 1.5rem; border-radius: ${buttonRadius}; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border: none; cursor: pointer; font-family: var(--font-button);"
+                >
+                  <span style="display: flex; align-items: center; gap: 0.5rem;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    ${config.ctaText || 'অর্ডার কনফার্ম করুন'}
+                  </span>
+                  <span style="font-family: var(--font-digit);">${currencySymbol}${total.toLocaleString()}</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
