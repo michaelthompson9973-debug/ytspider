@@ -1,10 +1,11 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery } from '@tanstack/react-query';
 import { CheckoutConfig, DeliveryMode, currencyOptions, defaultCheckoutFields, CheckoutField, defaultCheckoutSettings } from '@/components/admin/landing-page-editor/types';
-import { ProductList, CartItem } from './ProductList';
+import { Minus, Plus, Lock } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface Product {
   id: string;
@@ -58,38 +59,14 @@ const pushDataLayer = (event: string, data?: Record<string, unknown>) => {
   }
 };
 
-function calculateTotals(
-  cart: CartItem[],
-  settings: CheckoutSettings,
-  selectedZone?: 'inside' | 'outside'
-): { subtotal: number; delivery: number; total: number } {
-  const subtotal = cart.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
-  let delivery = 0;
-
-  // Only charge delivery if there are items in cart
-  if (subtotal > 0) {
-    switch (settings.delivery_mode) {
-      case 'free':
-        delivery = 0;
-        break;
-      case 'flat':
-        delivery = settings.delivery_amount;
-        break;
-      case 'conditional':
-        delivery = subtotal >= (settings.free_over_amount || 0)
-          ? 0
-          : settings.delivery_amount;
-        break;
-      case 'zoned':
-        delivery = selectedZone === 'outside'
-          ? settings.outside_city_amount
-          : settings.inside_city_amount;
-        break;
-    }
+// Format amount in Bengali
+const formatAmount = (value: number): string => {
+  try { 
+    return new Intl.NumberFormat('bn-BD').format(Math.round(value)); 
+  } catch {
+    return Math.round(value).toString();
   }
-
-  return { subtotal, delivery, total: subtotal + delivery };
-}
+};
 
 export function CheckoutSection({
   config,
@@ -104,23 +81,24 @@ export function CheckoutSection({
   const [submitting, setSubmitting] = useState(false);
   const [selectedZone, setSelectedZone] = useState<'inside' | 'outside'>('inside');
   
-  // Initialize cart state
-  const [cart, setCart] = useState<CartItem[]>([]);
+  // Package selection state
+  const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
+  const [quantities, setQuantities] = useState<Record<string, number>>({});
   
-  // Sync cart when products load/change
+  // Initialize selection when products load
   useEffect(() => {
-    if (products.length > 0 && cart.length === 0) {
-      setCart(
-        products.map(p => ({
-          productId: p.id,
-          productName: p.name,
-          unitPrice: p.price,
-          quantity: p.defaultQuantity ?? 1,
-          images: p.images,
-        }))
-      );
+    if (products.length > 0 && !selectedPackage) {
+      const firstProduct = products[0];
+      setSelectedPackage(firstProduct.id);
+      
+      // Initialize quantities for all products
+      const initialQuantities: Record<string, number> = {};
+      products.forEach(p => {
+        initialQuantities[p.id] = p.defaultQuantity ?? 1;
+      });
+      setQuantities(initialQuantities);
     }
-  }, [products, cart.length]);
+  }, [products, selectedPackage]);
 
   // Get fields from config or use defaults
   const fields = config.fields?.length > 0 ? config.fields : defaultCheckoutFields;
@@ -164,75 +142,130 @@ export function CheckoutSection({
   const settings = checkoutSettingsData ?? defaultSettings;
   const currencySymbol = currencyOptions.find(c => c.value === settings.currency)?.symbol || '৳';
 
-  // Calculate totals from cart
-  const { subtotal, delivery, total } = useMemo(
-    () => calculateTotals(cart, settings, selectedZone),
-    [cart, settings, selectedZone]
+  // Get selected product
+  const selectedProduct = useMemo(() => 
+    products.find(p => p.id === selectedPackage),
+    [products, selectedPackage]
   );
 
-  // Check if cart has any items
-  const hasItems = cart.some(item => item.quantity > 0);
+  // Calculate totals
+  const { subtotal, delivery, total, isFreeDelivery } = useMemo(() => {
+    if (!selectedProduct) {
+      return { subtotal: 0, delivery: 0, total: 0, isFreeDelivery: false };
+    }
+    
+    const quantity = quantities[selectedPackage!] || 1;
+    const sub = selectedProduct.price * quantity;
+    let del = 0;
+    let isFree = false;
+
+    if (sub > 0) {
+      switch (settings.delivery_mode) {
+        case 'free':
+          del = 0;
+          isFree = true;
+          break;
+        case 'flat':
+          del = settings.delivery_amount;
+          break;
+        case 'conditional':
+          if (sub >= (settings.free_over_amount || 0)) {
+            del = 0;
+            isFree = true;
+          } else {
+            del = settings.delivery_amount;
+          }
+          break;
+        case 'zoned':
+          del = selectedZone === 'outside'
+            ? settings.outside_city_amount
+            : settings.inside_city_amount;
+          break;
+      }
+    }
+
+    return { subtotal: sub, delivery: del, total: sub + del, isFreeDelivery: isFree };
+  }, [selectedProduct, selectedPackage, quantities, settings, selectedZone]);
 
   if (!config.enabled) {
     return null;
   }
 
-  const handleQuantityChange = (productId: string, newQuantity: number) => {
-    const item = cart.find(i => i.productId === productId);
-    const oldQuantity = item?.quantity || 0;
-    const clampedNewQuantity = Math.max(0, newQuantity);
+  const handlePackageSelect = (productId: string) => {
+    setSelectedPackage(productId);
     
-    // Fire add_to_cart when quantity increases
-    if (item && clampedNewQuantity > oldQuantity) {
-      const quantityAdded = clampedNewQuantity - oldQuantity;
-      pushDataLayer('add_to_cart', {
+    // Fire view_item event
+    const product = products.find(p => p.id === productId);
+    if (product) {
+      pushDataLayer('view_item', {
         ecommerce: {
           currency: settings.currency,
-          value: item.unitPrice * quantityAdded,
+          value: product.price,
           items: [{
-            item_id: item.productId,
-            item_name: item.productName,
-            price: item.unitPrice,
-            quantity: quantityAdded,
+            item_id: product.id,
+            item_name: product.name,
+            price: product.price,
+            quantity: quantities[productId] || 1,
           }],
         },
       });
     }
+  };
+
+  const handleQuantityChange = (productId: string, delta: number) => {
+    const currentQty = quantities[productId] || 1;
+    const newQty = Math.max(1, currentQty + delta);
     
-    // Fire remove_from_cart when quantity decreases
-    if (item && clampedNewQuantity < oldQuantity && clampedNewQuantity >= 0) {
-      const quantityRemoved = oldQuantity - clampedNewQuantity;
-      pushDataLayer('remove_from_cart', {
-        ecommerce: {
-          currency: settings.currency,
-          value: item.unitPrice * quantityRemoved,
-          items: [{
-            item_id: item.productId,
-            item_name: item.productName,
-            price: item.unitPrice,
-            quantity: quantityRemoved,
-          }],
-        },
-      });
+    // Fire add_to_cart/remove_from_cart events
+    const product = products.find(p => p.id === productId);
+    if (product) {
+      if (delta > 0) {
+        pushDataLayer('add_to_cart', {
+          ecommerce: {
+            currency: settings.currency,
+            value: product.price * delta,
+            items: [{
+              item_id: product.id,
+              item_name: product.name,
+              price: product.price,
+              quantity: delta,
+            }],
+          },
+        });
+      } else if (delta < 0 && currentQty > 1) {
+        pushDataLayer('remove_from_cart', {
+          ecommerce: {
+            currency: settings.currency,
+            value: product.price * Math.abs(delta),
+            items: [{
+              item_id: product.id,
+              item_name: product.name,
+              price: product.price,
+              quantity: Math.abs(delta),
+            }],
+          },
+        });
+      }
     }
 
-    setCart(prev =>
-      prev.map(cartItem =>
-        cartItem.productId === productId
-          ? { ...cartItem, quantity: clampedNewQuantity }
-          : cartItem
-      )
-    );
+    setQuantities(prev => ({
+      ...prev,
+      [productId]: newQty
+    }));
+    
+    // Auto-select if not already selected
+    if (selectedPackage !== productId) {
+      setSelectedPackage(productId);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate cart has items
-    if (!hasItems) {
+    if (!selectedProduct) {
       toast({
-        title: 'কার্ট খালি',
-        description: 'অন্তত একটি প্রোডাক্ট নির্বাচন করুন',
+        title: 'প্রোডাক্ট নির্বাচন করুন',
+        description: 'অন্তত একটি প্রোডাক্ট সিলেক্ট করুন',
         variant: 'destructive',
       });
       return;
@@ -256,16 +289,16 @@ export function CheckoutSection({
 
     try {
       const eventId = `evt_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+      const quantity = quantities[selectedPackage!] || 1;
 
-      // Prepare cart items for GA4 ecommerce format
-      const activeItems = cart.filter(item => item.quantity > 0);
-      const ga4Items = activeItems.map((item, index) => ({
-        item_id: item.productId,
-        item_name: item.productName,
-        price: item.unitPrice,
-        quantity: item.quantity,
-        index: index,
-      }));
+      // Prepare cart item for GA4 ecommerce format
+      const ga4Items = [{
+        item_id: selectedProduct.id,
+        item_name: selectedProduct.name,
+        price: selectedProduct.price,
+        quantity: quantity,
+        index: 0,
+      }];
 
       // Fire begin_checkout event (GA4 standard)
       pushDataLayer('begin_checkout', {
@@ -284,13 +317,15 @@ export function CheckoutSection({
         customer_phone: form.customer_phone || '',
         customer_address: form.customer_address || '',
         customer_city: form.customer_city || '',
+        product_id: selectedProduct.id,
         utm_source: searchParams.get('utm_source'),
         utm_medium: searchParams.get('utm_medium'),
         utm_campaign: searchParams.get('utm_campaign'),
         utm_term: searchParams.get('utm_term'),
         utm_content: searchParams.get('utm_content'),
         event_id: eventId,
-        quantity: cart.reduce((sum, item) => sum + item.quantity, 0),
+        quantity,
+        unit_price: selectedProduct.price,
         subtotal,
         delivery_charge: delivery,
         total,
@@ -299,24 +334,20 @@ export function CheckoutSection({
 
       if (error) throw error;
 
-      // Insert order items for each product with quantity > 0
-      const orderItems = activeItems.map(item => ({
-        order_id: orderData.id,
-        product_id: item.productId,
-        product_name: item.productName,
-        quantity: item.quantity,
-        unit_price: item.unitPrice,
-        subtotal: item.unitPrice * item.quantity,
-      }));
+      // Insert order item
+      const { error: itemsError } = await supabase
+        .from('order_items')
+        .insert({
+          order_id: orderData.id,
+          product_id: selectedProduct.id,
+          product_name: selectedProduct.name,
+          quantity: quantity,
+          unit_price: selectedProduct.price,
+          subtotal: selectedProduct.price * quantity,
+        });
 
-      if (orderItems.length > 0) {
-        const { error: itemsError } = await supabase
-          .from('order_items')
-          .insert(orderItems);
-
-        if (itemsError) {
-          console.error('Error inserting order items:', itemsError);
-        }
+      if (itemsError) {
+        console.error('Error inserting order items:', itemsError);
       }
 
       // Normalize phone number for Enhanced Conversions (E.164 format)
@@ -335,7 +366,6 @@ export function CheckoutSection({
           currency: settings.currency,
           items: ga4Items,
         },
-        // Enhanced Conversions user data (properly formatted for Google Ads)
         user_data: {
           phone_number: normalizedPhone,
           address: {
@@ -344,12 +374,10 @@ export function CheckoutSection({
             country: 'BD',
           },
         },
-        // Root level properties for Google Ads conversion tracking
         transaction_id: orderData.id,
         event_id: eventId,
         value: total,
         currency: settings.currency,
-        // Conversion label for Google Ads (set in GTM)
         conversion_value: total,
       });
 
@@ -360,12 +388,12 @@ export function CheckoutSection({
             eventId,
             orderId: orderData.id,
             transactionId: orderData.id,
-            productName: activeItems.map(i => i.productName).join(', '),
-            productIds: activeItems.map(i => i.productId),
+            productName: selectedProduct.name,
+            productIds: [selectedProduct.id],
             customerPhone: normalizedPhone,
             customerCity: form.customer_city,
             landingPageSlug,
-            quantity: activeItems.reduce((sum, item) => sum + item.quantity, 0),
+            quantity,
             subtotal,
             shipping: delivery,
             total,
@@ -403,144 +431,296 @@ export function CheckoutSection({
 
   // Helper to render appropriate input based on field type
   const renderField = (field: CheckoutField) => {
-    const commonProps = {
-      id: `checkout-${field.id}`,
-      value: form[field.name] || '',
-      onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => 
-        setForm({ ...form, [field.name]: e.target.value }),
-      className: "font-body w-full rounded-theme border border-input bg-background px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-primary",
-      placeholder: field.placeholder,
-      required: field.required,
-    };
+    const baseClasses = "block w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-3 text-[15px] text-gray-700 placeholder-gray-400 focus:border-primary focus:ring-2 focus:ring-primary/40 transition-all duration-200 font-body";
 
     if (field.type === 'textarea') {
-      return <textarea {...commonProps} rows={3} />;
+      return (
+        <textarea
+          id={`checkout-${field.id}`}
+          value={form[field.name] || ''}
+          onChange={(e) => setForm({ ...form, [field.name]: e.target.value })}
+          className={baseClasses}
+          placeholder={field.placeholder}
+          required={field.required}
+          rows={3}
+        />
+      );
     }
 
-    return <input {...commonProps} type={field.type} />;
+    return (
+      <input
+        id={`checkout-${field.id}`}
+        type={field.type}
+        value={form[field.name] || ''}
+        onChange={(e) => setForm({ ...form, [field.name]: e.target.value })}
+        className={baseClasses}
+        placeholder={field.placeholder}
+        required={field.required}
+      />
+    );
   };
 
   return (
-    <section className="py-12 px-4 bg-muted/50" id="checkout">
-      <div className="container max-w-4xl mx-auto">
-        <div className="rounded-theme bg-background border shadow-sm p-6">
-          <h2 
-            className="font-heading text-2xl text-primary mb-6 text-center"
-            dangerouslySetInnerHTML={{ __html: config.title || 'অর্ডার করুন' }}
-          />
+    <section className="bg-background" id="checkout">
+      <form onSubmit={handleSubmit}>
+        <div className="max-w-6xl mx-auto px-4 py-8 md:py-12">
+          {/* Header Title */}
+          <div className="text-center mb-8">
+            <h1 
+              className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground font-heading"
+              dangerouslySetInnerHTML={{ __html: config.title || 'অর্ডার করতে নিচের ফর্মে আপনার নাম, পূর্ণ ঠিকানা এবং মোবাইল নাম্বার লিখুন।' }}
+            />
+          </div>
 
-          {/* 2-Column Grid: Product List (Left) + Form (Right) on desktop */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Left Column: Product List and Price Summary */}
-            <div className="p-4 rounded-theme bg-muted/50 border space-y-4">
-              {/* Product List */}
-              <ProductList
-                items={cart}
-                currencySymbol={currencySymbol}
-                onQuantityChange={handleQuantityChange}
-              />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Left Column: Product Selection & Form (2 cols on desktop) */}
+            <div className="lg:col-span-2 flex flex-col gap-6">
+              
+              {/* Package Selection Cards */}
+              <div className="flex flex-col gap-4">
+                {products.map((product) => {
+                  const isSelected = selectedPackage === product.id;
+                  const qty = quantities[product.id] || 1;
+                  const imageUrl = product.images?.[0] || '/placeholder.svg';
 
-              {/* Zone Selection for Zoned Delivery */}
-              {settings.delivery_mode === 'zoned' && (
-                <div className="space-y-2">
-                  <span className="font-body text-sm text-muted-foreground block">ডেলিভারি এলাকা:</span>
-                  <div className="flex flex-col gap-2">
-                    <label 
-                      className={`flex items-center justify-between p-3 rounded-theme border cursor-pointer transition-colors ${
-                        selectedZone === 'inside' 
-                          ? 'border-primary bg-primary/5' 
-                          : 'border-input hover:border-primary/50'
-                      }`}
+                  return (
+                    <label
+                      key={product.id}
+                      className={cn(
+                        "relative p-3 bg-white border rounded-xl flex items-center gap-3 cursor-pointer transition-all duration-150",
+                        isSelected 
+                          ? "border-primary bg-primary/5 ring-2 ring-primary/20" 
+                          : "border-gray-200 hover:border-primary/60"
+                      )}
                     >
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="radio"
-                          name="delivery-zone"
-                          value="inside"
-                          checked={selectedZone === 'inside'}
-                          onChange={() => setSelectedZone('inside')}
-                          className="w-4 h-4 text-primary"
-                        />
-                        <span className="font-body">{settings.inside_city_label}</span>
-                      </div>
-                      <span className="font-digit text-primary font-medium">
-                        {currencySymbol}{settings.inside_city_amount.toLocaleString('bn-BD')}
-                      </span>
-                    </label>
-                    <label 
-                      className={`flex items-center justify-between p-3 rounded-theme border cursor-pointer transition-colors ${
-                        selectedZone === 'outside' 
-                          ? 'border-primary bg-primary/5' 
-                          : 'border-input hover:border-primary/50'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="radio"
-                          name="delivery-zone"
-                          value="outside"
-                          checked={selectedZone === 'outside'}
-                          onChange={() => setSelectedZone('outside')}
-                          className="w-4 h-4 text-primary"
-                        />
-                        <span className="font-body">{settings.outside_city_label}</span>
-                      </div>
-                      <span className="font-digit text-primary font-medium">
-                        {currencySymbol}{settings.outside_city_amount.toLocaleString('bn-BD')}
-                      </span>
-                    </label>
-                  </div>
-                </div>
-              )}
+                      {/* Hidden Radio */}
+                      <input
+                        type="radio"
+                        name="package"
+                        value={product.id}
+                        checked={isSelected}
+                        onChange={() => handlePackageSelect(product.id)}
+                        className="absolute inset-0 opacity-0 pointer-events-none"
+                      />
 
-              {/* Price Breakdown */}
-              <div className="border-t pt-3 space-y-2 text-sm">
-                <div className="flex justify-between font-body">
-                  <span className="text-muted-foreground">সাবটোটাল:</span>
-                  <span className="font-digit">{currencySymbol}{subtotal.toLocaleString('bn-BD')}</span>
+                      {/* Radio Indicator */}
+                      <div className={cn(
+                        "absolute left-2 top-2 w-5 h-5 bg-white border-2 rounded-full flex items-center justify-center z-10",
+                        isSelected ? "border-primary" : "border-gray-300"
+                      )}>
+                        <div className={cn(
+                          "w-3 h-3 rounded-full transition-colors",
+                          isSelected ? "bg-primary" : "bg-transparent"
+                        )} />
+                      </div>
+
+                      {/* Product Image */}
+                      <div className="w-20 h-20 border-2 border-primary rounded-xl overflow-hidden bg-white flex-shrink-0">
+                        <img 
+                          src={imageUrl} 
+                          alt={product.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+
+                      {/* Content */}
+                      <div className="flex-grow min-w-0">
+                        <h3 className="font-semibold text-gray-700 text-base leading-tight line-clamp-2 font-body">
+                          {product.name}
+                        </h3>
+                        <div className="flex items-center justify-between mt-2">
+                          {/* Price Badge */}
+                          <div className="flex items-baseline gap-2">
+                            <span className="bg-red-500 text-white font-bold text-xl py-0.5 px-2 rounded-md font-digit">
+                              {currencySymbol}{formatAmount(product.price)}
+                            </span>
+                          </div>
+
+                          {/* Quantity Controls */}
+                          <div className="flex items-center">
+                            <span className="text-gray-600 font-semibold mr-1 text-xs font-body">Qty:</span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                handleQuantityChange(product.id, -1);
+                              }}
+                              className="w-6 h-6 flex items-center justify-center rounded-full border text-gray-600 hover:bg-gray-100 transition-colors"
+                            >
+                              <Minus className="h-3 w-3" />
+                            </button>
+                            <span className="w-10 h-7 flex items-center justify-center text-sm text-gray-700 font-digit">
+                              {qty}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                handleQuantityChange(product.id, 1);
+                              }}
+                              className="w-6 h-6 flex items-center justify-center rounded-full border text-gray-600 hover:bg-gray-100 transition-colors"
+                            >
+                              <Plus className="h-3 w-3" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+
+              {/* Delivery Information Card */}
+              <div className="bg-white border border-border rounded-2xl p-7 shadow-md">
+                <div className="flex items-center gap-2 mb-5">
+                  <div className="w-2 h-6 bg-primary rounded" />
+                  <h3 className="text-2xl font-semibold text-foreground font-heading">ডেলিভারি তথ্য</h3>
                 </div>
-                <div className="flex justify-between font-body">
-                  <span className="text-muted-foreground">ডেলিভারি চার্জ:</span>
-                  <span className={`font-digit ${delivery === 0 ? 'text-green-600' : ''}`}>
-                    {delivery === 0 ? 'ফ্রি!' : `${currencySymbol}${delivery.toLocaleString('bn-BD')}`}
-                  </span>
-                </div>
-                {settings.delivery_mode === 'conditional' && subtotal < (settings.free_over_amount || 0) && subtotal > 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    {currencySymbol}{((settings.free_over_amount || 0) - subtotal).toLocaleString('bn-BD')} আরো অর্ডার করলে ডেলিভারি ফ্রি!
-                  </p>
-                )}
-                <div className="flex justify-between font-body font-semibold text-base border-t pt-2">
-                  <span>সর্বমোট:</span>
-                  <span className="font-digit text-primary">{currencySymbol}{total.toLocaleString('bn-BD')}</span>
+                <div className="space-y-5">
+                  {enabledFields.map((field) => (
+                    <div key={field.id}>
+                      <label 
+                        htmlFor={`checkout-${field.id}`} 
+                        className="block font-semibold text-gray-700 mb-1.5 font-body"
+                      >
+                        {field.label} {field.required && <span className="text-red-500">*</span>}
+                      </label>
+                      {renderField(field)}
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
 
-            {/* Right Column: Form Fields */}
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Dynamic Form Fields */}
-              {enabledFields.map((field) => (
-                <div key={field.id} className="space-y-2">
-                  <label htmlFor={`checkout-${field.id}`} className="font-body text-sm font-medium block">
-                    {field.label}
-                    {field.required && <span className="text-destructive ml-1">*</span>}
-                  </label>
-                  {renderField(field)}
+            {/* Right Column (Sticky Summary) */}
+            <div className="lg:sticky lg:top-6 h-fit">
+              <div className="bg-white border border-border rounded-2xl p-7 shadow-md">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-2 h-6 bg-primary rounded" />
+                  <h3 className="text-2xl font-semibold text-foreground font-heading">Order Summary</h3>
                 </div>
-              ))}
 
-              <button
-                type="submit"
-                disabled={submitting || !hasItems}
-                className="font-button w-full rounded-theme bg-primary text-primary-foreground py-3 text-lg font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50"
-              >
-                {submitting ? 'প্রসেসিং...' : config.ctaText}
-              </button>
-            </form>
+                {selectedProduct && (
+                  <div className="mt-3 space-y-3">
+                    {/* Selected Product */}
+                    <div className="flex justify-between items-center py-4 border-b border-dashed border-gray-200">
+                      <div className="flex items-center gap-4">
+                        <img 
+                          src={selectedProduct.images?.[0] || '/placeholder.svg'} 
+                          alt={selectedProduct.name}
+                          className="w-16 h-16 rounded-lg object-cover shadow-sm border border-gray-200"
+                        />
+                        <div>
+                          <span className="font-semibold text-gray-800 block leading-tight font-body">
+                            {selectedProduct.name}
+                          </span>
+                          <small className="text-gray-500 font-body">× {quantities[selectedPackage!] || 1}</small>
+                        </div>
+                      </div>
+                      <span className="font-semibold text-gray-800 text-lg font-digit">
+                        {currencySymbol}{formatAmount(subtotal)}
+                      </span>
+                    </div>
+
+                    {/* Subtotal */}
+                    <div className="flex justify-between items-center py-2 text-gray-700">
+                      <span className="font-body">Subtotal</span>
+                      <span className="font-medium font-digit">{currencySymbol}{formatAmount(subtotal)}</span>
+                    </div>
+
+                    {/* Delivery Charge */}
+                    {!isFreeDelivery && (
+                      <div className="flex justify-between items-center py-2 border-b border-dashed border-gray-200">
+                        <span className="font-body">ডেলিভারি চার্জ</span>
+                        <span className="font-medium font-digit">{currencySymbol}{formatAmount(delivery)}</span>
+                      </div>
+                    )}
+
+                    {/* Total */}
+                    <div className="flex justify-between items-center pt-4 text-xl font-bold text-primary">
+                      <span className="font-heading">সর্বমোট</span>
+                      <span className="font-digit">{currencySymbol}{formatAmount(total)}</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Zone Selection for Zoned Delivery */}
+                {settings.delivery_mode === 'zoned' && (
+                  <div className="mt-6">
+                    <h4 className="font-semibold mb-2 text-gray-700 text-[15px] font-body">ডেলিভারি এলাকা</h4>
+                    <div className="space-y-3">
+                      <label className={cn(
+                        "flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition-all duration-200",
+                        selectedZone === 'inside' 
+                          ? "bg-primary/5 border-primary ring-2 ring-primary/20" 
+                          : "hover:bg-primary/5 hover:border-primary"
+                      )}>
+                        <input
+                          type="radio"
+                          name="delivery_area"
+                          value="inside"
+                          checked={selectedZone === 'inside'}
+                          onChange={() => setSelectedZone('inside')}
+                          className="h-4 w-4 text-primary border-gray-300 focus:ring-primary"
+                        />
+                        <div className="flex justify-between w-full font-medium text-[15px] text-gray-700">
+                          <span className="font-body">{settings.inside_city_label}</span>
+                          <span className="font-semibold text-gray-800 font-digit">
+                            {currencySymbol}{formatAmount(settings.inside_city_amount)}
+                          </span>
+                        </div>
+                      </label>
+                      <label className={cn(
+                        "flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition-all duration-200",
+                        selectedZone === 'outside' 
+                          ? "bg-primary/5 border-primary ring-2 ring-primary/20" 
+                          : "hover:bg-primary/5 hover:border-primary"
+                      )}>
+                        <input
+                          type="radio"
+                          name="delivery_area"
+                          value="outside"
+                          checked={selectedZone === 'outside'}
+                          onChange={() => setSelectedZone('outside')}
+                          className="h-4 w-4 text-primary border-gray-300 focus:ring-primary"
+                        />
+                        <div className="flex justify-between w-full font-medium text-[15px] text-gray-700">
+                          <span className="font-body">{settings.outside_city_label}</span>
+                          <span className="font-semibold text-gray-800 font-digit">
+                            {currencySymbol}{formatAmount(settings.outside_city_amount)}
+                          </span>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+                )}
+
+                {/* Free Delivery Banner */}
+                {isFreeDelivery && (
+                  <div className="mt-6 text-center text-lg font-bold text-white bg-gradient-to-r from-green-500 to-green-600 rounded-xl p-4 shadow-sm">
+                    <strong>সারা বাংলাদেশে ফ্রি ডেলিভারি! 🎉</strong>
+                  </div>
+                )}
+
+                {/* Submit Button */}
+                <div className="mt-7">
+                  <button
+                    type="submit"
+                    disabled={submitting || !selectedProduct}
+                    className="w-full flex justify-between items-center bg-primary text-primary-foreground text-lg font-bold py-4 px-6 rounded-xl shadow-lg hover:opacity-90 transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed font-button"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Lock className="h-4 w-4" />
+                      {submitting ? 'প্রসেসিং...' : config.ctaText || 'অর্ডার কনফার্ম করুন'}
+                    </span>
+                    <span className="font-digit">{currencySymbol}{formatAmount(total)}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      </form>
     </section>
   );
 }
