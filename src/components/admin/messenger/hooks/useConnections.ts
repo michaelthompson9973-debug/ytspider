@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { MessengerConnection } from '../types';
 import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 export function useConnections() {
   return useQuery({
@@ -61,7 +62,7 @@ export function useToggleConnectionStatus() {
 
 export function useDeleteConnection() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
+  const { toast: toastHook } = useToast();
 
   return useMutation({
     mutationFn: async (connectionId: string) => {
@@ -74,16 +75,48 @@ export function useDeleteConnection() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['messenger-connections'] });
-      toast({
+      toastHook({
         title: 'পেজ সংযোগ মুছে ফেলা হয়েছে',
       });
     },
     onError: (error) => {
-      toast({
+      toastHook({
         title: 'ব্যর্থ',
         description: error instanceof Error ? error.message : 'অজানা সমস্যা',
         variant: 'destructive',
       });
+    },
+  });
+}
+
+export function useCreateConnection() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: {
+      page_name: string;
+      page_id: string;
+      page_access_token: string;
+    }) => {
+      // Generate random webhook verify token
+      const webhook_verify_token = crypto.randomUUID();
+
+      const { error } = await supabase
+        .from('messenger_connections')
+        .insert({
+          ...data,
+          webhook_verify_token,
+          is_active: true,
+        });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['messenger-connections'] });
+    },
+    onError: (error) => {
+      console.error('Error creating connection:', error);
+      toast.error('পেজ যোগ করতে সমস্যা হয়েছে');
     },
   });
 }
