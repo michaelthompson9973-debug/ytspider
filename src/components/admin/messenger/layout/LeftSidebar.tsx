@@ -93,7 +93,7 @@ export function LeftSidebar({
               key={f.value}
               onClick={() => onFilterChange(f.value)}
               className={cn(
-                "text-xs px-2 py-1 rounded-md flex items-center gap-1 transition-colors",
+                "text-xs px-2 py-1 rounded-md flex items-center gap-1 transition-colors font-heading",
                 filter === f.value
                   ? "bg-primary text-primary-foreground"
                   : "bg-muted/50 hover:bg-muted text-muted-foreground"
