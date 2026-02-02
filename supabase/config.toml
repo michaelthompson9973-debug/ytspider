@@ -61,3 +61,9 @@ verify_jwt = false
 
 [functions.track-event]
 verify_jwt = false
+
+[functions.messenger-webhook]
+verify_jwt = false
+
+[functions.messenger-send]
+verify_jwt = false
