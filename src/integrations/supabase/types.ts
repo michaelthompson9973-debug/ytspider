@@ -875,6 +875,7 @@ export type Database = {
           images: string[] | null
           name: string
           price: number
+          size_options: Json | null
           updated_at: string
           videos: string[] | null
         }
@@ -886,6 +887,7 @@ export type Database = {
           images?: string[] | null
           name: string
           price?: number
+          size_options?: Json | null
           updated_at?: string
           videos?: string[] | null
         }
@@ -897,6 +899,7 @@ export type Database = {
           images?: string[] | null
           name?: string
           price?: number
+          size_options?: Json | null
           updated_at?: string
           videos?: string[] | null
         }
