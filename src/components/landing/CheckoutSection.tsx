@@ -381,42 +381,34 @@ export function CheckoutSection({
         conversion_value: total,
       });
 
-      // Call server-side tracking for deduplication and backup
-      try {
-        await supabase.functions.invoke('track-conversion', {
-          body: {
-            eventId,
-            orderId: orderData.id,
-            transactionId: orderData.id,
-            productName: selectedProduct.name,
-            productIds: [selectedProduct.id],
-            customerPhone: normalizedPhone,
-            customerCity: form.customer_city,
-            landingPageSlug,
-            quantity,
-            subtotal,
-            shipping: delivery,
-            total,
-            currency: settings.currency,
-            items: ga4Items,
-          },
-        });
-      } catch (trackError) {
-        console.error('Tracking error:', trackError);
-      }
+      // Fire-and-forget: Track conversion in background (non-blocking)
+      supabase.functions.invoke('track-conversion', {
+        body: {
+          eventId,
+          orderId: orderData.id,
+          transactionId: orderData.id,
+          productName: selectedProduct.name,
+          productIds: [selectedProduct.id],
+          customerPhone: normalizedPhone,
+          customerCity: form.customer_city,
+          landingPageSlug,
+          quantity,
+          subtotal,
+          shipping: delivery,
+          total,
+          currency: settings.currency,
+          items: ga4Items,
+        },
+      }).catch(err => console.error('Tracking error:', err));
 
-      // Trigger webhooks for new order
-      try {
-        await supabase.functions.invoke('trigger-order-webhooks', {
-          body: { orderId: orderData?.id },
-        });
-      } catch (webhookError) {
-        console.error('Webhook error:', webhookError);
-      }
+      // Fire-and-forget: Trigger webhooks in background (non-blocking)
+      supabase.functions.invoke('trigger-order-webhooks', {
+        body: { orderId: orderData.id },
+      }).catch(err => console.error('Webhook error:', err));
 
-      // Redirect to thank you page
-      navigate(`/thank-you?orderId=${orderData?.id}`);
-      onOrderSuccess?.(orderData?.id);
+      // Redirect immediately after database insert (no more waiting)
+      navigate(`/thank-you?orderId=${orderData.id}`);
+      onOrderSuccess?.(orderData.id);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'An error occurred';
       toast({
