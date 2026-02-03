@@ -255,3 +255,25 @@
     font-family: 'Hind Siliguri', sans-serif;
   }
 }
+
+/* Admin Panel Smooth Transitions */
+@layer utilities {
+  .admin-transition {
+    @apply transition-colors duration-200 ease-in-out;
+  }
+}
+
+/* Global smooth transitions for sidebar and themed elements */
+[data-sidebar] {
+  transition: background-color 200ms ease-in-out, color 200ms ease-in-out;
+}
+
+/* Theme selection card animation */
+.theme-card-selected {
+  @apply ring-2 ring-primary ring-offset-2 transform scale-[1.02] transition-all duration-200;
+}
+
+/* Enhanced button and interactive element transitions */
+button, a, [role="button"] {
+  @apply transition-colors duration-150;
+}
