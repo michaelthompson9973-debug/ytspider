@@ -236,9 +236,13 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
       updated_at: shop.updated_at,
     };
 
-    // Refresh shops list and switch to new shop
-    await fetchShops();
-    await switchShop(newShop.id);
+    // Directly set as current shop (don't rely on switchShop which needs availableShops to be updated)
+    setCurrentShop(newShop);
+    setUserRole('owner');
+    localStorage.setItem(STORAGE_KEY, newShop.id);
+    
+    // Update available shops list
+    setAvailableShops(prev => [...prev, newShop]);
 
     return newShop;
   };
