@@ -34,6 +34,7 @@ import {
   CreditCard,
   Shield,
   ClipboardList,
+  Building2,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -94,19 +95,19 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
-    labelKey: 'sidebar.shop',
+    labelKey: 'sidebar.business',
     items: [
       { 
-        href: '/admin/shop', 
-        labelKey: 'sidebar.myShop', 
-        icon: Store,
+        href: '/admin/business', 
+        labelKey: 'sidebar.businessManagement', 
+        icon: Building2,
         children: [
-          { href: '/admin/shop/manage', labelKey: 'sidebar.shopManage', icon: Settings },
-          { href: '/admin/shop/team', labelKey: 'sidebar.shopTeam', icon: Users },
-          { href: '/admin/shop/billing', labelKey: 'sidebar.shopBilling', icon: CreditCard },
-          { href: '/admin/shop/security', labelKey: 'sidebar.shopSecurity', icon: Shield },
-          { href: '/admin/shop/analytics', labelKey: 'sidebar.shopAnalytics', icon: BarChart3 },
-          { href: '/admin/shop/audit-log', labelKey: 'sidebar.shopAuditLog', icon: ClipboardList },
+          { href: '/admin/business/shops', labelKey: 'sidebar.allShops', icon: Store },
+          { href: '/admin/business/team', labelKey: 'sidebar.shopTeam', icon: Users },
+          { href: '/admin/business/billing', labelKey: 'sidebar.shopBilling', icon: CreditCard },
+          { href: '/admin/business/security', labelKey: 'sidebar.shopSecurity', icon: Shield },
+          { href: '/admin/business/analytics', labelKey: 'sidebar.shopAnalytics', icon: BarChart3 },
+          { href: '/admin/business/audit-log', labelKey: 'sidebar.shopAuditLog', icon: ClipboardList },
         ]
       },
     ],
