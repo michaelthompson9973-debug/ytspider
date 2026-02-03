@@ -75,16 +75,16 @@ export function RecentOrdersTable() {
             <table className="w-full">
               <thead>
                 <tr className="border-b">
-                  <th className="py-3 text-left text-sm font-medium text-muted-foreground">
+                  <th className="py-2 text-left text-xs font-medium text-muted-foreground">
                     {t('orders.customer')}
                   </th>
-                  <th className="py-3 text-left text-sm font-medium text-muted-foreground">
+                  <th className="py-2 text-left text-xs font-medium text-muted-foreground">
                     {t('orders.product')}
                   </th>
-                  <th className="py-3 text-left text-sm font-medium text-muted-foreground">
+                  <th className="py-2 text-left text-xs font-medium text-muted-foreground">
                     {t('orders.total')}
                   </th>
-                  <th className="py-3 text-left text-sm font-medium text-muted-foreground">
+                  <th className="py-2 text-left text-xs font-medium text-muted-foreground">
                     {t('common.status')}
                   </th>
                 </tr>
@@ -96,10 +96,10 @@ export function RecentOrdersTable() {
                     className="border-b last:border-0 hover:bg-muted/30 transition-colors animate-in fade-in slide-in-from-top-1"
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
-                    <td className="py-3">
+                    <td className="py-1.5">
                       <div>
-                        <p className="font-medium">{order.customer_name}</p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-sm">{order.customer_name}</p>
+                        <p className="text-[11px] text-muted-foreground">
                           {formatDistanceToNow(new Date(order.created_at), {
                             addSuffix: true,
                             locale: language === 'bn' ? bn : enUS,
@@ -107,18 +107,18 @@ export function RecentOrdersTable() {
                         </p>
                       </div>
                     </td>
-                    <td className="py-3">
-                      <p className="truncate max-w-[150px]">
+                    <td className="py-1.5">
+                      <p className="text-sm truncate max-w-[150px]">
                         {order.products?.name ?? '-'}
                       </p>
                     </td>
-                    <td className="py-3 font-medium">
+                    <td className="py-1.5 text-sm">
                       ৳{order.total?.toLocaleString() ?? 0}
                     </td>
-                    <td className="py-3">
+                    <td className="py-1.5">
                       <Badge
                         variant="secondary"
-                        className={statusColors[order.status] || ''}
+                        className={`text-[11px] px-1.5 py-0 ${statusColors[order.status] || ''}`}
                       >
                         {order.status}
                       </Badge>
