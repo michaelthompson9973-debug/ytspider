@@ -98,7 +98,7 @@ export function RecentOrdersTable() {
                   >
                     <td className="py-1.5">
                       <div>
-                        <p className="text-sm">{order.customer_name}</p>
+                        <p className="text-sm font-heading">{order.customer_name}</p>
                         <p className="text-[11px] text-muted-foreground">
                           {formatDistanceToNow(new Date(order.created_at), {
                             addSuffix: true,
