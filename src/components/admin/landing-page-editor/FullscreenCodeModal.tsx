@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Code, Copy, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -7,6 +7,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { AiEnhanceButton } from './AiEnhanceButton';
+import { SmartCodeEditor } from './SmartCodeEditor';
 import { parseHtmlParts, mergeHtmlParts } from './htmlParseUtils';
 
 interface FullscreenCodeModalProps {
@@ -31,8 +32,6 @@ export function FullscreenCodeModal({
   const [codeTab, setCodeTab] = useState<CodeTab>('full');
   const [headCode, setHeadCode] = useState('');
   const [bodyCode, setBodyCode] = useState('');
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const lineNumbersRef = useRef<HTMLDivElement>(null);
 
   // Sync local state when modal opens or html prop changes
   useEffect(() => {
@@ -53,8 +52,6 @@ export function FullscreenCodeModal({
       default: return localHtml;
     }
   }, [codeTab, localHtml, headCode, bodyCode]);
-
-  const lines = getCurrentContent().split('\n');
 
   // Handle tab switching with parse/merge
   const handleCodeTabChange = useCallback((newTab: CodeTab) => {
@@ -99,22 +96,6 @@ export function FullscreenCodeModal({
   const handleApply = () => {
     onHtmlChange(localHtml);
     onOpenChange(false);
-  };
-
-  // Sync scroll between textarea and line numbers
-  const handleScroll = useCallback(() => {
-    if (textareaRef.current && lineNumbersRef.current) {
-      lineNumbersRef.current.scrollTop = textareaRef.current.scrollTop;
-    }
-  }, []);
-
-  // Get placeholder based on current tab
-  const getPlaceholder = () => {
-    switch (codeTab) {
-      case 'head': return '<style>\n  /* CSS styles here */\n</style>\n\n<script>\n  // JavaScript here\n</script>';
-      case 'body': return '<section>\n  Your HTML content here...\n</section>';
-      default: return '<section>Your HTML content here...</section>';
-    }
   };
 
   return (
@@ -196,29 +177,14 @@ export function FullscreenCodeModal({
           </Button>
         </div>
         
-        {/* VS Code style editor */}
-        <div className="flex-1 min-h-0 overflow-hidden bg-zinc-900 flex">
-          {/* Line numbers */}
-          <div
-            ref={lineNumbersRef}
-            className="w-12 py-4 text-right text-zinc-500 select-none font-mono text-sm border-r border-zinc-700 overflow-hidden shrink-0"
-          >
-            {lines.map((_, i) => (
-              <div key={i} className="px-2 leading-6">
-                {i + 1}
-              </div>
-            ))}
-          </div>
-          
-          {/* Code area */}
-          <textarea
-            ref={textareaRef}
-            className="flex-1 p-4 bg-transparent text-zinc-100 font-mono text-sm resize-none focus:outline-none leading-6"
+        {/* Monaco Editor - Full screen */}
+        <div className="flex-1 min-h-0 overflow-hidden bg-zinc-900">
+          <SmartCodeEditor
             value={getCurrentContent()}
-            onChange={(e) => handleContentChange(e.target.value)}
-            onScroll={handleScroll}
-            spellCheck={false}
-            placeholder={getPlaceholder()}
+            onChange={handleContentChange}
+            language="html"
+            theme="vs-dark"
+            height="100%"
           />
         </div>
         
