@@ -16,6 +16,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Plus, Pencil, Trash2, ImageIcon, Film, X } from 'lucide-react';
 import { z } from 'zod';
 import MediaPickerDialog from '@/components/admin/MediaPickerDialog';
@@ -50,6 +51,7 @@ export default function Products() {
   const [videoPickerOpen, setVideoPickerOpen] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   const { data: products, isLoading } = useQuery({
     queryKey: ['products'],
@@ -175,10 +177,10 @@ export default function Products() {
     <AdminLayout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Products</h1>
+          <h1 className="text-2xl font-bold">{t('products.title')}</h1>
           <Button onClick={() => { resetForm(); setDialogOpen(true); }}>
             <Plus className="mr-2 h-4 w-4" />
-            Add Product
+            {t('products.addProduct')}
           </Button>
         </div>
 
@@ -187,25 +189,25 @@ export default function Products() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b bg-muted/50">
-                    <th className="px-4 py-3 text-left font-medium w-16">Image</th>
-                    <th className="px-4 py-3 text-left font-medium">Name</th>
-                    <th className="px-4 py-3 text-left font-medium">Price</th>
-                    <th className="px-4 py-3 text-left font-medium">Status</th>
-                    <th className="px-4 py-3 text-right font-medium">Actions</th>
+                  <tr className="border-b bg-accent/50 text-accent-foreground">
+                    <th className="px-4 py-3 text-left font-medium w-16">{t('products.image')}</th>
+                    <th className="px-4 py-3 text-left font-medium">{t('products.name')}</th>
+                    <th className="px-4 py-3 text-left font-medium">{t('products.price')}</th>
+                    <th className="px-4 py-3 text-left font-medium">{t('common.status')}</th>
+                    <th className="px-4 py-3 text-right font-medium">{t('common.actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {isLoading ? (
                     <tr>
                       <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
-                        Loading...
+                        {t('common.loading')}
                       </td>
                     </tr>
                   ) : products?.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
-                        No products yet
+                        {t('products.noProducts')}
                       </td>
                     </tr>
                   ) : (
@@ -230,7 +232,7 @@ export default function Products() {
                           <span className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${
                             product.active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                           }`}>
-                            {product.active ? 'Active' : 'Inactive'}
+                            {product.active ? t('common.active') : t('common.inactive')}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-right">
@@ -261,11 +263,11 @@ export default function Products() {
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogContent className="max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>{editingId ? 'Edit Product' : 'New Product'}</DialogTitle>
+              <DialogTitle>{editingId ? t('products.editProduct') : t('products.newProduct')}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Name</Label>
+                <Label htmlFor="name">{t('products.name')}</Label>
                 <Input
                   id="name"
                   value={form.name}
@@ -274,7 +276,7 @@ export default function Products() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="price">Price</Label>
+                <Label htmlFor="price">{t('products.price')}</Label>
                 <Input
                   id="price"
                   type="number"
@@ -286,7 +288,7 @@ export default function Products() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description">{t('products.description')}</Label>
                 <Textarea
                   id="description"
                   value={form.description}
@@ -300,15 +302,15 @@ export default function Products() {
                   checked={form.active}
                   onCheckedChange={(checked) => setForm({ ...form, active: checked })}
                 />
-                <Label htmlFor="active">Active</Label>
+                <Label htmlFor="active">{t('common.active')}</Label>
               </div>
               
               <div className="space-y-2">
-                <Label>Images</Label>
+                <Label>{t('products.images')}</Label>
                 <div className="flex gap-2">
                   <Button type="button" variant="outline" onClick={() => setImagePickerOpen(true)}>
                     <ImageIcon className="mr-2 h-4 w-4" />
-                    Gallery
+                    {t('products.gallery')}
                   </Button>
                   <Input
                     placeholder="Or paste URL"
@@ -316,7 +318,7 @@ export default function Products() {
                     onChange={(e) => setImageInput(e.target.value)}
                     className="flex-1"
                   />
-                  <Button type="button" variant="outline" onClick={addImage}>Add</Button>
+                  <Button type="button" variant="outline" onClick={addImage}>{t('common.add')}</Button>
                 </div>
                 {form.images.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-2">
@@ -341,11 +343,11 @@ export default function Products() {
               </div>
 
               <div className="space-y-2">
-                <Label>Videos</Label>
+                <Label>{t('products.videos')}</Label>
                 <div className="flex gap-2">
                   <Button type="button" variant="outline" onClick={() => setVideoPickerOpen(true)}>
                     <Film className="mr-2 h-4 w-4" />
-                    Gallery
+                    {t('products.gallery')}
                   </Button>
                   <Input
                     placeholder="Or paste URL"
@@ -353,7 +355,7 @@ export default function Products() {
                     onChange={(e) => setVideoInput(e.target.value)}
                     className="flex-1"
                   />
-                  <Button type="button" variant="outline" onClick={addVideo}>Add</Button>
+                  <Button type="button" variant="outline" onClick={addVideo}>{t('common.add')}</Button>
                 </div>
                 {form.videos.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-2">
@@ -378,10 +380,10 @@ export default function Products() {
 
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
-                  Cancel
+                  {t('common.cancel')}
                 </Button>
                 <Button type="submit" disabled={saveMutation.isPending}>
-                  {saveMutation.isPending ? 'Saving...' : 'Save'}
+                  {saveMutation.isPending ? t('common.loading') : t('common.save')}
                 </Button>
               </DialogFooter>
             </form>

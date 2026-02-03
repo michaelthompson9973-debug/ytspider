@@ -4,23 +4,27 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useAdminTheme, ThemePreset } from '@/contexts/AdminThemeContext';
-import { ThemePresetCard, ColorPicker, AppearanceToggle } from '@/components/admin/settings';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { ThemePresetCard, ColorPicker, AppearanceToggle, LanguageToggle } from '@/components/admin/settings';
 import { toast } from 'sonner';
 
-const presetInfo: { preset: Exclude<ThemePreset, 'custom'>; name: string; description: string }[] = [
-  { preset: 'default', name: 'Default', description: 'Professional blue-gray' },
-  { preset: 'ocean', name: 'Ocean', description: 'Calming teal tones' },
-  { preset: 'forest', name: 'Forest', description: 'Fresh green nature' },
-  { preset: 'sunset', name: 'Sunset', description: 'Warm orange energy' },
-  { preset: 'slate', name: 'Slate', description: 'Neutral minimal' },
-];
+type PresetKey = Exclude<ThemePreset, 'custom'>;
 
 export default function Settings() {
   const { theme, setPreset, setMode, setCustomColor, resetToDefaults } = useAdminTheme();
+  const { t } = useLanguage();
+
+  const presetInfo: { preset: PresetKey; nameKey: string; descKey: string }[] = [
+    { preset: 'default', nameKey: 'themes.default', descKey: 'themes.defaultDesc' },
+    { preset: 'ocean', nameKey: 'themes.ocean', descKey: 'themes.oceanDesc' },
+    { preset: 'forest', nameKey: 'themes.forest', descKey: 'themes.forestDesc' },
+    { preset: 'sunset', nameKey: 'themes.sunset', descKey: 'themes.sunsetDesc' },
+    { preset: 'slate', nameKey: 'themes.slate', descKey: 'themes.slateDesc' },
+  ];
 
   const handleReset = () => {
     resetToDefaults();
-    toast.success('Theme reset to defaults');
+    toast.success(t('settings.themeResetSuccess'));
   };
 
   return (
@@ -29,19 +33,32 @@ export default function Settings() {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Palette className="h-6 w-6" />
-            Appearance Settings
+            {t('settings.appearance')}
           </h1>
           <p className="text-muted-foreground mt-1">
-            Customize the look and feel of your admin panel
+            {t('settings.appearanceDescription')}
           </p>
         </div>
+
+        {/* Language Toggle */}
+        <Card className="admin-transition">
+          <CardHeader>
+            <CardTitle className="text-lg">{t('settings.language')}</CardTitle>
+            <CardDescription>
+              {t('settings.languageDescription')}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <LanguageToggle />
+          </CardContent>
+        </Card>
 
         {/* Theme Presets */}
         <Card className="admin-transition">
           <CardHeader>
-            <CardTitle className="text-lg">Choose a Theme</CardTitle>
+            <CardTitle className="text-lg">{t('settings.chooseTheme')}</CardTitle>
             <CardDescription>
-              Select a pre-built color scheme or customize your own
+              {t('settings.chooseThemeDescription')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -50,8 +67,8 @@ export default function Settings() {
                 <ThemePresetCard
                   key={info.preset}
                   preset={info.preset}
-                  name={info.name}
-                  description={info.description}
+                  name={t(info.nameKey)}
+                  description={t(info.descKey)}
                   isSelected={theme.preset === info.preset}
                   onSelect={() => setPreset(info.preset)}
                 />
@@ -63,29 +80,29 @@ export default function Settings() {
         {/* Custom Colors */}
         <Card className="admin-transition">
           <CardHeader>
-            <CardTitle className="text-lg">Custom Colors</CardTitle>
+            <CardTitle className="text-lg">{t('settings.customColors')}</CardTitle>
             <CardDescription>
-              Fine-tune individual colors to match your brand
+              {t('settings.customColorsDescription')}
               {theme.preset === 'custom' && (
                 <span className="ml-2 text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                  Custom mode active
+                  {t('settings.customModeActive')}
                 </span>
               )}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <ColorPicker
-              label="Primary Color"
+              label={t('settings.primaryColor')}
               value={theme.colors.primary}
               onChange={(v) => setCustomColor('primary', v)}
             />
             <ColorPicker
-              label="Sidebar Background"
+              label={t('settings.sidebarBackground')}
               value={theme.colors.sidebarBg}
               onChange={(v) => setCustomColor('sidebarBg', v)}
             />
             <ColorPicker
-              label="Accent Color"
+              label={t('settings.accentColor')}
               value={theme.colors.accent}
               onChange={(v) => setCustomColor('accent', v)}
             />
@@ -95,9 +112,9 @@ export default function Settings() {
         {/* Appearance Mode */}
         <Card className="admin-transition">
           <CardHeader>
-            <CardTitle className="text-lg">Appearance</CardTitle>
+            <CardTitle className="text-lg">{t('settings.appearanceMode')}</CardTitle>
             <CardDescription>
-              Choose between light, dark, or system-based appearance
+              {t('settings.appearanceModeDescription')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -111,7 +128,7 @@ export default function Settings() {
         <div className="flex flex-col sm:flex-row gap-3 pb-6">
           <Button variant="outline" onClick={handleReset} className="gap-2">
             <RotateCcw className="h-4 w-4" />
-            Reset to Defaults
+            {t('settings.resetDefaults')}
           </Button>
         </div>
       </div>

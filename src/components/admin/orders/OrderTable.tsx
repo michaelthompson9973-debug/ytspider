@@ -18,6 +18,7 @@ import { Order, OrderStatus, STATUS_CONFIG, CustomerCourierHistory } from './typ
 import { TrustBadge } from './TrustBadge';
 import { formatCurrency, formatRelativeTime, getShortOrderId, truncateText } from './utils';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface OrderTableProps {
   orders: Order[];
@@ -58,6 +59,7 @@ export const OrderTable = React.forwardRef<HTMLDivElement, OrderTableProps>(
     },
     ref
   ) => {
+    const { t } = useLanguage();
     const allSelected = orders.length > 0 && selectedIds.length === orders.length;
     const someSelected = selectedIds.length > 0 && selectedIds.length < orders.length;
 
@@ -82,7 +84,7 @@ export const OrderTable = React.forwardRef<HTMLDivElement, OrderTableProps>(
     if (orders.length === 0) {
       return (
         <div ref={ref} className="text-center py-12">
-          <p className="text-muted-foreground">কোনো অর্ডার পাওয়া যায়নি</p>
+          <p className="text-muted-foreground">{t('orders.noOrders')}</p>
         </div>
       );
     }
@@ -91,23 +93,23 @@ export const OrderTable = React.forwardRef<HTMLDivElement, OrderTableProps>(
       <div ref={ref} className="overflow-x-auto border rounded-lg">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b bg-muted/50">
+            <tr className="border-b bg-accent/50 text-accent-foreground">
               <th className="px-4 py-3 text-left">
                 <Checkbox
                   checked={allSelected}
                   onCheckedChange={onSelectAll}
-                  aria-label="সব সিলেক্ট করুন"
+                  aria-label={t('orders.selectAll')}
                   className={someSelected ? 'data-[state=checked]:bg-primary/50' : ''}
                 />
               </th>
-              <th className="px-4 py-3 text-left font-medium whitespace-nowrap">অর্ডার</th>
-              <th className="px-4 py-3 text-left font-medium whitespace-nowrap">কাস্টমার</th>
-              <th className="px-4 py-3 text-left font-medium whitespace-nowrap">বিশ্বস্ততা</th>
-              <th className="px-4 py-3 text-left font-medium whitespace-nowrap">প্রোডাক্ট</th>
-              <th className="px-4 py-3 text-right font-medium whitespace-nowrap">মোট</th>
-              <th className="px-4 py-3 text-left font-medium whitespace-nowrap">স্ট্যাটাস</th>
-              <th className="px-4 py-3 text-left font-medium whitespace-nowrap">কুরিয়ার</th>
-              <th className="px-4 py-3 text-center font-medium whitespace-nowrap">অ্যাকশন</th>
+              <th className="px-4 py-3 text-left font-medium whitespace-nowrap">{t('orders.order')}</th>
+              <th className="px-4 py-3 text-left font-medium whitespace-nowrap">{t('orders.customer')}</th>
+              <th className="px-4 py-3 text-left font-medium whitespace-nowrap">{t('orders.trust')}</th>
+              <th className="px-4 py-3 text-left font-medium whitespace-nowrap">{t('orders.product')}</th>
+              <th className="px-4 py-3 text-right font-medium whitespace-nowrap">{t('orders.total')}</th>
+              <th className="px-4 py-3 text-left font-medium whitespace-nowrap">{t('common.status')}</th>
+              <th className="px-4 py-3 text-left font-medium whitespace-nowrap">{t('orders.courier')}</th>
+              <th className="px-4 py-3 text-center font-medium whitespace-nowrap">{t('common.actions')}</th>
             </tr>
           </thead>
           <tbody>
@@ -130,7 +132,7 @@ export const OrderTable = React.forwardRef<HTMLDivElement, OrderTableProps>(
                     <Checkbox
                       checked={isSelected}
                       onCheckedChange={(checked) => handleRowSelect(order.id, !!checked)}
-                      aria-label={`সিলেক্ট ${order.customer_name}`}
+                      aria-label={`${t('orders.selectAll')} ${order.customer_name}`}
                     />
                   </td>
 
@@ -175,7 +177,7 @@ export const OrderTable = React.forwardRef<HTMLDivElement, OrderTableProps>(
                         {order.products?.name || 'N/A'}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {order.quantity || 1} টি
+                        {order.quantity || 1} {t('orders.pieces')}
                       </p>
                     </div>
                   </td>
@@ -246,7 +248,7 @@ export const OrderTable = React.forwardRef<HTMLDivElement, OrderTableProps>(
                             <Eye className="h-4 w-4" />
                           </Button>
                         </TooltipTrigger>
-                        <TooltipContent>বিস্তারিত</TooltipContent>
+                        <TooltipContent>{t('orders.details')}</TooltipContent>
                       </Tooltip>
 
                       <Tooltip>
@@ -260,7 +262,7 @@ export const OrderTable = React.forwardRef<HTMLDivElement, OrderTableProps>(
                             <Edit className="h-4 w-4" />
                           </Button>
                         </TooltipTrigger>
-                        <TooltipContent>এডিট</TooltipContent>
+                        <TooltipContent>{t('common.edit')}</TooltipContent>
                       </Tooltip>
 
                       <Tooltip>
@@ -274,7 +276,7 @@ export const OrderTable = React.forwardRef<HTMLDivElement, OrderTableProps>(
                             <Printer className="h-4 w-4" />
                           </Button>
                         </TooltipTrigger>
-                        <TooltipContent>প্রিন্ট</TooltipContent>
+                        <TooltipContent>{t('common.print')}</TooltipContent>
                       </Tooltip>
 
                       {!order.tracking_code && (
@@ -289,7 +291,7 @@ export const OrderTable = React.forwardRef<HTMLDivElement, OrderTableProps>(
                               <Truck className="h-4 w-4" />
                             </Button>
                           </TooltipTrigger>
-                          <TooltipContent>কুরিয়ারে পাঠান</TooltipContent>
+                          <TooltipContent>{t('orders.sendToCourier')}</TooltipContent>
                         </Tooltip>
                       )}
 
@@ -304,7 +306,7 @@ export const OrderTable = React.forwardRef<HTMLDivElement, OrderTableProps>(
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </TooltipTrigger>
-                        <TooltipContent>ডিলিট</TooltipContent>
+                        <TooltipContent>{t('common.delete')}</TooltipContent>
                       </Tooltip>
                     </div>
                   </td>
