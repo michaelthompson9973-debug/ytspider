@@ -525,8 +525,8 @@ export default function LandingPages() {
   return (
     <AdminLayout>
       <div className="space-y-5">
-        {/* Header */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        {/* Header with Quick Actions */}
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold font-heading tracking-tight">
               ল্যান্ডিং পেজ
@@ -535,14 +535,30 @@ export default function LandingPages() {
               আপনার সকল ল্যান্ডিং পেজ ম্যানেজ করুন
             </p>
           </div>
-          <Button 
-            onClick={() => { resetForm(); setDialogOpen(true); }}
-            size="default"
-            className="font-medium"
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            নতুন পেজ
-          </Button>
+          
+          {/* Quick Actions - Horizontal */}
+          <div className="flex flex-wrap items-center gap-2">
+            <Button 
+              onClick={() => { resetForm(); setDialogOpen(true); }}
+              size="sm"
+              className="font-medium"
+            >
+              <Plus className="mr-1.5 h-4 w-4" />
+              নতুন পেজ
+            </Button>
+            <Button variant="outline" size="sm" disabled>
+              <Layout className="mr-1.5 h-4 w-4" />
+              টেমপ্লেট
+            </Button>
+            <Button variant="outline" size="sm" disabled>
+              <BarChart3 className="mr-1.5 h-4 w-4" />
+              Analytics
+            </Button>
+            <Button variant="outline" size="sm" disabled>
+              <Upload className="mr-1.5 h-4 w-4" />
+              Bulk Import
+            </Button>
+          </div>
         </div>
 
         {/* Stats Cards - 5 Cards in Single Row */}
@@ -590,29 +606,6 @@ export default function LandingPages() {
           />
         </div>
 
-        {/* Quick Actions Bar */}
-        <div className="flex flex-wrap items-center gap-2 p-3 bg-muted/30 rounded-lg border">
-          <Button 
-            onClick={() => { resetForm(); setDialogOpen(true); }}
-            size="sm"
-            className="font-medium"
-          >
-            <Plus className="mr-1.5 h-4 w-4" />
-            নতুন পেজ
-          </Button>
-          <Button variant="outline" size="sm" disabled>
-            <Layout className="mr-1.5 h-4 w-4" />
-            টেমপ্লেট
-          </Button>
-          <Button variant="outline" size="sm" disabled>
-            <BarChart3 className="mr-1.5 h-4 w-4" />
-            Analytics
-          </Button>
-          <Button variant="outline" size="sm" disabled>
-            <Upload className="mr-1.5 h-4 w-4" />
-            Bulk Import
-          </Button>
-        </div>
 
         {/* Status Filter Tabs + Search + View Toggle */}
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
