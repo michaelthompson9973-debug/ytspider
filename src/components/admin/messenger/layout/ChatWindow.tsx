@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { MessengerConversation, MessengerMessage } from '../types';
 import { useMessages, useSendMessage, useMarkAsRead, useQuickReplies } from '../hooks';
+import { useAISuggestion } from '@/hooks/useAISuggestion';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -15,7 +16,8 @@ import {
   Package,
   Truck,
   MessageSquare,
-  MoreVertical
+  MoreVertical,
+  Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -41,6 +43,7 @@ export function ChatWindow({ conversation, connectionId }: ChatWindowProps) {
   const { data: quickReplies = [] } = useQuickReplies();
   const sendMessage = useSendMessage();
   const markAsRead = useMarkAsRead();
+  const { isLoading: aiLoading, suggestion, getSuggestion, clearSuggestion } = useAISuggestion();
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -53,6 +56,23 @@ export function ChatWindow({ conversation, connectionId }: ChatWindowProps) {
       markAsRead.mutate(conversation.id);
     }
   }, [conversation?.id]);
+
+  // Get AI suggestion for the last customer message
+  useEffect(() => {
+    if (messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      if (!lastMessage.is_from_page && lastMessage.message_text) {
+        // Build conversation history
+        const history = messages.slice(-6, -1).map(m => ({
+          role: m.is_from_page ? 'page' as const : 'customer' as const,
+          content: m.message_text || '',
+        }));
+        getSuggestion(lastMessage.message_text, history, connectionId || undefined);
+      }
+    } else {
+      clearSuggestion();
+    }
+  }, [messages, connectionId]);
 
   const handleSend = () => {
     if (!message.trim() || !conversation || !connectionId) return;
@@ -156,17 +176,41 @@ export function ChatWindow({ conversation, connectionId }: ChatWindowProps) {
         </div>
       </ScrollArea>
 
-      {/* AI Suggestion Box - placeholder */}
-      <div className="px-4 py-2 border-t bg-accent/30">
-        <div className="flex items-center gap-2 text-sm">
-          <Sparkles className="h-4 w-4 text-primary" />
-          <span className="text-muted-foreground">AI সাজেশন:</span>
-          <span className="text-foreground">"অর্ডার করতে নাম ও ঠিকানা দিন"</span>
-          <Button variant="ghost" size="sm" className="h-6 text-xs ml-auto">
-            ব্যবহার করুন
-          </Button>
+      {/* AI Suggestion Box */}
+      {(aiLoading || suggestion) && (
+        <div className="px-4 py-2 border-t bg-accent/30">
+          <div className="flex items-center gap-2 text-sm">
+            {aiLoading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                <span className="text-muted-foreground">AI সাজেশন তৈরি হচ্ছে...</span>
+              </>
+            ) : suggestion ? (
+              <>
+                <Sparkles className="h-4 w-4 text-primary" />
+                <span className="text-muted-foreground">AI সাজেশন:</span>
+                <span className="text-foreground flex-1 truncate">"{suggestion.suggestion}"</span>
+                {suggestion.source === 'keyword_rule' && (
+                  <Badge variant="secondary" className="text-[10px]">
+                    {suggestion.matchedRule || 'Rule'}
+                  </Badge>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 text-xs ml-auto"
+                  onClick={() => {
+                    setMessage(suggestion.suggestion);
+                    textareaRef.current?.focus();
+                  }}
+                >
+                  ব্যবহার করুন
+                </Button>
+              </>
+            ) : null}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Quick Actions */}
       <div className="px-4 py-2 border-t flex items-center gap-2">
