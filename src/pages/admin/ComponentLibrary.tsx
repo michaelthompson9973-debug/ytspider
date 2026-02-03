@@ -12,6 +12,17 @@ import {
 } from '@/components/ui/select';
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+} from '@/components/ui/sidebar';
+import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
@@ -68,67 +79,76 @@ export default function ComponentLibrary() {
   };
 
   const CategorySidebar = () => (
-    <Collapsible open={isCategoriesOpen} onOpenChange={setIsCategoriesOpen}>
-      <CollapsibleTrigger className="flex items-center justify-between w-full px-2 py-2 rounded-md hover:bg-muted transition-colors group">
-        <h3 className="text-sm font-medium text-muted-foreground">Categories</h3>
-        {isCategoriesOpen ? (
-          <ChevronDown className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-        ) : (
-          <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-        )}
-      </CollapsibleTrigger>
-      
-      <CollapsibleContent className="space-y-1 mt-2">
-        <button
-          onClick={() => setSelectedCategory('all')}
-          className={cn(
-            "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors",
-            selectedCategory === 'all' 
-              ? "bg-primary text-primary-foreground" 
-              : "hover:bg-muted"
-          )}
-        >
-          {selectedCategory === 'all' ? (
-            <FolderOpen className="h-4 w-4" />
-          ) : (
-            <Folder className="h-4 w-4" />
-          )}
-          <span className="flex-1 text-left">All</span>
-          <span className="text-xs opacity-70">{getCategoryCount('all')}</span>
-        </button>
+    <Collapsible open={isCategoriesOpen} onOpenChange={setIsCategoriesOpen} className="group/collapsible">
+      <SidebarGroup>
+        <CollapsibleTrigger asChild>
+          <SidebarGroupLabel className="cursor-pointer hover:bg-sidebar-accent hover:text-sidebar-accent-foreground rounded-md transition-colors px-2 py-1.5">
+            <span className="flex-1">Categories</span>
+            <ChevronDown
+              className={cn(
+                'h-4 w-4 transition-transform duration-200',
+                isCategoriesOpen && 'rotate-180'
+              )}
+            />
+          </SidebarGroupLabel>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {/* All Category */}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  isActive={selectedCategory === 'all'}
+                  onClick={() => setSelectedCategory('all')}
+                  className="cursor-pointer"
+                >
+                  {selectedCategory === 'all' ? (
+                    <FolderOpen className="h-4 w-4" />
+                  ) : (
+                    <Folder className="h-4 w-4" />
+                  )}
+                  <span className="flex-1">All</span>
+                  <span className="text-xs text-muted-foreground">{getCategoryCount('all')}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
 
-        {componentCategories.map((cat) => (
-          <button
-            key={cat.value}
-            onClick={() => setSelectedCategory(cat.value)}
-            className={cn(
-              "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors",
-              selectedCategory === cat.value 
-                ? "bg-primary text-primary-foreground" 
-                : "hover:bg-muted"
-            )}
-          >
-            {selectedCategory === cat.value ? (
-              <FolderOpen className="h-4 w-4" />
-            ) : (
-              <Folder className="h-4 w-4" />
-            )}
-            <span className="flex-1 text-left">{cat.label}</span>
-            <span className="text-xs opacity-70">{getCategoryCount(cat.value)}</span>
-          </button>
-        ))}
-      </CollapsibleContent>
+              {/* Category Items */}
+              {componentCategories.map((cat) => (
+                <SidebarMenuItem key={cat.value}>
+                  <SidebarMenuButton
+                    isActive={selectedCategory === cat.value}
+                    onClick={() => setSelectedCategory(cat.value)}
+                    className="cursor-pointer"
+                  >
+                    {selectedCategory === cat.value ? (
+                      <FolderOpen className="h-4 w-4" />
+                    ) : (
+                      <Folder className="h-4 w-4" />
+                    )}
+                    <span className="flex-1">{cat.label}</span>
+                    <span className="text-xs text-muted-foreground">{getCategoryCount(cat.value)}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </CollapsibleContent>
+      </SidebarGroup>
     </Collapsible>
   );
 
   return (
     <AdminLayout>
       <div className="flex h-full">
-        {/* Desktop Sidebar */}
+        {/* Desktop Sidebar - Menu Style */}
         {!isMobile && (
-          <div className="w-56 shrink-0 border-r bg-muted/30 p-4 sticky top-0 h-screen overflow-y-auto">
-            <CategorySidebar />
-          </div>
+          <SidebarProvider defaultOpen={true}>
+            <Sidebar collapsible="none" className="w-56 shrink-0 border-r bg-sidebar">
+              <SidebarContent className="p-2">
+                <CategorySidebar />
+              </SidebarContent>
+            </Sidebar>
+          </SidebarProvider>
         )}
 
         {/* Main Content */}
