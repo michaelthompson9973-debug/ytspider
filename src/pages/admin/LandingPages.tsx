@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { DeleteConfirmDialog } from '@/components/admin/landing-page-editor/DeleteConfirmDialog';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,6 +11,7 @@ import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -49,12 +50,22 @@ import {
   Search,
   LayoutGrid,
   List,
+  ShoppingCart,
+  Wallet,
+  TrendingUp,
+  Layout,
+  BarChart3,
+  Upload,
+  X,
+  EyeOff,
+  Clock,
 } from 'lucide-react';
 import { z } from 'zod';
 import { SectionBuilder } from '@/components/admin/landing-page-editor';
 import { useTrackingProfilesSelect } from '@/hooks/useTrackingProfiles';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
+import { bn } from 'date-fns/locale';
 
 const pageSchema = z.object({
   slug: z.string().min(1, 'Slug is required').max(100).regex(/^[a-z0-9-]+$/, 'Slug must be lowercase alphanumeric with dashes'),
@@ -89,6 +100,36 @@ interface LandingPage {
   tracking_profiles: { name: string } | null;
 }
 
+type StatusFilter = 'all' | 'published' | 'draft';
+
+// Stat Card Component
+interface StatCardProps {
+  icon: React.ElementType;
+  label: string;
+  value: string | number;
+  subtext?: string;
+  borderColor: string;
+}
+
+function StatCard({ icon: Icon, label, value, subtext, borderColor }: StatCardProps) {
+  return (
+    <Card className={cn("border-l-4 shadow-sm hover:shadow-md transition-shadow", borderColor)}>
+      <CardContent className="p-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-muted/50">
+            <Icon className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs text-muted-foreground font-medium truncate">{label}</p>
+            <p className="text-xl sm:text-2xl font-bold font-digit tracking-tight">{value}</p>
+            {subtext && <p className="text-[10px] text-muted-foreground">{subtext}</p>}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function LandingPages() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -100,11 +141,14 @@ export default function LandingPages() {
   const [deletingPageId, setDeletingPageId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { user } = useAuth();
   const { profiles: trackingProfiles } = useTrackingProfilesSelect();
 
+  // Fetch landing pages
   const { data: pages, isLoading } = useQuery({
     queryKey: ['landing-pages'],
     queryFn: async () => {
@@ -121,6 +165,45 @@ export default function LandingPages() {
     },
   });
 
+  // Fetch enhanced stats (orders data)
+  const { data: enhancedStats } = useQuery({
+    queryKey: ['landing-pages-enhanced-stats'],
+    queryFn: async () => {
+      const [pagesResult, ordersResult] = await Promise.all([
+        supabase.from('landing_pages').select('id, published, created_at'),
+        supabase.from('orders').select('landing_page_id, total').not('landing_page_id', 'is', null),
+      ]);
+
+      const pagesData = pagesResult.data ?? [];
+      const ordersData = ordersResult.data ?? [];
+
+      const thisWeekStart = new Date();
+      thisWeekStart.setDate(thisWeekStart.getDate() - 7);
+
+      // Per-page stats
+      const pageStats: Record<string, { orders: number; revenue: number }> = {};
+      ordersData.forEach((order) => {
+        if (order.landing_page_id) {
+          if (!pageStats[order.landing_page_id]) {
+            pageStats[order.landing_page_id] = { orders: 0, revenue: 0 };
+          }
+          pageStats[order.landing_page_id].orders += 1;
+          pageStats[order.landing_page_id].revenue += Number(order.total) || 0;
+        }
+      });
+
+      return {
+        total: pagesData.length,
+        published: pagesData.filter((p) => p.published).length,
+        draft: pagesData.filter((p) => !p.published).length,
+        thisWeek: pagesData.filter((p) => new Date(p.created_at) >= thisWeekStart).length,
+        totalOrders: ordersData.length,
+        totalRevenue: ordersData.reduce((sum, o) => sum + (Number(o.total) || 0), 0),
+        pageStats,
+      };
+    },
+  });
+
   const { data: products } = useQuery({
     queryKey: ['products-select'],
     queryFn: async () => {
@@ -134,11 +217,27 @@ export default function LandingPages() {
     },
   });
 
-  // Filter pages based on search query
-  const filteredPages = pages?.filter(page => 
-    page.slug.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    page.products?.name?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Filter pages based on search query and status filter
+  const filteredPages = useMemo(() => {
+    let result = pages ?? [];
+    
+    // Search filter
+    if (searchQuery) {
+      result = result.filter((page) =>
+        page.slug.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        page.products?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+    
+    // Status filter
+    if (statusFilter === 'published') {
+      result = result.filter((p) => p.published);
+    } else if (statusFilter === 'draft') {
+      result = result.filter((p) => !p.published);
+    }
+    
+    return result;
+  }, [pages, searchQuery, statusFilter]);
 
   const saveMutation = useMutation({
     mutationFn: async (data: PageForm) => {
@@ -169,6 +268,7 @@ export default function LandingPages() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['landing-pages'] });
+      queryClient.invalidateQueries({ queryKey: ['landing-pages-enhanced-stats'] });
       setDialogOpen(false);
       resetForm();
       toast({ title: editingId ? 'পেজ আপডেট হয়েছে' : 'নতুন পেজ তৈরি হয়েছে' });
@@ -185,6 +285,7 @@ export default function LandingPages() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['landing-pages'] });
+      queryClient.invalidateQueries({ queryKey: ['landing-pages-enhanced-stats'] });
       toast({ title: 'পেজ ডিলিট হয়েছে' });
     },
     onError: (error) => {
@@ -200,6 +301,7 @@ export default function LandingPages() {
           slug: `${page.slug}-copy-${Date.now()}`,
           product_id: page.product_id,
           gtm_id: page.gtm_id,
+          tracking_profile_id: page.tracking_profile_id,
           published: false,
           html_content: page.html_content,
           created_by: user?.id,
@@ -220,6 +322,8 @@ export default function LandingPages() {
           name: s.name,
           html: s.html,
           sort_order: s.sort_order,
+          type: s.type,
+          config: s.config,
         }));
         await supabase.from('landing_page_sections').insert(newSections);
       }
@@ -236,10 +340,100 @@ export default function LandingPages() {
           config: theme.config,
         });
       }
+
+      // Copy checkout settings
+      const { data: checkoutSettings } = await supabase
+        .from('landing_page_checkout_settings')
+        .select('*')
+        .eq('landing_page_id', page.id)
+        .maybeSingle();
+
+      if (checkoutSettings) {
+        const { id, landing_page_id, created_at, updated_at, ...settingsData } = checkoutSettings;
+        await supabase.from('landing_page_checkout_settings').insert({
+          ...settingsData,
+          landing_page_id: newPage.id,
+        });
+      }
+
+      // Copy products
+      const { data: pageProducts } = await supabase
+        .from('landing_page_products')
+        .select('*')
+        .eq('landing_page_id', page.id);
+
+      if (pageProducts && pageProducts.length > 0) {
+        const newProducts = pageProducts.map((p) => ({
+          landing_page_id: newPage.id,
+          product_id: p.product_id,
+          default_quantity: p.default_quantity,
+          sort_order: p.sort_order,
+        }));
+        await supabase.from('landing_page_products').insert(newProducts);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['landing-pages'] });
+      queryClient.invalidateQueries({ queryKey: ['landing-pages-enhanced-stats'] });
       toast({ title: 'পেজ ডুপ্লিকেট হয়েছে' });
+    },
+    onError: (error) => {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    },
+  });
+
+  // Bulk mutations
+  const bulkPublishMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const { error } = await supabase
+        .from('landing_pages')
+        .update({ published: true })
+        .in('id', ids);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['landing-pages'] });
+      queryClient.invalidateQueries({ queryKey: ['landing-pages-enhanced-stats'] });
+      setSelectedIds([]);
+      toast({ title: `${selectedIds.length}টি পেজ পাবলিশ হয়েছে` });
+    },
+    onError: (error) => {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    },
+  });
+
+  const bulkUnpublishMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const { error } = await supabase
+        .from('landing_pages')
+        .update({ published: false })
+        .in('id', ids);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['landing-pages'] });
+      queryClient.invalidateQueries({ queryKey: ['landing-pages-enhanced-stats'] });
+      setSelectedIds([]);
+      toast({ title: `${selectedIds.length}টি পেজ আনপাবলিশ হয়েছে` });
+    },
+    onError: (error) => {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    },
+  });
+
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const { error } = await supabase
+        .from('landing_pages')
+        .delete()
+        .in('id', ids);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['landing-pages'] });
+      queryClient.invalidateQueries({ queryKey: ['landing-pages-enhanced-stats'] });
+      setSelectedIds([]);
+      toast({ title: `${selectedIds.length}টি পেজ ডিলিট হয়েছে` });
     },
     onError: (error) => {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
@@ -283,10 +477,21 @@ export default function LandingPages() {
     saveMutation.mutate(form);
   };
 
-  // Stats
-  const totalPages = pages?.length ?? 0;
-  const publishedPages = pages?.filter(p => p.published).length ?? 0;
-  const draftPages = totalPages - publishedPages;
+  const toggleSelection = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    );
+  };
+
+  const selectAll = () => {
+    if (selectedIds.length === filteredPages.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(filteredPages.map((p) => p.id));
+    }
+  };
+
+  const isProcessing = bulkPublishMutation.isPending || bulkUnpublishMutation.isPending || bulkDeleteMutation.isPending;
 
   if (builderPageId) {
     return (
@@ -303,102 +508,166 @@ export default function LandingPages() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
+      <div className="space-y-5">
         {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold font-heading tracking-tight">
               ল্যান্ডিং পেজ
             </h1>
-            <p className="text-sm sm:text-base text-muted-foreground mt-1">
+            <p className="text-sm text-muted-foreground mt-0.5">
               আপনার সকল ল্যান্ডিং পেজ ম্যানেজ করুন
             </p>
           </div>
           <Button 
             onClick={() => { resetForm(); setDialogOpen(true); }}
-            size="lg"
+            size="default"
             className="font-medium"
           >
-            <Plus className="mr-2 h-5 w-5" />
+            <Plus className="mr-2 h-4 w-4" />
             নতুন পেজ
           </Button>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-3 gap-3 sm:gap-4">
-          <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 sm:p-3 rounded-xl bg-primary/10">
-                  <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-                </div>
-                <div>
-                  <p className="text-xs sm:text-sm text-muted-foreground font-medium">মোট পেজ</p>
-                  <p className="text-xl sm:text-2xl font-bold font-digit">{totalPages}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="bg-gradient-to-br from-green-500/5 to-green-500/10 border-green-500/20">
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 sm:p-3 rounded-xl bg-green-500/10">
-                  <Globe className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
-                </div>
-                <div>
-                  <p className="text-xs sm:text-sm text-muted-foreground font-medium">পাবলিশড</p>
-                  <p className="text-xl sm:text-2xl font-bold font-digit text-green-600">{publishedPages}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="bg-gradient-to-br from-amber-500/5 to-amber-500/10 border-amber-500/20">
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 sm:p-3 rounded-xl bg-amber-500/10">
-                  <Pencil className="h-5 w-5 sm:h-6 sm:w-6 text-amber-600" />
-                </div>
-                <div>
-                  <p className="text-xs sm:text-sm text-muted-foreground font-medium">ড্রাফট</p>
-                  <p className="text-xl sm:text-2xl font-bold font-digit text-amber-600">{draftPages}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Enhanced Stats Cards - 6 Cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          <StatCard
+            icon={FileText}
+            label="মোট পেজ"
+            value={enhancedStats?.total ?? 0}
+            borderColor="border-l-primary"
+          />
+          <StatCard
+            icon={Globe}
+            label="পাবলিশড"
+            value={enhancedStats?.published ?? 0}
+            borderColor="border-l-emerald-600"
+          />
+          <StatCard
+            icon={Pencil}
+            label="ড্রাফট"
+            value={enhancedStats?.draft ?? 0}
+            borderColor="border-l-amber-500"
+          />
+          <StatCard
+            icon={ShoppingCart}
+            label="মোট অর্ডার"
+            value={enhancedStats?.totalOrders ?? 0}
+            borderColor="border-l-blue-500"
+          />
+          <StatCard
+            icon={Wallet}
+            label="মোট রেভিনিউ"
+            value={`৳${(enhancedStats?.totalRevenue ?? 0).toLocaleString('bn-BD')}`}
+            borderColor="border-l-purple-500"
+          />
+          <StatCard
+            icon={TrendingUp}
+            label="এই সপ্তাহে"
+            value={enhancedStats?.thisWeek ?? 0}
+            subtext="নতুন পেজ"
+            borderColor="border-l-indigo-500"
+          />
         </div>
 
-        {/* Search & View Toggle */}
-        <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="পেজ খুঁজুন..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 h-11"
-            />
+        {/* Quick Actions Bar */}
+        <div className="flex flex-wrap items-center gap-2 p-3 bg-muted/30 rounded-lg border">
+          <Button 
+            onClick={() => { resetForm(); setDialogOpen(true); }}
+            size="sm"
+            className="font-medium"
+          >
+            <Plus className="mr-1.5 h-4 w-4" />
+            নতুন পেজ
+          </Button>
+          <Button variant="outline" size="sm" disabled>
+            <Layout className="mr-1.5 h-4 w-4" />
+            টেমপ্লেট
+          </Button>
+          <Button variant="outline" size="sm" disabled>
+            <BarChart3 className="mr-1.5 h-4 w-4" />
+            Analytics
+          </Button>
+          <Button variant="outline" size="sm" disabled>
+            <Upload className="mr-1.5 h-4 w-4" />
+            Bulk Import
+          </Button>
+        </div>
+
+        {/* Status Filter Tabs + Search + View Toggle */}
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          {/* Status Tabs */}
+          <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-lg w-fit">
+            {([
+              { key: 'all' as StatusFilter, label: 'সব', count: enhancedStats?.total ?? 0 },
+              { key: 'published' as StatusFilter, label: 'পাবলিশড', count: enhancedStats?.published ?? 0 },
+              { key: 'draft' as StatusFilter, label: 'ড্রাফট', count: enhancedStats?.draft ?? 0 },
+            ]).map((tab) => (
+              <Button
+                key={tab.key}
+                variant={statusFilter === tab.key ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => { setStatusFilter(tab.key); setSelectedIds([]); }}
+                className="text-xs sm:text-sm"
+              >
+                {tab.label}
+                <Badge 
+                  variant={statusFilter === tab.key ? 'secondary' : 'outline'} 
+                  className="ml-1.5 text-[10px] px-1.5 py-0"
+                >
+                  {tab.count}
+                </Badge>
+              </Button>
+            ))}
           </div>
+
+          {/* Search & View Toggle */}
           <div className="flex items-center gap-2">
-            <Button
-              variant={viewMode === 'grid' ? 'default' : 'outline'}
-              size="icon"
-              onClick={() => setViewMode('grid')}
-              className="h-10 w-10"
-            >
-              <LayoutGrid className="h-4 w-4" />
-            </Button>
-            <Button
-              variant={viewMode === 'list' ? 'default' : 'outline'}
-              size="icon"
-              onClick={() => setViewMode('list')}
-              className="h-10 w-10"
-            >
-              <List className="h-4 w-4" />
-            </Button>
+            <div className="relative flex-1 lg:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="পেজ খুঁজুন..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 h-9"
+              />
+            </div>
+            <div className="flex items-center border rounded-lg p-0.5">
+              <Button
+                variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+                size="icon"
+                onClick={() => setViewMode('grid')}
+                className="h-8 w-8"
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+                size="icon"
+                onClick={() => setViewMode('list')}
+                className="h-8 w-8"
+              >
+                <List className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
+
+        {/* Select All (when items exist) */}
+        {filteredPages.length > 0 && (
+          <div className="flex items-center gap-3 px-1">
+            <Checkbox
+              checked={selectedIds.length === filteredPages.length && filteredPages.length > 0}
+              onCheckedChange={selectAll}
+            />
+            <span className="text-sm text-muted-foreground">
+              {selectedIds.length > 0 
+                ? `${selectedIds.length}টি সিলেক্টেড` 
+                : 'সব সিলেক্ট করুন'
+              }
+            </span>
+          </div>
+        )}
 
         {/* Pages Grid/List */}
         {isLoading ? (
@@ -417,7 +686,7 @@ export default function LandingPages() {
               </Card>
             ))}
           </div>
-        ) : filteredPages?.length === 0 ? (
+        ) : filteredPages.length === 0 ? (
           <Card>
             <CardContent className="py-16 text-center">
               <FileText className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
@@ -435,49 +704,62 @@ export default function LandingPages() {
           </Card>
         ) : viewMode === 'grid' ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredPages?.map((page, index) => (
+            {filteredPages.map((page, index) => (
               <Card 
                 key={page.id} 
                 className={cn(
-                  "group hover:shadow-lg transition-all duration-200 hover:border-primary/30",
+                  "group hover:shadow-lg transition-all duration-200",
+                  selectedIds.includes(page.id) && "ring-2 ring-primary border-primary",
                   "animate-in fade-in-50 slide-in-from-bottom-2"
                 )}
-                style={{ animationDelay: `${index * 50}ms` }}
+                style={{ animationDelay: `${index * 30}ms` }}
               >
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between gap-2">
+                <CardHeader className="pb-2">
+                  <div className="flex items-start gap-3">
+                    {/* Checkbox */}
+                    <Checkbox
+                      checked={selectedIds.includes(page.id)}
+                      onCheckedChange={() => toggleSelection(page.id)}
+                      className="mt-1"
+                    />
                     <div className="flex-1 min-w-0">
-                      <CardTitle className="text-base sm:text-lg font-semibold truncate font-heading">
-                        /{page.slug}
-                      </CardTitle>
-                      <p className="text-sm text-muted-foreground mt-1 truncate">
+                      <div className="flex items-center justify-between gap-2">
+                        <CardTitle className="text-base font-semibold truncate font-heading">
+                          /{page.slug}
+                        </CardTitle>
+                        <Badge 
+                          variant={page.published ? 'default' : 'secondary'}
+                          className={cn(
+                            "shrink-0 text-[10px] px-1.5",
+                            page.published && "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border-emerald-500/20"
+                          )}
+                        >
+                          {page.published ? 'পাবলিশড' : 'ড্রাফট'}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-0.5 truncate">
                         {page.products?.name ?? 'কোনো প্রোডাক্ট নেই'}
                       </p>
                     </div>
-                    <Badge 
-                      variant={page.published ? 'default' : 'secondary'}
-                      className={cn(
-                        "shrink-0 font-medium",
-                        page.published && "bg-green-500/10 text-green-600 hover:bg-green-500/20 border-green-500/20"
-                      )}
-                    >
-                      {page.published ? 'পাবলিশড' : 'ড্রাফট'}
-                    </Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="pt-0">
-                  {/* Meta Info */}
-                  <div className="flex items-center gap-4 text-xs text-muted-foreground mb-4">
+                  {/* Page Stats Row */}
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground py-2.5 my-2 border-t border-b">
                     <div className="flex items-center gap-1">
-                      <Calendar className="h-3.5 w-3.5" />
-                      <span>{format(new Date(page.created_at), 'dd MMM yyyy')}</span>
+                      <ShoppingCart className="h-3 w-3" />
+                      <span>{enhancedStats?.pageStats?.[page.id]?.orders ?? 0} অর্ডার</span>
                     </div>
-                    {page.tracking_profiles && (
-                      <div className="flex items-center gap-1">
-                        <Target className="h-3.5 w-3.5" />
-                        <span className="truncate max-w-[100px]">{page.tracking_profiles.name}</span>
-                      </div>
-                    )}
+                    <div className="flex items-center gap-1">
+                      <Wallet className="h-3 w-3" />
+                      <span>৳{(enhancedStats?.pageStats?.[page.id]?.revenue ?? 0).toLocaleString('bn-BD')}</span>
+                    </div>
+                    <div className="flex items-center gap-1 ml-auto">
+                      <Clock className="h-3 w-3" />
+                      <span className="truncate max-w-[80px]">
+                        {formatDistanceToNow(new Date(page.updated_at), { addSuffix: true, locale: bn })}
+                      </span>
+                    </div>
                   </div>
 
                   {/* Actions */}
@@ -486,15 +768,15 @@ export default function LandingPages() {
                       variant="default"
                       size="sm"
                       onClick={() => openBuilder(page)}
-                      className="flex-1 font-medium"
+                      className="flex-1 font-medium h-8"
                     >
-                      <Layers className="h-4 w-4 mr-1.5" />
+                      <Layers className="h-3.5 w-3.5 mr-1.5" />
                       এডিট
                     </Button>
                     
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="icon" className="h-9 w-9">
+                        <Button variant="outline" size="icon" className="h-8 w-8">
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
@@ -538,11 +820,18 @@ export default function LandingPages() {
           <Card>
             <CardContent className="p-0">
               <div className="divide-y">
-                {filteredPages?.map((page) => (
+                {filteredPages.map((page) => (
                   <div 
                     key={page.id} 
-                    className="flex items-center gap-4 p-4 hover:bg-muted/50 transition-colors"
+                    className={cn(
+                      "flex items-center gap-4 p-4 hover:bg-muted/50 transition-colors",
+                      selectedIds.includes(page.id) && "bg-primary/5"
+                    )}
                   >
+                    <Checkbox
+                      checked={selectedIds.includes(page.id)}
+                      onCheckedChange={() => toggleSelection(page.id)}
+                    />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3">
                         <h3 className="font-semibold truncate font-heading">/{page.slug}</h3>
@@ -550,7 +839,7 @@ export default function LandingPages() {
                           variant={page.published ? 'default' : 'secondary'}
                           className={cn(
                             "shrink-0 font-medium text-xs",
-                            page.published && "bg-green-500/10 text-green-600 border-green-500/20"
+                            page.published && "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
                           )}
                         >
                           {page.published ? 'পাবলিশড' : 'ড্রাফট'}
@@ -559,12 +848,17 @@ export default function LandingPages() {
                       <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
                         <span>{page.products?.name ?? 'প্রোডাক্ট নেই'}</span>
                         <span className="text-xs">•</span>
-                        <span className="text-xs">{format(new Date(page.created_at), 'dd MMM yyyy')}</span>
+                        <span className="text-xs flex items-center gap-1">
+                          <ShoppingCart className="h-3 w-3" />
+                          {enhancedStats?.pageStats?.[page.id]?.orders ?? 0}
+                        </span>
+                        <span className="text-xs">•</span>
+                        <span className="text-xs">৳{(enhancedStats?.pageStats?.[page.id]?.revenue ?? 0).toLocaleString('bn-BD')}</span>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       {page.published && (
-                        <Button variant="ghost" size="icon" asChild className="h-9 w-9">
+                        <Button variant="ghost" size="icon" asChild className="h-8 w-8">
                           <a href={`/p/${page.slug}`} target="_blank" rel="noopener noreferrer">
                             <ExternalLink className="h-4 w-4" />
                           </a>
@@ -574,14 +868,14 @@ export default function LandingPages() {
                         variant="outline"
                         size="sm"
                         onClick={() => openBuilder(page)}
-                        className="font-medium"
+                        className="font-medium h-8"
                       >
-                        <Layers className="h-4 w-4 mr-1.5" />
+                        <Layers className="h-3.5 w-3.5 mr-1.5" />
                         এডিট
                       </Button>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-9 w-9">
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
@@ -613,6 +907,56 @@ export default function LandingPages() {
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {/* Floating Bulk Actions Bar */}
+        {selectedIds.length > 0 && (
+          <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-background border rounded-lg shadow-xl px-4 py-3 animate-in slide-in-from-bottom-4">
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-sm">{selectedIds.length}টি সিলেক্টেড</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6"
+                onClick={() => setSelectedIds([])}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <div className="h-6 w-px bg-border" />
+
+            <Button 
+              size="sm" 
+              variant="outline" 
+              onClick={() => bulkPublishMutation.mutate(selectedIds)}
+              disabled={isProcessing}
+              className="h-8"
+            >
+              <Globe className="mr-1.5 h-3.5 w-3.5" />
+              Publish
+            </Button>
+            <Button 
+              size="sm" 
+              variant="outline" 
+              onClick={() => bulkUnpublishMutation.mutate(selectedIds)}
+              disabled={isProcessing}
+              className="h-8"
+            >
+              <EyeOff className="mr-1.5 h-3.5 w-3.5" />
+              Unpublish
+            </Button>
+            <Button 
+              size="sm" 
+              variant="destructive" 
+              onClick={() => bulkDeleteMutation.mutate(selectedIds)}
+              disabled={isProcessing}
+              className="h-8"
+            >
+              <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+              Delete
+            </Button>
+          </div>
         )}
 
         {/* Create/Edit Dialog */}
