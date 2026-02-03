@@ -28,6 +28,12 @@ import {
   Target,
   BarChart3,
   Palette,
+  Store,
+  Settings,
+  Users,
+  CreditCard,
+  Shield,
+  ClipboardList,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -85,6 +91,24 @@ const navGroups: NavGroup[] = [
     labelKey: 'sidebar.overview',
     items: [
       { href: '/admin', labelKey: 'sidebar.dashboard', icon: LayoutDashboard },
+    ],
+  },
+  {
+    labelKey: 'sidebar.shop',
+    items: [
+      { 
+        href: '/admin/shop', 
+        labelKey: 'sidebar.myShop', 
+        icon: Store,
+        children: [
+          { href: '/admin/shop/manage', labelKey: 'sidebar.shopManage', icon: Settings },
+          { href: '/admin/shop/team', labelKey: 'sidebar.shopTeam', icon: Users },
+          { href: '/admin/shop/billing', labelKey: 'sidebar.shopBilling', icon: CreditCard },
+          { href: '/admin/shop/security', labelKey: 'sidebar.shopSecurity', icon: Shield },
+          { href: '/admin/shop/analytics', labelKey: 'sidebar.shopAnalytics', icon: BarChart3 },
+          { href: '/admin/shop/audit-log', labelKey: 'sidebar.shopAuditLog', icon: ClipboardList },
+        ]
+      },
     ],
   },
   {
