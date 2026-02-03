@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import AdminLayout from '@/components/admin/AdminLayout';
+import { CreateShopDialog } from '@/components/admin/CreateShopDialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -36,6 +37,7 @@ export default function AllShops() {
   const { t } = useLanguage();
   const queryClient = useQueryClient();
   const [deleteShop, setDeleteShop] = useState<Shop | null>(null);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   // Fetch all shops
   const { data: shops, isLoading } = useQuery({
@@ -112,7 +114,7 @@ export default function AllShops() {
               <p className="text-muted-foreground">Manage all shops in the system</p>
             </div>
           </div>
-          <Button>
+          <Button onClick={() => setCreateDialogOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Create Shop
           </Button>
@@ -134,7 +136,7 @@ export default function AllShops() {
               <Store className="h-16 w-16 text-muted-foreground/50 mb-4" />
               <h3 className="text-lg font-semibold">No shops yet</h3>
               <p className="text-muted-foreground mb-4">Create your first shop to get started</p>
-              <Button>
+              <Button onClick={() => setCreateDialogOpen(true)}>
                 <Plus className="h-4 w-4 mr-2" />
                 Create Shop
               </Button>
@@ -225,6 +227,13 @@ export default function AllShops() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Create Shop Dialog */}
+      <CreateShopDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        onSuccess={() => queryClient.invalidateQueries({ queryKey: ['all-shops'] })}
+      />
     </AdminLayout>
   );
 }
