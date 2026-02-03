@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { ArrowLeft, Settings, Eye, ShoppingCart, Package, Save, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { useSections } from './useSections';
 import { useTheme } from './useTheme';
 import { useCheckoutSettings } from './useCheckoutSettings';
@@ -12,11 +13,9 @@ import { ThemePanel } from './ThemePanel';
 import { FullPagePreview } from './FullPagePreview';
 import { MobileNavigation, MobileTab } from './MobileNavigation';
 import { ProductsPanel } from './ProductsPanel';
-import { Section, SectionType, CheckoutConfig } from './types';
+import { Section, SectionType } from './types';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-
-const SECTION_LIST_COLLAPSED_KEY = 'section-list-collapsed';
 
 interface SectionBuilderProps {
   landingPageId: string;
@@ -34,17 +33,10 @@ export function SectionBuilder({ landingPageId, gtmId, slug, onBack }: SectionBu
   const [mobileTab, setMobileTab] = useState<MobileTab>('sections');
   const [isSavingAll, setIsSavingAll] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
-  const [sectionListCollapsed, setSectionListCollapsed] = useState(() => {
-    return localStorage.getItem(SECTION_LIST_COLLAPSED_KEY) === 'true';
-  });
+  const [sectionListCollapsed, setSectionListCollapsed] = useState(false);
   const htmlEditorRef = useRef<SectionEditorHandle | null>(null);
   const checkoutEditorRef = useRef<CheckoutEditorHandle | null>(null);
   const { toast } = useToast();
-
-  // Persist collapse state
-  useEffect(() => {
-    localStorage.setItem(SECTION_LIST_COLLAPSED_KEY, String(sectionListCollapsed));
-  }, [sectionListCollapsed]);
 
   const {
     sections,
@@ -63,6 +55,7 @@ export function SectionBuilder({ landingPageId, gtmId, slug, onBack }: SectionBu
   
   // Checkout settings hook (separate from theme)
   const { checkoutSettings } = useCheckoutSettings(landingPageId);
+  
   // Sync activeSection with updated sections data
   useEffect(() => {
     if (activeSection && sections.length > 0) {
@@ -241,82 +234,106 @@ export function SectionBuilder({ landingPageId, gtmId, slug, onBack }: SectionBu
         </div>
       </div>
 
-      {/* Desktop Layout - 3 columns */}
-      <div className="hidden lg:grid flex-1 grid-cols-12 gap-4 min-h-0">
-        {/* Left: Section List - Dynamic width */}
-        <div className={cn(
-          "border rounded-lg overflow-hidden flex flex-col transition-all duration-200",
-          sectionListCollapsed ? "col-span-1 p-2" : "col-span-3 p-4"
-        )}>
-          <SectionList
-            sections={sections}
-            activeSection={activeSection}
-            previewingSections={previewingSections}
-            onSelectSection={handleSelectSection}
-            onTogglePreview={toggleSectionPreview}
-            onAddSection={(data: { name: string; html: string; type: SectionType; config: unknown }) => addSection(data)}
-            onAddMultipleSections={addMultipleSections}
-            onDuplicateSection={duplicateSection}
-            onDeleteSection={handleDeleteSection}
-            onReorderSections={reorderSections}
-            isAdding={isAdding}
-            collapsed={sectionListCollapsed}
-            onToggleCollapse={() => setSectionListCollapsed(!sectionListCollapsed)}
-          />
-        </div>
+      {/* Desktop Layout - Resizable 3 columns (VS Code style) */}
+      <div className="hidden lg:flex flex-1 min-h-0">
+        <ResizablePanelGroup
+          direction="horizontal"
+          autoSaveId="section-builder-layout"
+          className="rounded-lg border"
+        >
+          {/* Left: Section List */}
+          <ResizablePanel
+            defaultSize={20}
+            minSize={5}
+            maxSize={30}
+            collapsible
+            collapsedSize={5}
+            onCollapse={() => setSectionListCollapsed(true)}
+            onExpand={() => setSectionListCollapsed(false)}
+          >
+            <div className="h-full p-4 overflow-hidden flex flex-col">
+              <SectionList
+                sections={sections}
+                activeSection={activeSection}
+                previewingSections={previewingSections}
+                onSelectSection={handleSelectSection}
+                onTogglePreview={toggleSectionPreview}
+                onAddSection={(data: { name: string; html: string; type: SectionType; config: unknown }) => addSection(data)}
+                onAddMultipleSections={addMultipleSections}
+                onDuplicateSection={duplicateSection}
+                onDeleteSection={handleDeleteSection}
+                onReorderSections={reorderSections}
+                isAdding={isAdding}
+                collapsed={sectionListCollapsed}
+                onToggleCollapse={() => setSectionListCollapsed(!sectionListCollapsed)}
+              />
+            </div>
+          </ResizablePanel>
 
-        {/* Center: Editor - Dynamic width (expands when list collapses) */}
-        <div className={cn(
-          "border rounded-lg p-4 overflow-hidden transition-all duration-200",
-          sectionListCollapsed ? "col-span-7" : "col-span-5"
-        )}>
-          {activeSection?.type === 'checkout' ? (
-            <CheckoutEditor
-              ref={checkoutEditorRef}
-              section={activeSection}
-              themeConfig={themeConfig}
-              landingPageId={landingPageId}
-              onSave={async (data) => {
-                await updateSectionAsync({ id: data.id, name: data.name, config: data.config });
-                flashSaved();
-              }}
-              isSaving={isUpdating}
-            />
-          ) : (
-            <SectionEditor
-              ref={htmlEditorRef}
-              section={activeSection}
-              themeConfig={themeConfig}
-              onSave={async (data) => {
-                await updateSectionAsync({ id: data.id, name: data.name, html: data.html });
-                flashSaved();
-              }}
-              isSaving={isUpdating}
-            />
-          )}
-        </div>
+          <ResizableHandle withHandle />
 
-        {/* Right: Preview, Theme, Products, or Checkout Settings */}
-        <div className="col-span-4 border rounded-lg p-4 overflow-hidden">
-          {rightPanel === 'theme' ? (
-            <ThemePanel
-              themeConfig={themeConfig}
-              onSave={saveTheme}
-              isSaving={isThemeSaving}
-            />
-          ) : rightPanel === 'products' ? (
-            <ProductsPanel landingPageId={landingPageId} />
-          ) : rightPanel === 'checkout' ? (
-            <CheckoutSettingsPanel landingPageId={landingPageId} />
-          ) : (
-            <FullPagePreview
-              sections={visibleSections}
-              themeConfig={themeConfig}
-              landingPageId={landingPageId}
-              gtmId={gtmId}
-            />
-          )}
-        </div>
+          {/* Center: Editor */}
+          <ResizablePanel
+            defaultSize={45}
+            minSize={30}
+          >
+            <div className="h-full p-4 overflow-hidden">
+              {activeSection?.type === 'checkout' ? (
+                <CheckoutEditor
+                  ref={checkoutEditorRef}
+                  section={activeSection}
+                  themeConfig={themeConfig}
+                  landingPageId={landingPageId}
+                  onSave={async (data) => {
+                    await updateSectionAsync({ id: data.id, name: data.name, config: data.config });
+                    flashSaved();
+                  }}
+                  isSaving={isUpdating}
+                />
+              ) : (
+                <SectionEditor
+                  ref={htmlEditorRef}
+                  section={activeSection}
+                  themeConfig={themeConfig}
+                  onSave={async (data) => {
+                    await updateSectionAsync({ id: data.id, name: data.name, html: data.html });
+                    flashSaved();
+                  }}
+                  isSaving={isUpdating}
+                />
+              )}
+            </div>
+          </ResizablePanel>
+
+          <ResizableHandle withHandle />
+
+          {/* Right: Preview, Theme, Products, or Checkout Settings */}
+          <ResizablePanel
+            defaultSize={35}
+            minSize={20}
+          >
+            <div className="h-full p-4 overflow-hidden">
+              {rightPanel === 'theme' ? (
+                <ThemePanel
+                  themeConfig={themeConfig}
+                  onSave={saveTheme}
+                  isSaving={isThemeSaving}
+                />
+              ) : rightPanel === 'products' ? (
+                <ProductsPanel landingPageId={landingPageId} />
+              ) : rightPanel === 'checkout' ? (
+                <CheckoutSettingsPanel landingPageId={landingPageId} />
+              ) : (
+                <FullPagePreview
+                  sections={visibleSections}
+                  themeConfig={themeConfig}
+                  landingPageId={landingPageId}
+                  gtmId={gtmId}
+                />
+              )}
+            </div>
+          </ResizablePanel>
+        </ResizablePanelGroup>
       </div>
 
       {/* Mobile Layout - Single panel with bottom navigation */}

@@ -9,6 +9,7 @@ export { SectionPreview } from './SectionPreview';
 export { FullPagePreview } from './FullPagePreview';
 export { FullscreenPreviewModal } from './FullscreenPreviewModal';
 export { FullscreenCodeModal } from './FullscreenCodeModal';
+export { SmartCodeEditor } from './SmartCodeEditor';
 export { ThemePanel } from './ThemePanel';
 export { ProductsPanel } from './ProductsPanel';
 export { MobileNavigation } from './MobileNavigation';

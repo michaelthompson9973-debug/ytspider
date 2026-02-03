@@ -7,6 +7,7 @@ import { Save, FileCode, Eye, Code, Maximize2, Type } from 'lucide-react';
 import { Section, ThemeConfig, defaultThemeConfig } from './types';
 import { AiEnhanceButton } from './AiEnhanceButton';
 import { FullscreenCodeModal } from './FullscreenCodeModal';
+import { SmartCodeEditor } from './SmartCodeEditor';
 import { generatePreviewHTML } from './themeUtils';
 import { parseHtmlParts, mergeHtmlParts } from './htmlParseUtils';
 
@@ -110,7 +111,7 @@ export const SectionEditor = forwardRef<SectionEditorHandle, SectionEditorProps>
     return (
       <div className="h-full flex flex-col">
         {/* Header */}
-        <div className="flex items-center gap-3 mb-4 pb-3 border-b">
+        <div className="flex items-center gap-3 mb-4 pb-3 border-b shrink-0">
           <div className="flex-1 space-y-1">
             <Label htmlFor="section-name" className="text-xs text-muted-foreground">
               Section Name
@@ -138,7 +139,7 @@ export const SectionEditor = forwardRef<SectionEditorHandle, SectionEditorProps>
         </div>
 
         {/* View Mode Toggle & AI Button */}
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between mb-2 shrink-0">
           <div className="flex items-center gap-1">
             <Button
               variant={viewMode === 'richtext' ? 'default' : 'ghost'}
@@ -196,7 +197,7 @@ export const SectionEditor = forwardRef<SectionEditorHandle, SectionEditorProps>
 
         {/* Code Sub-tabs */}
         {viewMode === 'code' && (
-          <div className="flex items-center gap-1 mb-2">
+          <div className="flex items-center gap-1 mb-2 shrink-0">
             <Button
               variant={codeTab === 'full' ? 'default' : 'ghost'}
               size="sm"
@@ -225,7 +226,7 @@ export const SectionEditor = forwardRef<SectionEditorHandle, SectionEditorProps>
         )}
 
         {/* Content Area */}
-        <div className="flex-1 min-h-0 overflow-auto">
+        <div className="flex-1 min-h-0 overflow-hidden">
           {viewMode === 'richtext' ? (
             <RichTextEditor
               value={html}
@@ -246,31 +247,31 @@ export const SectionEditor = forwardRef<SectionEditorHandle, SectionEditorProps>
               />
             </div>
           ) : codeTab === 'full' ? (
-            <textarea
-              className="flex-1 w-full h-full font-mono text-sm p-4 border rounded-md bg-muted/50 resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+            <SmartCodeEditor
               value={html}
-              onChange={(e) => {
-                setHtml(e.target.value);
+              onChange={(newHtml) => {
+                setHtml(newHtml);
                 setIsDirty(true);
               }}
-              placeholder="<section>Your HTML content here...</section>"
-              spellCheck={false}
+              language="html"
+              theme="vs-dark"
+              height="100%"
             />
           ) : codeTab === 'head' ? (
-            <textarea
-              className="flex-1 w-full h-full font-mono text-sm p-4 border rounded-md bg-muted/50 resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+            <SmartCodeEditor
               value={headCode}
-              onChange={(e) => handleHeadChange(e.target.value)}
-              placeholder="<style>&#10;  /* CSS styles here */&#10;</style>&#10;&#10;<script>&#10;  // JavaScript here&#10;</script>"
-              spellCheck={false}
+              onChange={handleHeadChange}
+              language="html"
+              theme="vs-dark"
+              height="100%"
             />
           ) : (
-            <textarea
-              className="flex-1 w-full h-full font-mono text-sm p-4 border rounded-md bg-muted/50 resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+            <SmartCodeEditor
               value={bodyCode}
-              onChange={(e) => handleBodyChange(e.target.value)}
-              placeholder="<section>&#10;  Your HTML content here...&#10;</section>"
-              spellCheck={false}
+              onChange={handleBodyChange}
+              language="html"
+              theme="vs-dark"
+              height="100%"
             />
           )}
         </div>
