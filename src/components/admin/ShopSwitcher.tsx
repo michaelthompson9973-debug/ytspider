@@ -26,8 +26,6 @@ import {
   ChevronDown, 
   Plus, 
   Check, 
-  Settings,
-  Users,
   Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -100,155 +98,183 @@ export function ShopSwitcher() {
     );
   }
 
+  // No shop exists - show only create button
   if (!currentShop) {
     return (
-      <Button 
-        variant="outline" 
-        size="sm" 
-        className="gap-2"
-        onClick={() => setCreateDialogOpen(true)}
-      >
-        <Plus className="h-4 w-4" />
-        <span>নতুন শপ তৈরি করুন</span>
-      </Button>
+      <>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="gap-2"
+          onClick={() => setCreateDialogOpen(true)}
+        >
+          <Plus className="h-4 w-4" />
+          <span>নতুন শপ তৈরি করুন</span>
+        </Button>
+        
+        <CreateShopDialog 
+          open={createDialogOpen}
+          onOpenChange={setCreateDialogOpen}
+          shopName={newShopName}
+          onShopNameChange={setNewShopName}
+          onSubmit={handleCreateShop}
+          isCreating={isCreating}
+        />
+      </>
     );
   }
 
   return (
     <>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm" className="gap-2 max-w-[200px]">
-            <Avatar className="h-6 w-6">
-              <AvatarImage src={currentShop.logo_url || undefined} alt={currentShop.name} />
-              <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                {getShopInitials(currentShop.name)}
-              </AvatarFallback>
-            </Avatar>
-            <span className="truncate hidden sm:inline font-medium">{currentShop.name}</span>
-            <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </DropdownMenuTrigger>
-        
-        <DropdownMenuContent align="start" className="w-[260px]">
-          <DropdownMenuLabel className="flex items-center gap-2">
-            <Store className="h-4 w-4" />
-            আপনার শপসমূহ
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          
-          {availableShops.map((shop) => (
-            <DropdownMenuItem
-              key={shop.id}
-              onClick={() => handleSwitchShop(shop)}
-              className="flex items-center gap-3 cursor-pointer"
-            >
-              <Avatar className="h-8 w-8">
-                <AvatarImage src={shop.logo_url || undefined} alt={shop.name} />
-                <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                  {getShopInitials(shop.name)}
+      <div className="flex items-center gap-2">
+        {/* Add New Shop Button */}
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={() => setCreateDialogOpen(true)}
+          className="gap-1"
+        >
+          <Plus className="h-4 w-4" />
+          <span className="hidden sm:inline">Add Shop</span>
+        </Button>
+
+        {/* Shop Switch Dropdown */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm" className="gap-2 max-w-[180px]">
+              <Avatar className="h-5 w-5">
+                <AvatarImage src={currentShop.logo_url || undefined} alt={currentShop.name} />
+                <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
+                  {getShopInitials(currentShop.name)}
                 </AvatarFallback>
               </Avatar>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium truncate">{shop.name}</span>
-                  {shop.id === currentShop.id && (
-                    <Check className="h-4 w-4 text-primary shrink-0" />
+              <span className="truncate hidden sm:inline font-medium">{currentShop.name}</span>
+              <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </DropdownMenuTrigger>
+          
+          <DropdownMenuContent align="center" className="w-[260px]">
+            <DropdownMenuLabel className="flex items-center gap-2">
+              <Store className="h-4 w-4" />
+              Switch Shop
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            
+            {availableShops.map((shop) => (
+              <DropdownMenuItem
+                key={shop.id}
+                onClick={() => handleSwitchShop(shop)}
+                className="flex items-center gap-3 cursor-pointer"
+              >
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={shop.logo_url || undefined} alt={shop.name} />
+                  <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                    {getShopInitials(shop.name)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium truncate">{shop.name}</span>
+                    {shop.id === currentShop.id && (
+                      <Check className="h-4 w-4 text-primary shrink-0" />
+                    )}
+                  </div>
+                  {shop.id === currentShop.id && userRole && (
+                    <Badge variant={roleBadgeVariants[userRole]} className="text-[10px] h-4 mt-0.5">
+                      {roleLabels[userRole]}
+                    </Badge>
                   )}
                 </div>
-                {shop.id === currentShop.id && userRole && (
-                  <Badge variant={roleBadgeVariants[userRole]} className="text-[10px] h-4 mt-0.5">
-                    {roleLabels[userRole]}
-                  </Badge>
-                )}
-              </div>
-            </DropdownMenuItem>
-          ))}
-          
-          <DropdownMenuSeparator />
-          
-          <DropdownMenuItem
-            onClick={() => setCreateDialogOpen(true)}
-            className="gap-2 text-primary cursor-pointer"
-          >
-            <Plus className="h-4 w-4" />
-            নতুন শপ তৈরি করুন
-          </DropdownMenuItem>
-          
-          {userRole === 'owner' || userRole === 'admin' ? (
-            <>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="gap-2 cursor-pointer" asChild>
-                <a href="/admin/settings">
-                  <Settings className="h-4 w-4" />
-                  শপ সেটিংস
-                </a>
               </DropdownMenuItem>
-              <DropdownMenuItem className="gap-2 cursor-pointer" asChild>
-                <a href="/admin/team">
-                  <Users className="h-4 w-4" />
-                  টিম মেম্বার
-                </a>
-              </DropdownMenuItem>
-            </>
-          ) : null}
-        </DropdownMenuContent>
-      </DropdownMenu>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
 
       {/* Create Shop Dialog */}
-      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <form onSubmit={handleCreateShop}>
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Store className="h-5 w-5" />
-                নতুন শপ তৈরি করুন
-              </DialogTitle>
-              <DialogDescription>
-                আপনার নতুন বিজনেসের জন্য একটি শপ তৈরি করুন। পরে সব সেটিংস পরিবর্তন করা যাবে।
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="shop-name">শপের নাম</Label>
-                <Input
-                  id="shop-name"
-                  placeholder="যেমন: chaldal, EcomX v2 Pro"
-                  value={newShopName}
-                  onChange={(e) => setNewShopName(e.target.value)}
-                  disabled={isCreating}
-                  autoFocus
-                />
-              </div>
-            </div>
-            
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setCreateDialogOpen(false)}
-                disabled={isCreating}
-              >
-                বাতিল
-              </Button>
-              <Button type="submit" disabled={isCreating || !newShopName.trim()}>
-                {isCreating ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    তৈরি হচ্ছে...
-                  </>
-                ) : (
-                  <>
-                    <Plus className="mr-2 h-4 w-4" />
-                    শপ তৈরি করুন
-                  </>
-                )}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <CreateShopDialog 
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        shopName={newShopName}
+        onShopNameChange={setNewShopName}
+        onSubmit={handleCreateShop}
+        isCreating={isCreating}
+      />
     </>
+  );
+}
+
+// Extracted dialog component for reuse
+interface CreateShopDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  shopName: string;
+  onShopNameChange: (name: string) => void;
+  onSubmit: (e: React.FormEvent) => void;
+  isCreating: boolean;
+}
+
+function CreateShopDialog({
+  open,
+  onOpenChange,
+  shopName,
+  onShopNameChange,
+  onSubmit,
+  isCreating,
+}: CreateShopDialogProps) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[425px]">
+        <form onSubmit={onSubmit}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Store className="h-5 w-5" />
+              নতুন শপ তৈরি করুন
+            </DialogTitle>
+            <DialogDescription>
+              আপনার নতুন বিজনেসের জন্য একটি শপ তৈরি করুন। পরে সব সেটিংস পরিবর্তন করা যাবে।
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="shop-name">শপের নাম</Label>
+              <Input
+                id="shop-name"
+                placeholder="যেমন: chaldal, EcomX v2 Pro"
+                value={shopName}
+                onChange={(e) => onShopNameChange(e.target.value)}
+                disabled={isCreating}
+                autoFocus
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={isCreating}
+            >
+              বাতিল
+            </Button>
+            <Button type="submit" disabled={isCreating || !shopName.trim()}>
+              {isCreating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  তৈরি হচ্ছে...
+                </>
+              ) : (
+                <>
+                  <Plus className="mr-2 h-4 w-4" />
+                  শপ তৈরি করুন
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
