@@ -28,7 +28,7 @@ import InboxMessenger from "./pages/admin/InboxMessenger";
 import InboxWhatsapp from "./pages/admin/InboxWhatsapp";
 import Settings from "./pages/admin/Settings";
 import TeamMembers from "./pages/admin/TeamMembers";
-import ShopManage from "./pages/admin/ShopManage";
+import AllShops from "./pages/admin/AllShops";
 import ShopBilling from "./pages/admin/ShopBilling";
 import ShopSecurity from "./pages/admin/ShopSecurity";
 import ShopAnalytics from "./pages/admin/ShopAnalytics";
@@ -76,7 +76,7 @@ const App = () => (
                   <Route path="/admin/settings" element={<ProtectedRoute requireAdmin><Settings /></ProtectedRoute>} />
                   {/* Business Management Routes */}
                   <Route path="/admin/business" element={<Navigate to="/admin/business/shops" replace />} />
-                  <Route path="/admin/business/shops" element={<ProtectedRoute requireAdmin><ShopManage /></ProtectedRoute>} />
+                  <Route path="/admin/business/shops" element={<ProtectedRoute requireAdmin><AllShops /></ProtectedRoute>} />
                   <Route path="/admin/business/team" element={<ProtectedRoute requireAdmin><TeamMembers /></ProtectedRoute>} />
                   <Route path="/admin/business/billing" element={<ProtectedRoute requireAdmin><ShopBilling /></ProtectedRoute>} />
                   <Route path="/admin/business/security" element={<ProtectedRoute requireAdmin><ShopSecurity /></ProtectedRoute>} />
