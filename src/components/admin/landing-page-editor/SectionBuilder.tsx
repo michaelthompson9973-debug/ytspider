@@ -16,6 +16,8 @@ import { Section, SectionType, CheckoutConfig } from './types';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
+const SECTION_LIST_COLLAPSED_KEY = 'section-list-collapsed';
+
 interface SectionBuilderProps {
   landingPageId: string;
   gtmId?: string;
@@ -32,9 +34,17 @@ export function SectionBuilder({ landingPageId, gtmId, slug, onBack }: SectionBu
   const [mobileTab, setMobileTab] = useState<MobileTab>('sections');
   const [isSavingAll, setIsSavingAll] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [sectionListCollapsed, setSectionListCollapsed] = useState(() => {
+    return localStorage.getItem(SECTION_LIST_COLLAPSED_KEY) === 'true';
+  });
   const htmlEditorRef = useRef<SectionEditorHandle | null>(null);
   const checkoutEditorRef = useRef<CheckoutEditorHandle | null>(null);
   const { toast } = useToast();
+
+  // Persist collapse state
+  useEffect(() => {
+    localStorage.setItem(SECTION_LIST_COLLAPSED_KEY, String(sectionListCollapsed));
+  }, [sectionListCollapsed]);
 
   const {
     sections,
@@ -233,8 +243,11 @@ export function SectionBuilder({ landingPageId, gtmId, slug, onBack }: SectionBu
 
       {/* Desktop Layout - 3 columns */}
       <div className="hidden lg:grid flex-1 grid-cols-12 gap-4 min-h-0">
-        {/* Left: Section List */}
-        <div className="col-span-3 border rounded-lg p-4 overflow-hidden flex flex-col">
+        {/* Left: Section List - Dynamic width */}
+        <div className={cn(
+          "border rounded-lg overflow-hidden flex flex-col transition-all duration-200",
+          sectionListCollapsed ? "col-span-1 p-2" : "col-span-3 p-4"
+        )}>
           <SectionList
             sections={sections}
             activeSection={activeSection}
@@ -247,11 +260,16 @@ export function SectionBuilder({ landingPageId, gtmId, slug, onBack }: SectionBu
             onDeleteSection={handleDeleteSection}
             onReorderSections={reorderSections}
             isAdding={isAdding}
+            collapsed={sectionListCollapsed}
+            onToggleCollapse={() => setSectionListCollapsed(!sectionListCollapsed)}
           />
         </div>
 
-        {/* Center: Editor */}
-        <div className="col-span-5 border rounded-lg p-4 overflow-hidden">
+        {/* Center: Editor - Dynamic width (expands when list collapses) */}
+        <div className={cn(
+          "border rounded-lg p-4 overflow-hidden transition-all duration-200",
+          sectionListCollapsed ? "col-span-7" : "col-span-5"
+        )}>
           {activeSection?.type === 'checkout' ? (
             <CheckoutEditor
               ref={checkoutEditorRef}

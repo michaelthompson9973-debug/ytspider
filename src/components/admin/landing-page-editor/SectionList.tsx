@@ -14,7 +14,7 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { Plus, Layers, FileCode, ShoppingCart, BookOpen } from 'lucide-react';
+import { Plus, Layers, FileCode, ShoppingCart, BookOpen, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -26,6 +26,11 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { Section, SectionType, defaultCheckoutConfig } from './types';
 import { SectionItem } from './SectionItem';
 import { LibraryPickerModal, LibraryComponent } from '@/components/admin/library';
@@ -43,6 +48,8 @@ interface SectionListProps {
   onDeleteSection: (id: string) => void;
   onReorderSections: (newOrder: { id: string; sort_order: number }[]) => void;
   isAdding: boolean;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 type DialogSectionType = 'html' | 'checkout';
@@ -66,6 +73,8 @@ export function SectionList({
   onDeleteSection,
   onReorderSections,
   isAdding,
+  collapsed = false,
+  onToggleCollapse,
 }: SectionListProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [libraryPickerOpen, setLibraryPickerOpen] = useState(false);
@@ -168,6 +177,181 @@ export function SectionList({
     }
   };
 
+  // Collapsed view - icon only
+  if (collapsed) {
+    return (
+      <div className="h-full flex flex-col">
+        {/* Collapsed Header - Expand button */}
+        <div className="flex items-center justify-center mb-2 pb-2 border-b">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                size="icon" 
+                variant="ghost" 
+                onClick={onToggleCollapse}
+                className="h-8 w-8"
+              >
+                <ChevronsRight className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">Expand sections</TooltipContent>
+          </Tooltip>
+        </div>
+
+        {/* Collapsed Section Icons */}
+        <div className="flex-1 overflow-y-auto space-y-1">
+          {sections.map((section) => (
+            <Tooltip key={section.id}>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => onSelectSection(section)}
+                  className={cn(
+                    "w-full p-2 rounded flex items-center justify-center transition-colors",
+                    "hover:bg-accent",
+                    activeSection?.id === section.id && "bg-accent"
+                  )}
+                >
+                  {section.type === 'checkout' ? (
+                    <ShoppingCart className="h-4 w-4" />
+                  ) : (
+                    <FileCode className="h-4 w-4" />
+                  )}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right">{section.name}</TooltipContent>
+            </Tooltip>
+          ))}
+        </div>
+
+        {/* Collapsed Add Button */}
+        <div className="pt-2 border-t">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                size="icon" 
+                variant="ghost" 
+                onClick={() => setDialogOpen(true)}
+                className="w-full h-8"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">Add section</TooltipContent>
+          </Tooltip>
+        </div>
+
+        {/* Dialog still available in collapsed mode */}
+        <Dialog open={dialogOpen} onOpenChange={(open) => {
+          setDialogOpen(open);
+          if (!open) {
+            setNewSectionName('');
+            setNewSectionType('html');
+          }
+        }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add New Section</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Section Type</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setNewSectionType('html')}
+                    className={cn(
+                      "flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-colors",
+                      newSectionType === 'html'
+                        ? "border-primary bg-primary/5"
+                        : "border-muted hover:border-muted-foreground/30"
+                    )}
+                  >
+                    <FileCode className={cn(
+                      "h-6 w-6",
+                      newSectionType === 'html' ? "text-primary" : "text-muted-foreground"
+                    )} />
+                    <span className={cn(
+                      "text-sm font-medium",
+                      newSectionType === 'html' ? "text-primary" : "text-muted-foreground"
+                    )}>
+                      HTML Section
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNewSectionType('checkout')}
+                    className={cn(
+                      "flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-colors",
+                      newSectionType === 'checkout'
+                        ? "border-primary bg-primary/5"
+                        : "border-muted hover:border-muted-foreground/30"
+                    )}
+                  >
+                    <ShoppingCart className={cn(
+                      "h-6 w-6",
+                      newSectionType === 'checkout' ? "text-primary" : "text-muted-foreground"
+                    )} />
+                    <span className={cn(
+                      "text-sm font-medium",
+                      newSectionType === 'checkout' ? "text-primary" : "text-muted-foreground"
+                    )}>
+                      Checkout Section
+                    </span>
+                  </button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="section-name-collapsed">Section Name</Label>
+                <Input
+                  id="section-name-collapsed"
+                  placeholder={newSectionType === 'checkout' ? "e.g. Order Form" : "e.g. Hero, Features, Pricing"}
+                  value={newSectionName}
+                  onChange={(e) => setNewSectionName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddSection()}
+                />
+              </div>
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <Separator className="w-full" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">or</span>
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  setDialogOpen(false);
+                  setLibraryPickerOpen(true);
+                }}
+              >
+                <BookOpen className="h-4 w-4 mr-2" />
+                Choose from Library
+              </Button>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleAddSection} disabled={isAdding || !newSectionName.trim()}>
+                {isAdding ? 'Adding...' : 'Add Section'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <LibraryPickerModal
+          open={libraryPickerOpen}
+          onOpenChange={setLibraryPickerOpen}
+          onSelect={handleLibrarySelect}
+        />
+      </div>
+    );
+  }
+
+  // Expanded view - full list
   return (
     <div className="h-full flex flex-col">
       <div className="flex items-center justify-between mb-4 pb-3 border-b">
@@ -175,10 +359,22 @@ export function SectionList({
           <Layers className="h-4 w-4" />
           Sections
         </h3>
-        <Button size="sm" onClick={() => setDialogOpen(true)}>
-          <Plus className="h-4 w-4 mr-1" />
-          Add
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button size="sm" onClick={() => setDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-1" />
+            Add
+          </Button>
+          {onToggleCollapse && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="icon" variant="ghost" onClick={onToggleCollapse} className="h-8 w-8">
+                  <ChevronsLeft className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Collapse sections</TooltipContent>
+            </Tooltip>
+          )}
+        </div>
       </div>
 
       {sections.length === 0 ? (
