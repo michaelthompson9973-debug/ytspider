@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, BookOpen, FolderOpen, Folder } from 'lucide-react';
+import { Plus, BookOpen, FolderOpen, Folder, ChevronDown, ChevronRight } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -11,6 +11,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useIsMobile } from '@/hooks/use-mobile';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import {
   ComponentCard,
   ComponentEditor,
@@ -37,6 +42,7 @@ export default function ComponentLibrary() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [editingComponent, setEditingComponent] = useState<LibraryComponent | null>(null);
   const [previewComponent, setPreviewComponent] = useState<LibraryComponent | null>(null);
+  const [isCategoriesOpen, setIsCategoriesOpen] = useState(true);
   const isMobile = useIsMobile();
 
   const handleAdd = () => {
@@ -62,48 +68,57 @@ export default function ComponentLibrary() {
   };
 
   const CategorySidebar = () => (
-    <div className="space-y-1">
-      <h3 className="text-sm font-medium text-muted-foreground mb-3 px-2">Categories</h3>
-      
-      <button
-        onClick={() => setSelectedCategory('all')}
-        className={cn(
-          "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors",
-          selectedCategory === 'all' 
-            ? "bg-primary text-primary-foreground" 
-            : "hover:bg-muted"
-        )}
-      >
-        {selectedCategory === 'all' ? (
-          <FolderOpen className="h-4 w-4" />
+    <Collapsible open={isCategoriesOpen} onOpenChange={setIsCategoriesOpen}>
+      <CollapsibleTrigger className="flex items-center justify-between w-full px-2 py-2 rounded-md hover:bg-muted transition-colors group">
+        <h3 className="text-sm font-medium text-muted-foreground">Categories</h3>
+        {isCategoriesOpen ? (
+          <ChevronDown className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
         ) : (
-          <Folder className="h-4 w-4" />
+          <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
         )}
-        <span className="flex-1 text-left">All</span>
-        <span className="text-xs opacity-70">{getCategoryCount('all')}</span>
-      </button>
-
-      {componentCategories.map((cat) => (
+      </CollapsibleTrigger>
+      
+      <CollapsibleContent className="space-y-1 mt-2">
         <button
-          key={cat.value}
-          onClick={() => setSelectedCategory(cat.value)}
+          onClick={() => setSelectedCategory('all')}
           className={cn(
             "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors",
-            selectedCategory === cat.value 
+            selectedCategory === 'all' 
               ? "bg-primary text-primary-foreground" 
               : "hover:bg-muted"
           )}
         >
-          {selectedCategory === cat.value ? (
+          {selectedCategory === 'all' ? (
             <FolderOpen className="h-4 w-4" />
           ) : (
             <Folder className="h-4 w-4" />
           )}
-          <span className="flex-1 text-left">{cat.label}</span>
-          <span className="text-xs opacity-70">{getCategoryCount(cat.value)}</span>
+          <span className="flex-1 text-left">All</span>
+          <span className="text-xs opacity-70">{getCategoryCount('all')}</span>
         </button>
-      ))}
-    </div>
+
+        {componentCategories.map((cat) => (
+          <button
+            key={cat.value}
+            onClick={() => setSelectedCategory(cat.value)}
+            className={cn(
+              "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors",
+              selectedCategory === cat.value 
+                ? "bg-primary text-primary-foreground" 
+                : "hover:bg-muted"
+            )}
+          >
+            {selectedCategory === cat.value ? (
+              <FolderOpen className="h-4 w-4" />
+            ) : (
+              <Folder className="h-4 w-4" />
+            )}
+            <span className="flex-1 text-left">{cat.label}</span>
+            <span className="text-xs opacity-70">{getCategoryCount(cat.value)}</span>
+          </button>
+        ))}
+      </CollapsibleContent>
+    </Collapsible>
   );
 
   return (
