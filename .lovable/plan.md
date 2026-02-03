@@ -1,215 +1,232 @@
 
-# Admin Panel Settings - Theme Customization System
+# Theme-Aware Table Headers + Language Toggle System
 
 ## Overview
 
-Admin panel এ একটি নতুন **Settings** পেজ তৈরি করব যেখানে থাকবে:
-- 4-5টি Pre-built Theme Color Presets (এক ক্লিকে পুরো admin panel এর look বদলে যাবে)
-- Custom color picker দিয়ে নিজের মতো করে সাজানোর অপশন
-- Smooth transitions এবং better UX feel
-- LocalStorage এ save হবে (browser refresh এর পরেও থাকবে)
+এই প্ল্যান দুইটি ফিচার যুক্ত করবে:
+1. **Theme-Aware Headers**: Table/Card headers গুলো থিম অনুযায়ী রঙ পরিবর্তন করবে
+2. **Language Toggle**: বাংলা ↔ ইংলিশ ভাষা সুইচ করার অপশন
 
-## Theme Presets Design
+---
 
-```text
-┌─────────────────────────────────────────────────────────────────────────┐
-│ ⚙️ Settings                                                             │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                         │
-│  🎨 Theme Settings                                                      │
-│  ─────────────────────────────────────────────────────────────────────  │
-│                                                                         │
-│  Choose a Theme                                                         │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐     │
-│  │ Default  │ │  Ocean   │ │  Forest  │ │  Sunset  │ │  Slate   │     │
-│  │  ●───────│ │  ●───────│ │  ●───────│ │  ●───────│ │  ●───────│     │
-│  │  [Blue]  │ │  [Teal]  │ │  [Green] │ │ [Orange] │ │  [Gray]  │     │
-│  │   ✓      │ │          │ │          │ │          │ │          │     │
-│  └──────────┘ └──────────┘ └──────────┘ └──────────┘ └──────────┘     │
-│                                                                         │
-│  ─────────────────────────────────────────────────────────────────────  │
-│                                                                         │
-│  Custom Colors                                                          │
-│  ┌─────────────────────────────────────────────────────────────────┐   │
-│  │  Primary Color      [🎨] #3B82F6                                 │   │
-│  │  Sidebar Background [🎨] #F8F9FA                                 │   │
-│  │  Accent Color       [🎨] #F1F5F9                                 │   │
-│  └─────────────────────────────────────────────────────────────────┘   │
-│                                                                         │
-│  ─────────────────────────────────────────────────────────────────────  │
-│                                                                         │
-│  Appearance                                                             │
-│  ┌─────────────────────────────────────────────────────────────────┐   │
-│  │  ☀️ Light Mode    🌙 Dark Mode    💻 System                      │   │
-│  └─────────────────────────────────────────────────────────────────┘   │
-│                                                                         │
-│       [Reset to Defaults]                      [Apply Changes]         │
-│                                                                         │
-└─────────────────────────────────────────────────────────────────────────┘
-```
+## Part 1: Theme-Aware Table Headers
 
-## Color Theme Presets (5টি)
+### বর্তমান সমস্যা
+- Table headers এ হার্ডকোডেড `bg-muted/50` ব্যবহার হচ্ছে
+- Theme পরিবর্তন করলে headers একই রঙে থাকে
 
-| Theme Name | Primary | Sidebar BG | Accent | Description |
-|------------|---------|------------|--------|-------------|
-| Default | `#222E3C` | `#F8F9FA` | `#F1F5F9` | Clean professional blue-gray |
-| Ocean | `#0891B2` | `#F0FDFA` | `#CCFBF1` | Calming teal/cyan tones |
-| Forest | `#16A34A` | `#F0FDF4` | `#DCFCE7` | Fresh green nature feel |
-| Sunset | `#EA580C` | `#FFF7ED` | `#FFEDD5` | Warm orange energy |
-| Slate | `#475569` | `#F8FAFC` | `#F1F5F9` | Neutral gray minimal |
-
-## Implementation Architecture
+### সমাধান
+নতুন CSS variable `--table-header` যোগ করব যা theme এর সাথে বদলাবে:
 
 ```text
-┌─────────────────────────────────────────────────────────────────────────┐
-│                        Admin Theme System                               │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                         │
-│  ┌──────────────────┐    ┌──────────────────┐    ┌─────────────────┐  │
-│  │ AdminThemeContext│───▶│ CSS Variables    │───▶│ All Admin UI    │  │
-│  │                  │    │ (document.style) │    │ Components      │  │
-│  └────────┬─────────┘    └──────────────────┘    └─────────────────┘  │
-│           │                                                             │
-│           ▼                                                             │
-│  ┌──────────────────┐                                                   │
-│  │ localStorage     │                                                   │
-│  │ (admin-theme)    │                                                   │
-│  └──────────────────┘                                                   │
-│                                                                         │
-└─────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│  Theme        │  Table Header BG    │  Header Text            │
+├───────────────┼─────────────────────┼─────────────────────────┤
+│  Default      │  Soft gray          │  Dark gray              │
+│  Ocean        │  Light teal tint    │  Teal dark              │
+│  Forest       │  Light green tint   │  Green dark             │
+│  Sunset       │  Light orange tint  │  Orange dark            │
+│  Slate        │  Soft neutral       │  Slate dark             │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-## UX Improvements
+### প্রভাবিত Files
 
-1. **Smooth Transitions**
-   - সব color change এ `transition-colors duration-200` যোগ হবে
-   - Theme switch এ subtle fade effect
+| File | পরিবর্তন |
+|------|----------|
+| `AdminThemeContext.tsx` | নতুন `tableHeader` ও `tableHeaderFg` color যোগ |
+| `index.css` | `--table-header` CSS variable যোগ |
+| `Products.tsx` | `bg-muted/50` → `bg-[hsl(var(--accent))]` |
+| `OrderTable.tsx` | `bg-muted/50` → `bg-[hsl(var(--accent))]` |
+| `table.tsx` | TableHeader component এ default class update |
 
-2. **Hover States Enhancement**
-   - Sidebar items এ better hover feedback
-   - Button hover states আরও responsive
+---
 
-3. **Visual Feedback**
-   - Theme select এ animated checkmark
-   - Color picker এ live preview
-   - Save button এ success animation
+## Part 2: Language Toggle System
 
-4. **Consistency**
-   - সব admin page এ একই color scheme
-   - Cards, buttons, inputs সব consistent হবে
+### ডিজাইন
+
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│  Settings > Appearance                                          │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  🌐 Language / ভাষা                                             │
+│  ┌────────────────────────────────────────────────────────┐    │
+│  │   [  বাংলা  ]  ←→  [  English  ]                       │    │
+│  │         ▲ Toggle Switch                                │    │
+│  └────────────────────────────────────────────────────────┘    │
+│                                                                 │
+│  নোট: শুধুমাত্র Admin Panel এ প্রযোজ্য                          │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Translation System
+
+নতুন `LanguageContext` তৈরি করব যেখানে সব admin panel এর text translations থাকবে:
+
+```text
+src/
+├── contexts/
+│   └── LanguageContext.tsx    ← নতুন
+├── locales/
+│   ├── bn.ts                  ← বাংলা translations
+│   └── en.ts                  ← English translations
+```
+
+### Sample Translations Structure
+
+```typescript
+// locales/bn.ts
+export const bn = {
+  common: {
+    save: 'সেভ করুন',
+    cancel: 'বাতিল',
+    delete: 'ডিলিট',
+    edit: 'এডিট',
+    loading: 'লোড হচ্ছে...',
+    noData: 'কোনো ডেটা নেই',
+  },
+  sidebar: {
+    dashboard: 'ড্যাশবোর্ড',
+    products: 'প্রোডাক্ট',
+    orders: 'অর্ডার',
+    media: 'মিডিয়া',
+    settings: 'সেটিংস',
+    appearance: 'অ্যাপেয়ারেন্স',
+  },
+  products: {
+    title: 'প্রোডাক্ট',
+    addProduct: 'প্রোডাক্ট যোগ করুন',
+    name: 'নাম',
+    price: 'মূল্য',
+    status: 'স্ট্যাটাস',
+    active: 'সক্রিয়',
+    inactive: 'নিষ্ক্রিয়',
+  },
+  orders: {
+    title: 'অর্ডার',
+    customer: 'কাস্টমার',
+    total: 'মোট',
+    status: 'স্ট্যাটাস',
+  },
+  settings: {
+    title: 'সেটিংস',
+    appearance: 'অ্যাপেয়ারেন্স',
+    chooseTheme: 'থিম বেছে নিন',
+    customColors: 'কাস্টম কালার',
+    language: 'ভাষা',
+    resetDefaults: 'ডিফল্টে ফেরান',
+  },
+};
+
+// locales/en.ts
+export const en = {
+  common: {
+    save: 'Save',
+    cancel: 'Cancel',
+    delete: 'Delete',
+    edit: 'Edit',
+    loading: 'Loading...',
+    noData: 'No data',
+  },
+  sidebar: {
+    dashboard: 'Dashboard',
+    products: 'Products',
+    orders: 'Orders',
+    media: 'Media',
+    settings: 'Settings',
+    appearance: 'Appearance',
+  },
+  // ... same structure
+};
+```
+
+### Language Hook Usage
+
+```typescript
+// যেকোনো component এ ব্যবহার:
+const { t, language, setLanguage } = useLanguage();
+
+// Use translations
+<h1>{t('products.title')}</h1>
+<Button>{t('common.save')}</Button>
+
+// Toggle language
+<LanguageToggle value={language} onChange={setLanguage} />
+```
+
+---
 
 ## Files to Create/Modify
 
 | File | Action | Purpose |
 |------|--------|---------|
-| `src/contexts/AdminThemeContext.tsx` | Create | Theme state management ও CSS variable injection |
-| `src/pages/admin/Settings.tsx` | Create | Settings page with theme controls |
-| `src/components/admin/settings/ThemePresetCard.tsx` | Create | Individual theme preset card |
-| `src/components/admin/settings/ColorPicker.tsx` | Create | Custom color input component |
-| `src/components/admin/settings/AppearanceToggle.tsx` | Create | Light/Dark/System toggle |
-| `src/App.tsx` | Modify | AdminThemeProvider wrap করা |
-| `src/components/admin/AdminSidebar.tsx` | Modify | Settings nav item যোগ করা |
-| `src/index.css` | Modify | Admin-specific CSS variables ও transitions |
+| `src/contexts/LanguageContext.tsx` | Create | Language state ও t() function |
+| `src/locales/bn.ts` | Create | বাংলা translations |
+| `src/locales/en.ts` | Create | English translations |
+| `src/components/admin/settings/LanguageToggle.tsx` | Create | Language switch UI |
+| `src/contexts/AdminThemeContext.tsx` | Modify | Table header colors যোগ |
+| `src/pages/admin/Settings.tsx` | Modify | Language toggle section যোগ |
+| `src/App.tsx` | Modify | LanguageProvider wrap |
+| `src/components/admin/AdminSidebar.tsx` | Modify | Translation keys ব্যবহার |
+| `src/pages/admin/Products.tsx` | Modify | Theme-aware headers + translations |
+| `src/components/admin/orders/OrderTable.tsx` | Modify | Theme-aware headers + translations |
+| `src/index.css` | Modify | Table header CSS variables |
 
-## Technical Details
+---
 
-### AdminThemeContext
-```typescript
-interface AdminTheme {
-  preset: 'default' | 'ocean' | 'forest' | 'sunset' | 'slate' | 'custom';
-  colors: {
-    primary: string;
-    sidebarBg: string;
-    sidebarFg: string;
-    accent: string;
-    accentFg: string;
-  };
-  mode: 'light' | 'dark' | 'system';
-}
-
-// CSS Variables inject করবে:
-// --admin-primary, --admin-sidebar-bg, --admin-accent, etc.
-```
-
-### Theme Preset Structure
-```typescript
-const themePresets = {
-  default: {
-    primary: '222.2 47.4% 11.2%',
-    sidebarBg: '0 0% 98%',
-    accent: '210 40% 96.1%',
-  },
-  ocean: {
-    primary: '189 94% 43%',
-    sidebarBg: '166 76% 97%',
-    accent: '167 85% 89%',
-  },
-  // ... more presets
-};
-```
-
-### LocalStorage Persistence
-```typescript
-const STORAGE_KEY = 'ytspider-admin-theme';
-
-// Load on init
-const stored = localStorage.getItem(STORAGE_KEY);
-const initial = stored ? JSON.parse(stored) : defaultTheme;
-
-// Save on change
-useEffect(() => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(theme));
-}, [theme]);
-```
-
-## Navigation Update
-
-Sidebar এ Settings group এ নতুন item যোগ হবে:
+## UX Flow
 
 ```text
-Settings
-├── Allowed Domains
-├── Webhooks
-├── API (dropdown)
-└── 🆕 Appearance  ← নতুন
+1. User opens Settings > Appearance
+           │
+           ▼
+2. Sees Language section with toggle
+           │
+           ▼
+3. Clicks "English" 
+           │
+           ▼
+4. Entire admin panel instantly switches to English
+   - Sidebar menus
+   - Page titles
+   - Table headers
+   - Button labels
+   - Toast messages
+           │
+           ▼
+5. Preference saved in localStorage
+   (persists across sessions)
 ```
 
-## Smooth UX Additions
+---
 
-1. **Global Transitions** (index.css এ)
+## LocalStorage Persistence
+
+```typescript
+const LANG_STORAGE_KEY = 'ytspider-admin-language';
+
+// Default: 'bn' (Bengali)
+// Options: 'bn' | 'en'
+```
+
+---
+
+## Technical Notes
+
+### Theme-Aware Classes
+বর্তমান `bg-muted/50` এর বদলে ব্যবহার করব:
 ```css
-/* Admin panel smooth transitions */
-.admin-transition {
-  @apply transition-colors duration-200 ease-in-out;
-}
-
-[data-sidebar] {
-  @apply transition-all duration-200 ease-in-out;
+.table-header-themed {
+  background-color: hsl(var(--accent) / 0.5);
+  color: hsl(var(--accent-foreground));
 }
 ```
 
-2. **Hover Improvements**
-```css
-/* Enhanced hover states */
-.sidebar-item-hover {
-  @apply hover:bg-sidebar-accent/80 active:scale-[0.98];
-}
-```
+### Admin-Only Scope
+এই সিস্টেম শুধুমাত্র admin panel এ কাজ করবে। Landing pages ও public pages এর ভাষা আলাদা থাকবে।
 
-3. **Selection Animation**
-```css
-/* Theme selection feedback */
-.theme-card-selected {
-  @apply ring-2 ring-primary ring-offset-2 
-         transform scale-[1.02] 
-         transition-all duration-200;
-}
-```
-
-## Mobile Responsiveness
-
-Settings page মোবাইলে:
-- Theme cards 2-column grid হবে
-- Color pickers full-width হবে
-- Sticky save button bottom এ থাকবে
-
+### Gradual Migration
+প্রথমে core pages (Products, Orders, Settings) এ translation যোগ হবে। পরবর্তীতে বাকি pages এ যোগ করা যাবে।
