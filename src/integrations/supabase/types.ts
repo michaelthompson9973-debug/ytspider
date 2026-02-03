@@ -70,6 +70,7 @@ export type Database = {
           is_active: boolean | null
           keywords: string[] | null
           metadata: Json | null
+          shop_id: string | null
           title: string
           updated_at: string
         }
@@ -81,6 +82,7 @@ export type Database = {
           is_active?: boolean | null
           keywords?: string[] | null
           metadata?: Json | null
+          shop_id?: string | null
           title: string
           updated_at?: string
         }
@@ -92,10 +94,19 @@ export type Database = {
           is_active?: boolean | null
           keywords?: string[] | null
           metadata?: Json | null
+          shop_id?: string | null
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "ai_training_data_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       allowed_domains: {
         Row: {
@@ -104,6 +115,7 @@ export type Database = {
           enabled: boolean
           id: string
           is_wildcard: boolean
+          shop_id: string | null
         }
         Insert: {
           created_at?: string
@@ -111,6 +123,7 @@ export type Database = {
           enabled?: boolean
           id?: string
           is_wildcard?: boolean
+          shop_id?: string | null
         }
         Update: {
           created_at?: string
@@ -118,8 +131,17 @@ export type Database = {
           enabled?: boolean
           id?: string
           is_wildcard?: boolean
+          shop_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "allowed_domains_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       api_keys: {
         Row: {
@@ -130,6 +152,7 @@ export type Database = {
           last_used_at: string | null
           provider: string
           rate_limited_until: string | null
+          shop_id: string | null
           status: string
           updated_at: string
           usage_count: number
@@ -142,6 +165,7 @@ export type Database = {
           last_used_at?: string | null
           provider?: string
           rate_limited_until?: string | null
+          shop_id?: string | null
           status?: string
           updated_at?: string
           usage_count?: number
@@ -154,11 +178,20 @@ export type Database = {
           last_used_at?: string | null
           provider?: string
           rate_limited_until?: string | null
+          shop_id?: string | null
           status?: string
           updated_at?: string
           usage_count?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "api_keys_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       auto_reply_rules: {
         Row: {
@@ -169,6 +202,7 @@ export type Database = {
           priority: number | null
           response_content: string | null
           response_type: string
+          shop_id: string | null
           trigger_conditions: Json
           trigger_type: string
           use_count: number | null
@@ -181,6 +215,7 @@ export type Database = {
           priority?: number | null
           response_content?: string | null
           response_type: string
+          shop_id?: string | null
           trigger_conditions?: Json
           trigger_type: string
           use_count?: number | null
@@ -193,11 +228,20 @@ export type Database = {
           priority?: number | null
           response_content?: string | null
           response_type?: string
+          shop_id?: string | null
           trigger_conditions?: Json
           trigger_type?: string
           use_count?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "auto_reply_rules_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       component_library: {
         Row: {
@@ -207,6 +251,7 @@ export type Database = {
           html: string
           id: string
           name: string
+          shop_id: string | null
           thumbnail_url: string | null
           updated_at: string | null
         }
@@ -217,6 +262,7 @@ export type Database = {
           html?: string
           id?: string
           name: string
+          shop_id?: string | null
           thumbnail_url?: string | null
           updated_at?: string | null
         }
@@ -227,10 +273,19 @@ export type Database = {
           html?: string
           id?: string
           name?: string
+          shop_id?: string | null
           thumbnail_url?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "component_library_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       conversation_assignments: {
         Row: {
@@ -357,6 +412,7 @@ export type Database = {
           is_active: boolean
           label: string | null
           provider: string
+          shop_id: string | null
           token_expires_at: string | null
           updated_at: string
         }
@@ -369,6 +425,7 @@ export type Database = {
           is_active?: boolean
           label?: string | null
           provider: string
+          shop_id?: string | null
           token_expires_at?: string | null
           updated_at?: string
         }
@@ -381,10 +438,19 @@ export type Database = {
           is_active?: boolean
           label?: string | null
           provider?: string
+          shop_id?: string | null
           token_expires_at?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "courier_credentials_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       customer_courier_history: {
         Row: {
@@ -476,6 +542,7 @@ export type Database = {
           id: string
           is_system: boolean | null
           name: string
+          shop_id: string | null
         }
         Insert: {
           auto_rule?: Json | null
@@ -485,6 +552,7 @@ export type Database = {
           id?: string
           is_system?: boolean | null
           name: string
+          shop_id?: string | null
         }
         Update: {
           auto_rule?: Json | null
@@ -494,8 +562,17 @@ export type Database = {
           id?: string
           is_system?: boolean | null
           name?: string
+          shop_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "customer_labels_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       customer_profiles: {
         Row: {
@@ -514,6 +591,7 @@ export type Database = {
           profile_pic: string | null
           psid: string
           risk_score: number | null
+          shop_id: string | null
           source_ad_id: string | null
           source_campaign_id: string | null
           total_orders: number | null
@@ -536,6 +614,7 @@ export type Database = {
           profile_pic?: string | null
           psid: string
           risk_score?: number | null
+          shop_id?: string | null
           source_ad_id?: string | null
           source_campaign_id?: string | null
           total_orders?: number | null
@@ -558,6 +637,7 @@ export type Database = {
           profile_pic?: string | null
           psid?: string
           risk_score?: number | null
+          shop_id?: string | null
           source_ad_id?: string | null
           source_campaign_id?: string | null
           total_orders?: number | null
@@ -570,6 +650,13 @@ export type Database = {
             columns: ["connection_id"]
             isOneToOne: false
             referencedRelation: "messenger_connections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_profiles_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
             referencedColumns: ["id"]
           },
         ]
@@ -751,6 +838,7 @@ export type Database = {
           id: string
           product_id: string | null
           published: boolean
+          shop_id: string | null
           slug: string
           tracking_profile_id: string | null
           updated_at: string
@@ -763,6 +851,7 @@ export type Database = {
           id?: string
           product_id?: string | null
           published?: boolean
+          shop_id?: string | null
           slug: string
           tracking_profile_id?: string | null
           updated_at?: string
@@ -775,6 +864,7 @@ export type Database = {
           id?: string
           product_id?: string | null
           published?: boolean
+          shop_id?: string | null
           slug?: string
           tracking_profile_id?: string | null
           updated_at?: string
@@ -785,6 +875,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "landing_pages_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
             referencedColumns: ["id"]
           },
           {
@@ -806,6 +903,7 @@ export type Database = {
           folder: string | null
           id: string
           public_url: string | null
+          shop_id: string | null
           uploaded_by: string | null
         }
         Insert: {
@@ -817,6 +915,7 @@ export type Database = {
           folder?: string | null
           id?: string
           public_url?: string | null
+          shop_id?: string | null
           uploaded_by?: string | null
         }
         Update: {
@@ -828,9 +927,18 @@ export type Database = {
           folder?: string | null
           id?: string
           public_url?: string | null
+          shop_id?: string | null
           uploaded_by?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "media_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       messenger_agents: {
         Row: {
@@ -842,6 +950,7 @@ export type Database = {
           max_conversations: number | null
           name: string
           satisfaction_score: number | null
+          shop_id: string | null
           status: string | null
           total_resolved: number | null
           updated_at: string
@@ -856,6 +965,7 @@ export type Database = {
           max_conversations?: number | null
           name: string
           satisfaction_score?: number | null
+          shop_id?: string | null
           status?: string | null
           total_resolved?: number | null
           updated_at?: string
@@ -870,12 +980,21 @@ export type Database = {
           max_conversations?: number | null
           name?: string
           satisfaction_score?: number | null
+          shop_id?: string | null
           status?: string | null
           total_resolved?: number | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "messenger_agents_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       messenger_connections: {
         Row: {
@@ -886,6 +1005,7 @@ export type Database = {
           page_access_token: string
           page_id: string
           page_name: string
+          shop_id: string | null
           token_expires_at: string | null
           updated_at: string
           user_access_token: string | null
@@ -899,6 +1019,7 @@ export type Database = {
           page_access_token: string
           page_id: string
           page_name: string
+          shop_id?: string | null
           token_expires_at?: string | null
           updated_at?: string
           user_access_token?: string | null
@@ -912,12 +1033,21 @@ export type Database = {
           page_access_token?: string
           page_id?: string
           page_name?: string
+          shop_id?: string | null
           token_expires_at?: string | null
           updated_at?: string
           user_access_token?: string | null
           webhook_verify_token?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "messenger_connections_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       messenger_conversations: {
         Row: {
@@ -1129,6 +1259,7 @@ export type Database = {
           note: string | null
           product_id: string | null
           quantity: number
+          shop_id: string | null
           status: Database["public"]["Enums"]["order_status"]
           subtotal: number | null
           total: number | null
@@ -1160,6 +1291,7 @@ export type Database = {
           note?: string | null
           product_id?: string | null
           quantity?: number
+          shop_id?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           subtotal?: number | null
           total?: number | null
@@ -1191,6 +1323,7 @@ export type Database = {
           note?: string | null
           product_id?: string | null
           quantity?: number
+          shop_id?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           subtotal?: number | null
           total?: number | null
@@ -1216,6 +1349,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
             referencedColumns: ["id"]
           },
         ]
@@ -1262,6 +1402,7 @@ export type Database = {
           images: string[] | null
           name: string
           price: number
+          shop_id: string | null
           size_options: Json | null
           updated_at: string
           videos: string[] | null
@@ -1274,6 +1415,7 @@ export type Database = {
           images?: string[] | null
           name: string
           price?: number
+          shop_id?: string | null
           size_options?: Json | null
           updated_at?: string
           videos?: string[] | null
@@ -1286,11 +1428,20 @@ export type Database = {
           images?: string[] | null
           name?: string
           price?: number
+          shop_id?: string | null
           size_options?: Json | null
           updated_at?: string
           videos?: string[] | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "products_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       quick_replies: {
         Row: {
@@ -1298,6 +1449,7 @@ export type Database = {
           content: string
           created_at: string
           id: string
+          shop_id: string | null
           shortcut: string | null
           title: string
           use_count: number | null
@@ -1307,6 +1459,7 @@ export type Database = {
           content: string
           created_at?: string
           id?: string
+          shop_id?: string | null
           shortcut?: string | null
           title: string
           use_count?: number | null
@@ -1316,17 +1469,68 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          shop_id?: string | null
           shortcut?: string | null
           title?: string
           use_count?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "quick_replies_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shop_members: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          id: string
+          invited_at: string
+          invited_by: string | null
+          role: Database["public"]["Enums"]["shop_role"]
+          shop_id: string
+          user_id: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          id?: string
+          invited_at?: string
+          invited_by?: string | null
+          role?: Database["public"]["Enums"]["shop_role"]
+          shop_id: string
+          user_id: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          id?: string
+          invited_at?: string
+          invited_by?: string | null
+          role?: Database["public"]["Enums"]["shop_role"]
+          shop_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shop_members_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       shop_settings: {
         Row: {
           created_at: string
           id: string
           key: string
+          shop_id: string | null
           updated_at: string
           value: string | null
         }
@@ -1334,6 +1538,7 @@ export type Database = {
           created_at?: string
           id?: string
           key: string
+          shop_id?: string | null
           updated_at?: string
           value?: string | null
         }
@@ -1341,8 +1546,56 @@ export type Database = {
           created_at?: string
           id?: string
           key?: string
+          shop_id?: string | null
           updated_at?: string
           value?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shop_settings_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shops: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          logo_url: string | null
+          name: string
+          owner_id: string
+          plan: Database["public"]["Enums"]["shop_plan"]
+          settings: Json
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          logo_url?: string | null
+          name: string
+          owner_id: string
+          plan?: Database["public"]["Enums"]["shop_plan"]
+          settings?: Json
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          logo_url?: string | null
+          name?: string
+          owner_id?: string
+          plan?: Database["public"]["Enums"]["shop_plan"]
+          settings?: Json
+          slug?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1413,6 +1666,7 @@ export type Database = {
           id: string
           is_active: boolean
           name: string
+          shop_id: string | null
           tiktok_access_token: string | null
           tiktok_pixel_id: string | null
           tiktok_test_event_code: string | null
@@ -1430,6 +1684,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           name: string
+          shop_id?: string | null
           tiktok_access_token?: string | null
           tiktok_pixel_id?: string | null
           tiktok_test_event_code?: string | null
@@ -1447,12 +1702,21 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string
+          shop_id?: string | null
           tiktok_access_token?: string | null
           tiktok_pixel_id?: string | null
           tiktok_test_event_code?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "tracking_profiles_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -1480,11 +1744,37 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_user_shop_role: { Args: { _shop_id: string }; Returns: string }
+      get_user_shops: {
+        Args: never
+        Returns: {
+          created_at: string
+          id: string
+          is_active: boolean
+          logo_url: string | null
+          name: string
+          owner_id: string
+          plan: Database["public"]["Enums"]["shop_plan"]
+          settings: Json
+          slug: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "shops"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      has_shop_access: {
+        Args: { _min_role?: string; _shop_id: string }
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
@@ -1500,6 +1790,8 @@ export type Database = {
         | "pending"
         | "processing"
         | "delivered"
+      shop_plan: "free" | "pro" | "enterprise"
+      shop_role: "owner" | "admin" | "editor" | "viewer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1638,6 +1930,8 @@ export const Constants = {
         "processing",
         "delivered",
       ],
+      shop_plan: ["free", "pro", "enterprise"],
+      shop_role: ["owner", "admin", "editor", "viewer"],
     },
   },
 } as const
