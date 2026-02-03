@@ -1,232 +1,393 @@
 
-# Theme-Aware Table Headers + Language Toggle System
+# মাস্টার ড্যাশবোর্ড রিডিজাইন
 
 ## Overview
 
-এই প্ল্যান দুইটি ফিচার যুক্ত করবে:
-1. **Theme-Aware Headers**: Table/Card headers গুলো থিম অনুযায়ী রঙ পরিবর্তন করবে
-2. **Language Toggle**: বাংলা ↔ ইংলিশ ভাষা সুইচ করার অপশন
+বর্তমান ড্যাশবোর্ডকে একটি **প্রিমিয়াম, ডাইনামিক, থিম-ম্যাচিং** ড্যাশবোর্ডে রূপান্তর করা হবে যেখানে থাকবে:
+- Multi-color KPI cards with icon illustrations
+- Sales & Revenue summary
+- Visitors summary (from tracking data)
+- Best selling products list
+- Realtime data updates
+- Skeleton loaders
+- Notification panel
 
 ---
 
-## Part 1: Theme-Aware Table Headers
-
-### বর্তমান সমস্যা
-- Table headers এ হার্ডকোডেড `bg-muted/50` ব্যবহার হচ্ছে
-- Theme পরিবর্তন করলে headers একই রঙে থাকে
-
-### সমাধান
-নতুন CSS variable `--table-header` যোগ করব যা theme এর সাথে বদলাবে:
+## Dashboard Layout
 
 ```text
-┌─────────────────────────────────────────────────────────────────┐
-│  Theme        │  Table Header BG    │  Header Text            │
-├───────────────┼─────────────────────┼─────────────────────────┤
-│  Default      │  Soft gray          │  Dark gray              │
-│  Ocean        │  Light teal tint    │  Teal dark              │
-│  Forest       │  Light green tint   │  Green dark             │
-│  Sunset       │  Light orange tint  │  Orange dark            │
-│  Slate        │  Soft neutral       │  Slate dark             │
-└─────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│  📊 Dashboard                                            🔔 Notification Panel  │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│  ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐│
+│  │ 💰 Total Revenue│ │ 📦 Total Orders │ │ 🆕 New Orders  │ │ ✅ Delivered    ││
+│  │     ৳2,380      │ │       5         │ │       5        │ │       0         ││
+│  │   +12% ↑        │ │   Today: 0      │ │   Pending      │ │   This week     ││
+│  │   [Gradient BG] │ │   [Gradient BG] │ │   [Gradient BG]│ │   [Gradient BG] ││
+│  └─────────────────┘ └─────────────────┘ └─────────────────┘ └─────────────────┘│
+│                                                                                 │
+│  ┌──────────────────────────────────────┐ ┌────────────────────────────────────┐│
+│  │ 📈 Sales Overview (Chart)            │ │ 🏆 Best Selling Products          ││
+│  │                                      │ │                                    ││
+│  │   [Line/Area Chart - Last 7 days]    │ │  1. Baby Pant Diaper - 2 sold     ││
+│  │                                      │ │  2. ...                           ││
+│  │                                      │ │  3. ...                           ││
+│  └──────────────────────────────────────┘ └────────────────────────────────────┘│
+│                                                                                 │
+│  ┌──────────────────────────────────────┐ ┌────────────────────────────────────┐│
+│  │ 🕐 Recent Orders                     │ │ 📊 Order Status Distribution      ││
+│  │                                      │ │                                    ││
+│  │   [Real-time updating table]         │ │   [Pie/Donut Chart]               ││
+│  │   with animated new row entry        │ │   New: 5, Confirmed: 0, etc.      ││
+│  └──────────────────────────────────────┘ └────────────────────────────────────┘│
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
 ```
-
-### প্রভাবিত Files
-
-| File | পরিবর্তন |
-|------|----------|
-| `AdminThemeContext.tsx` | নতুন `tableHeader` ও `tableHeaderFg` color যোগ |
-| `index.css` | `--table-header` CSS variable যোগ |
-| `Products.tsx` | `bg-muted/50` → `bg-[hsl(var(--accent))]` |
-| `OrderTable.tsx` | `bg-muted/50` → `bg-[hsl(var(--accent))]` |
-| `table.tsx` | TableHeader component এ default class update |
 
 ---
 
-## Part 2: Language Toggle System
+## Part 1: Multi-Color KPI Cards
 
-### ডিজাইন
+### Design Specs
 
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│  Settings > Appearance                                          │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  🌐 Language / ভাষা                                             │
-│  ┌────────────────────────────────────────────────────────┐    │
-│  │   [  বাংলা  ]  ←→  [  English  ]                       │    │
-│  │         ▲ Toggle Switch                                │    │
-│  └────────────────────────────────────────────────────────┘    │
-│                                                                 │
-│  নোট: শুধুমাত্র Admin Panel এ প্রযোজ্য                          │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
+প্রতিটি KPI card আলাদা gradient background এবং large icon illustration সহ:
+
+| Card | Gradient | Icon | Data |
+|------|----------|------|------|
+| Total Revenue | Blue-Purple | DollarSign/Wallet | ৳2,380 + % change |
+| Total Orders | Green-Teal | ShoppingCart | 5 + today count |
+| New Orders | Orange-Yellow | Package | 5 + pending label |
+| Delivered | Emerald-Green | CheckCircle | 0 + this week |
+| Cancelled | Red-Rose | XCircle | 0 + rate |
+| Products | Indigo-Violet | Box | 1 active |
+
+### Theme Integration
+
+Cards গুলো AdminThemeContext এর সাথে যুক্ত থাকবে:
+- Default theme: Standard gradients
+- Ocean theme: Teal-based gradients
+- Forest theme: Green-based gradients
+- Sunset theme: Orange-based gradients
+
+---
+
+## Part 2: Sales Summary Section
+
+### Components
+
+1. **Revenue Overview Card**
+   - Total revenue (৳2,380)
+   - Average order value
+   - Revenue trend (last 7 days vs previous)
+
+2. **Sales Chart**
+   - recharts library ব্যবহার করে Area/Line chart
+   - Last 7/30 days toggle
+   - Daily revenue visualization
+   - Theme-matched colors
+
+### Data Query
+
+```sql
+SELECT 
+  DATE(created_at) as date,
+  COUNT(*) as orders,
+  SUM(total) as revenue
+FROM orders
+WHERE created_at >= NOW() - INTERVAL '30 days'
+GROUP BY DATE(created_at)
+ORDER BY date
 ```
 
-### Translation System
+---
 
-নতুন `LanguageContext` তৈরি করব যেখানে সব admin panel এর text translations থাকবে:
+## Part 3: Best Selling Products
+
+### Layout
 
 ```text
-src/
-├── contexts/
-│   └── LanguageContext.tsx    ← নতুন
-├── locales/
-│   ├── bn.ts                  ← বাংলা translations
-│   └── en.ts                  ← English translations
+┌────────────────────────────────────────┐
+│ 🏆 Best Selling Products               │
+├────────────────────────────────────────┤
+│ ┌────┐                                 │
+│ │ 1  │ Baby Pant Diaper    2 sold      │
+│ └────┘ ৳1,220 revenue                  │
+│ ┌────┐                                 │
+│ │ 2  │ Product Name        X sold      │
+│ └────┘ ৳XXX revenue                    │
+│ ┌────┐                                 │
+│ │ 3  │ Product Name        X sold      │
+│ └────┘ ৳XXX revenue                    │
+│                                        │
+│ [View All Products →]                  │
+└────────────────────────────────────────┘
 ```
 
-### Sample Translations Structure
+### Data Query
+
+```sql
+SELECT p.id, p.name, p.images,
+  COUNT(o.id) as order_count,
+  SUM(o.quantity) as total_sold,
+  SUM(o.total) as revenue
+FROM products p
+LEFT JOIN orders o ON o.product_id = p.id
+GROUP BY p.id
+ORDER BY total_sold DESC
+LIMIT 5
+```
+
+---
+
+## Part 4: Skeleton Loaders
+
+### Dashboard Skeleton Component
+
+প্রতিটি section এর জন্য matching skeleton:
+
+1. **KPI Card Skeleton**
+```tsx
+<div className="animate-pulse">
+  <div className="h-4 w-20 bg-muted rounded mb-2" />
+  <div className="h-8 w-32 bg-muted rounded mb-2" />
+  <div className="h-3 w-16 bg-muted rounded" />
+</div>
+```
+
+2. **Chart Skeleton**
+```tsx
+<div className="h-64 bg-muted/50 rounded-lg animate-pulse flex items-end gap-1 p-4">
+  {[40, 60, 35, 80, 45, 70, 55].map((h, i) => (
+    <div key={i} style={{height: `${h}%`}} className="flex-1 bg-muted rounded-t" />
+  ))}
+</div>
+```
+
+3. **Table Row Skeleton**
+```tsx
+<tr className="animate-pulse">
+  <td><div className="h-4 w-24 bg-muted rounded" /></td>
+  <td><div className="h-4 w-32 bg-muted rounded" /></td>
+  ...
+</tr>
+```
+
+---
+
+## Part 5: Realtime Data Updates
+
+### Hook: useDashboardRealtime
 
 ```typescript
-// locales/bn.ts
-export const bn = {
-  common: {
-    save: 'সেভ করুন',
-    cancel: 'বাতিল',
-    delete: 'ডিলিট',
-    edit: 'এডিট',
-    loading: 'লোড হচ্ছে...',
-    noData: 'কোনো ডেটা নেই',
-  },
-  sidebar: {
-    dashboard: 'ড্যাশবোর্ড',
-    products: 'প্রোডাক্ট',
-    orders: 'অর্ডার',
-    media: 'মিডিয়া',
-    settings: 'সেটিংস',
-    appearance: 'অ্যাপেয়ারেন্স',
-  },
-  products: {
-    title: 'প্রোডাক্ট',
-    addProduct: 'প্রোডাক্ট যোগ করুন',
-    name: 'নাম',
-    price: 'মূল্য',
-    status: 'স্ট্যাটাস',
-    active: 'সক্রিয়',
-    inactive: 'নিষ্ক্রিয়',
-  },
-  orders: {
-    title: 'অর্ডার',
-    customer: 'কাস্টমার',
-    total: 'মোট',
-    status: 'স্ট্যাটাস',
-  },
-  settings: {
-    title: 'সেটিংস',
-    appearance: 'অ্যাপেয়ারেন্স',
-    chooseTheme: 'থিম বেছে নিন',
-    customColors: 'কাস্টম কালার',
-    language: 'ভাষা',
-    resetDefaults: 'ডিফল্টে ফেরান',
-  },
-};
+// src/hooks/useDashboardRealtime.ts
 
-// locales/en.ts
-export const en = {
-  common: {
-    save: 'Save',
-    cancel: 'Cancel',
-    delete: 'Delete',
-    edit: 'Edit',
-    loading: 'Loading...',
-    noData: 'No data',
-  },
-  sidebar: {
-    dashboard: 'Dashboard',
-    products: 'Products',
-    orders: 'Orders',
-    media: 'Media',
-    settings: 'Settings',
-    appearance: 'Appearance',
-  },
-  // ... same structure
-};
-```
+export function useDashboardRealtime() {
+  const queryClient = useQueryClient();
 
-### Language Hook Usage
+  useEffect(() => {
+    const channel = supabase
+      .channel('dashboard-realtime')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'orders'
+      }, () => {
+        // Invalidate all dashboard queries
+        queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+        queryClient.invalidateQueries({ queryKey: ['recent-orders'] });
+        queryClient.invalidateQueries({ queryKey: ['sales-chart'] });
+        queryClient.invalidateQueries({ queryKey: ['best-selling'] });
+      })
+      .subscribe();
 
-```typescript
-// যেকোনো component এ ব্যবহার:
-const { t, language, setLanguage } = useLanguage();
-
-// Use translations
-<h1>{t('products.title')}</h1>
-<Button>{t('common.save')}</Button>
-
-// Toggle language
-<LanguageToggle value={language} onChange={setLanguage} />
-```
-
----
-
-## Files to Create/Modify
-
-| File | Action | Purpose |
-|------|--------|---------|
-| `src/contexts/LanguageContext.tsx` | Create | Language state ও t() function |
-| `src/locales/bn.ts` | Create | বাংলা translations |
-| `src/locales/en.ts` | Create | English translations |
-| `src/components/admin/settings/LanguageToggle.tsx` | Create | Language switch UI |
-| `src/contexts/AdminThemeContext.tsx` | Modify | Table header colors যোগ |
-| `src/pages/admin/Settings.tsx` | Modify | Language toggle section যোগ |
-| `src/App.tsx` | Modify | LanguageProvider wrap |
-| `src/components/admin/AdminSidebar.tsx` | Modify | Translation keys ব্যবহার |
-| `src/pages/admin/Products.tsx` | Modify | Theme-aware headers + translations |
-| `src/components/admin/orders/OrderTable.tsx` | Modify | Theme-aware headers + translations |
-| `src/index.css` | Modify | Table header CSS variables |
-
----
-
-## UX Flow
-
-```text
-1. User opens Settings > Appearance
-           │
-           ▼
-2. Sees Language section with toggle
-           │
-           ▼
-3. Clicks "English" 
-           │
-           ▼
-4. Entire admin panel instantly switches to English
-   - Sidebar menus
-   - Page titles
-   - Table headers
-   - Button labels
-   - Toast messages
-           │
-           ▼
-5. Preference saved in localStorage
-   (persists across sessions)
-```
-
----
-
-## LocalStorage Persistence
-
-```typescript
-const LANG_STORAGE_KEY = 'ytspider-admin-language';
-
-// Default: 'bn' (Bengali)
-// Options: 'bn' | 'en'
-```
-
----
-
-## Technical Notes
-
-### Theme-Aware Classes
-বর্তমান `bg-muted/50` এর বদলে ব্যবহার করব:
-```css
-.table-header-themed {
-  background-color: hsl(var(--accent) / 0.5);
-  color: hsl(var(--accent-foreground));
+    return () => supabase.removeChannel(channel);
+  }, [queryClient]);
 }
 ```
 
-### Admin-Only Scope
-এই সিস্টেম শুধুমাত্র admin panel এ কাজ করবে। Landing pages ও public pages এর ভাষা আলাদা থাকবে।
+### New Order Animation
 
-### Gradual Migration
-প্রথমে core pages (Products, Orders, Settings) এ translation যোগ হবে। পরবর্তীতে বাকি pages এ যোগ করা যাবে।
+নতুন অর্ডার আসলে Recent Orders table এ:
+- Row slide-in animation
+- Highlight effect (green glow)
+- Fade out to normal after 3 seconds
+
+---
+
+## Part 6: Notification Panel
+
+### Design
+
+```text
+┌──────────────────────────────────────┐
+│ 🔔 Notifications           [Clear]  │
+├──────────────────────────────────────┤
+│ ┌────────────────────────────────┐   │
+│ │ 🆕 New Order                   │   │
+│ │ Md - ৳610 • 5 min ago         │   │
+│ │ [View] [Confirm]              │   │
+│ └────────────────────────────────┘   │
+│                                      │
+│ ┌────────────────────────────────┐   │
+│ │ 📦 Order Shipped              │   │
+│ │ Order #abc123 • 1 hour ago    │   │
+│ │ [Track]                       │   │
+│ └────────────────────────────────┘   │
+│                                      │
+│ ┌────────────────────────────────┐   │
+│ │ ⚠️ Low Stock Alert            │   │
+│ │ Baby Diaper - 2 remaining     │   │
+│ │ [Restock]                     │   │
+│ └────────────────────────────────┘   │
+└──────────────────────────────────────┘
+```
+
+### Implementation
+
+- Sheet component (slides from right)
+- Bell icon in header with badge count
+- Notification types: New Order, Status Change, Low Stock
+- Mark as read functionality
+- Clear all option
+
+---
+
+## Files to Create
+
+| File | Purpose |
+|------|---------|
+| `src/pages/admin/Dashboard.tsx` | Complete redesign |
+| `src/components/admin/dashboard/KpiCard.tsx` | Multi-color KPI cards |
+| `src/components/admin/dashboard/SalesChart.tsx` | Revenue chart |
+| `src/components/admin/dashboard/BestSellingProducts.tsx` | Top products list |
+| `src/components/admin/dashboard/RecentOrdersTable.tsx` | Real-time orders |
+| `src/components/admin/dashboard/OrderStatusChart.tsx` | Pie chart |
+| `src/components/admin/dashboard/DashboardSkeleton.tsx` | Loading states |
+| `src/components/admin/dashboard/NotificationPanel.tsx` | Notification side panel |
+| `src/components/admin/dashboard/index.ts` | Exports |
+| `src/hooks/useDashboardRealtime.ts` | Realtime subscription |
+
+---
+
+## Files to Modify
+
+| File | Changes |
+|------|---------|
+| `src/locales/bn.ts` | Dashboard translations |
+| `src/locales/en.ts` | Dashboard translations |
+| `src/components/admin/AdminLayout.tsx` | Notification bell in header |
+
+---
+
+## Translation Keys (New)
+
+```typescript
+dashboard: {
+  title: 'ড্যাশবোর্ড',
+  totalRevenue: 'মোট আয়',
+  totalOrders: 'মোট অর্ডার',
+  newOrders: 'নতুন অর্ডার',
+  delivered: 'ডেলিভার্ড',
+  cancelled: 'বাতিল',
+  products: 'প্রোডাক্ট',
+  todayOrders: 'আজকের অর্ডার',
+  thisWeek: 'এই সপ্তাহে',
+  pending: 'পেন্ডিং',
+  salesOverview: 'সেলস ওভারভিউ',
+  bestSelling: 'সেরা বিক্রিত প্রোডাক্ট',
+  recentOrders: 'সাম্প্রতিক অর্ডার',
+  orderStatus: 'অর্ডার স্ট্যাটাস',
+  notifications: 'নোটিফিকেশন',
+  viewAll: 'সব দেখুন',
+  noOrders: 'কোনো অর্ডার নেই',
+  sold: 'বিক্রিত',
+  revenue: 'আয়',
+  avgOrderValue: 'গড় অর্ডার মূল্য',
+  last7Days: 'গত ৭ দিন',
+  last30Days: 'গত ৩০ দিন',
+}
+```
+
+---
+
+## KPI Card Colors (Multi-color)
+
+```typescript
+const kpiCards = [
+  {
+    key: 'revenue',
+    gradient: 'from-blue-500 to-purple-600',
+    bgLight: 'bg-blue-50',
+    iconBg: 'bg-blue-100',
+    iconColor: 'text-blue-600',
+    Icon: Wallet,
+  },
+  {
+    key: 'orders',
+    gradient: 'from-emerald-500 to-teal-600',
+    bgLight: 'bg-emerald-50',
+    iconBg: 'bg-emerald-100',
+    iconColor: 'text-emerald-600',
+    Icon: ShoppingCart,
+  },
+  {
+    key: 'newOrders',
+    gradient: 'from-orange-400 to-amber-500',
+    bgLight: 'bg-orange-50',
+    iconBg: 'bg-orange-100',
+    iconColor: 'text-orange-600',
+    Icon: Package,
+  },
+  {
+    key: 'delivered',
+    gradient: 'from-green-500 to-emerald-600',
+    bgLight: 'bg-green-50',
+    iconBg: 'bg-green-100',
+    iconColor: 'text-green-600',
+    Icon: CheckCircle2,
+  },
+];
+```
+
+---
+
+## Technical Implementation
+
+### 1. Dashboard Data Hook
+
+```typescript
+// All dashboard data in one hook with parallel fetching
+export function useDashboardData() {
+  return useQueries({
+    queries: [
+      { queryKey: ['dashboard-stats'], queryFn: fetchStats },
+      { queryKey: ['sales-chart'], queryFn: fetchSalesData },
+      { queryKey: ['best-selling'], queryFn: fetchBestSelling },
+      { queryKey: ['recent-orders'], queryFn: fetchRecentOrders },
+      { queryKey: ['order-distribution'], queryFn: fetchOrderDistribution },
+    ]
+  });
+}
+```
+
+### 2. Notification System
+
+- useOrderNotification hook ইতিমধ্যে আছে
+- NotificationPanel component নতুন তৈরি
+- Bell icon AdminLayout header এ
+
+### 3. Chart Library
+
+recharts ইতিমধ্যে installed আছে - সেটাই ব্যবহার করব
+
+---
+
+## Performance Optimizations
+
+1. **Parallel Data Fetching**: useQueries দিয়ে সব data একসাথে fetch
+2. **Skeleton Loading**: প্রতিটি section এ individual skeleton
+3. **Realtime Subscription**: Single channel for all dashboard updates
+4. **Memoization**: useMemo for chart data formatting
+5. **Lazy Loading**: Charts lazy load করা হবে
