@@ -26,6 +26,7 @@ import {
   BookOpen,
   Target,
   BarChart3,
+  Palette,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -130,6 +131,7 @@ const navGroups: NavGroup[] = [
     items: [
       { href: '/admin/domains', label: 'Allowed Domains', icon: Globe },
       { href: '/admin/webhooks', label: 'Webhooks', icon: Bell },
+      { href: '/admin/settings', label: 'Appearance', icon: Palette },
       { 
         href: '/admin/api', 
         label: 'API', 

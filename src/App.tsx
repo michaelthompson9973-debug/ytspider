@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { AdminThemeProvider } from "@/contexts/AdminThemeContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/admin/Dashboard";
@@ -23,6 +24,7 @@ import ApiMessenger from "./pages/admin/ApiMessenger";
 import ApiWhatsapp from "./pages/admin/ApiWhatsapp";
 import InboxMessenger from "./pages/admin/InboxMessenger";
 import InboxWhatsapp from "./pages/admin/InboxWhatsapp";
+import Settings from "./pages/admin/Settings";
 import LandingPage from "./pages/LandingPage";
 import ThankYou from "./pages/ThankYou";
 import NotFound from "./pages/NotFound";
@@ -30,6 +32,7 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 const App = () => (
+  <AdminThemeProvider>
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <TooltipProvider>
@@ -59,6 +62,7 @@ const App = () => (
             <Route path="/admin/api/courier" element={<ProtectedRoute requireAdmin><ApiCourier /></ProtectedRoute>} />
             <Route path="/admin/api/messaging/messenger" element={<ProtectedRoute requireAdmin><ApiMessenger /></ProtectedRoute>} />
             <Route path="/admin/api/messaging/whatsapp" element={<ProtectedRoute requireAdmin><ApiWhatsapp /></ProtectedRoute>} />
+            <Route path="/admin/settings" element={<ProtectedRoute requireAdmin><Settings /></ProtectedRoute>} />
             <Route path="/thank-you" element={<ThankYou />} />
             <Route path="/p/:slug" element={<LandingPage />} />
             <Route path="*" element={<NotFound />} />
@@ -67,6 +71,7 @@ const App = () => (
       </TooltipProvider>
     </AuthProvider>
   </QueryClientProvider>
+  </AdminThemeProvider>
 );
 
 export default App;
