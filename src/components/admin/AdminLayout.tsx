@@ -1,8 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Menu } from 'lucide-react';
 import {
   SidebarProvider,
   SidebarInset,
@@ -10,6 +6,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import AdminSidebar from './AdminSidebar';
+import { NotificationPanel } from './dashboard/NotificationPanel';
 
 const STORAGE_KEY = 'ytspider-sidebar-collapsed';
 
@@ -31,10 +28,15 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     <>
       <AdminSidebar />
       <SidebarInset>
-        {/* Mobile header with trigger */}
-        <header className="sticky top-0 z-40 flex h-14 items-center gap-4 border-b bg-background px-4 md:hidden">
-          <SidebarTrigger className="-ml-1" />
-          <span className="font-bold text-lg">Ytspider</span>
+        {/* Header with trigger and notifications */}
+        <header className="sticky top-0 z-40 flex h-14 items-center justify-between gap-4 border-b bg-background px-4">
+          <div className="flex items-center gap-4">
+            <SidebarTrigger className="-ml-1 md:hidden" />
+            <span className="font-bold text-lg md:hidden">Ytspider</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <NotificationPanel />
+          </div>
         </header>
 
         {/* Main content */}
