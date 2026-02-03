@@ -1,431 +1,261 @@
 
-# Ytspider Multi-Shop Architecture - Master Plan
 
-## Vision
-Ytspider কে বিশ্বের সবচেয়ে উন্নত মাল্টি-টেন্যান্ট ল্যান্ডিং পেজ সার্ভিস প্ল্যাটফর্মে রূপান্তর করা, যেখানে একটি সিস্টেমে অসংখ্য স্বতন্ত্র শপ চালানো যাবে।
+# সাইডবারে Shop মেনু এন্টারপ্রাইজ ফিচার সহ
 
-## Current State Analysis
+## লক্ষ্য
+সাইডবারে একটি "Shop" ড্রপডাউন মেনু যোগ করা যেখানে এন্টারপ্রাইজ-গ্রেড শপ ম্যানেজমেন্ট ফিচার থাকবে।
 
-**বর্তমান সিস্টেম:**
-- Single-tenant architecture (একটি শপ = সম্পূর্ণ সিস্টেম)
-- `user_roles` টেবিলে শুধু 'admin' role আছে
-- সব ডেটা (products, orders, landing_pages) একই টেবিলে global ভাবে stored
-- RLS policies `is_admin()` ফাংশন দিয়ে চেক করা হয়
-
-**লক্ষ্য:**
-- Multi-tenant architecture (অনেক শপ = একটি সিস্টেম)
-- প্রতিটি শপ সম্পূর্ণ আলাদা (isolated data)
-- Shop switching via dropdown
-- Per-shop role-based access control
-
-## Architecture Design
-
-### Database Schema Changes
+## প্রস্তাবিত Shop মেনু স্ট্রাকচার
 
 ```text
-┌──────────────────────────────────────────────────────────────┐
-│                      NEW TABLES                               │
-├──────────────────────────────────────────────────────────────┤
-│                                                               │
-│  ┌─────────────────┐                                         │
-│  │     shops       │ ◄── Master shop table                   │
-│  ├─────────────────┤                                         │
-│  │ id              │                                         │
-│  │ name            │ "chaldal", "EcomX v2 Pro"               │
-│  │ slug            │ "chaldal", "ecomx-v2-pro"               │
-│  │ logo_url        │                                         │
-│  │ owner_id        │ ──► auth.users                          │
-│  │ plan            │ free, pro, enterprise                   │
-│  │ settings        │ jsonb (theme, currency, etc)            │
-│  │ is_active       │                                         │
-│  │ created_at      │                                         │
-│  └─────────────────┘                                         │
-│           │                                                   │
-│           ▼                                                   │
-│  ┌─────────────────┐                                         │
-│  │  shop_members   │ ◄── Who can access which shop           │
-│  ├─────────────────┤                                         │
-│  │ id              │                                         │
-│  │ shop_id         │ ──► shops.id                            │
-│  │ user_id         │ ──► auth.users                          │
-│  │ role            │ owner, admin, editor, viewer            │
-│  │ invited_by      │                                         │
-│  │ invited_at      │                                         │
-│  │ accepted_at     │                                         │
-│  └─────────────────┘                                         │
-│                                                               │
-└──────────────────────────────────────────────────────────────┘
+Shop ▼
+├── 🏪 Manage           - শপ সেটিংস ম্যানেজ করুন
+├── 👥 Team             - টিম মেম্বার ম্যানেজ করুন
+├── 💳 Billing          - বিলিং ও সাবস্ক্রিপশন
+├── 🔐 Security         - সিকিউরিটি সেটিংস
+├── 📊 Analytics        - শপ এনালিটিক্স
+└── 📋 Audit Log        - অ্যাক্টিভিটি হিস্ট্রি
 ```
 
-### Existing Tables - Add shop_id
+## এন্টারপ্রাইজ ফিচার লিস্ট
 
-```text
-ALL existing tables will get a new column:
+| ফিচার | বিবরণ | প্রায়োরিটি |
+|-------|-------|-----------|
+| **Manage** | শপের নাম, লোগো, কনট্যাক্ট ইনফো, টাইমজোন | High |
+| **Team** | মেম্বার ইনভাইট, রোল ম্যানেজমেন্ট (Owner, Admin, Editor, Viewer) | High |
+| **Billing** | প্ল্যান (Free/Pro/Enterprise), পেমেন্ট হিস্ট্রি, ইনভয়েস | Medium |
+| **Security** | 2FA, API Keys, Session Management, IP Whitelist | Medium |
+| **Analytics** | শপ পারফরম্যান্স, ট্রাফিক, কনভার্সন রেট | Medium |
+| **Audit Log** | সব অ্যাক্টিভিটি ট্র্যাকিং (কে, কখন, কী করেছে) | Low |
 
-┌─────────────────────────────────────────────────────────────┐
-│  products            + shop_id (FK → shops.id)              │
-│  landing_pages       + shop_id (FK → shops.id)              │
-│  orders              + shop_id (FK → shops.id)              │
-│  media               + shop_id (FK → shops.id)              │
-│  tracking_profiles   + shop_id (FK → shops.id)              │
-│  allowed_domains     + shop_id (FK → shops.id)              │
-│  api_keys            + shop_id (FK → shops.id)              │
-│  webhooks            + shop_id (FK → shops.id)              │
-│  courier_credentials + shop_id (FK → shops.id)              │
-│  messenger_*         + shop_id (FK → shops.id)              │
-│  component_library   + shop_id (nullable, global templates) │
-│  ... all other tables                                       │
-└─────────────────────────────────────────────────────────────┘
-```
+## সাইডবার পরিবর্তন
 
-### New Role Enum
+### বর্তমান navGroups স্ট্রাকচারে নতুন গ্রুপ যোগ
 
-```sql
--- Extend app_role enum
-ALTER TYPE app_role ADD VALUE 'shop_owner';
-ALTER TYPE app_role ADD VALUE 'shop_admin';
-ALTER TYPE app_role ADD VALUE 'shop_editor';
-ALTER TYPE app_role ADD VALUE 'shop_viewer';
-ALTER TYPE app_role ADD VALUE 'super_admin';  -- Platform admin
-```
-
-### RLS Policy Updates
-
-```text
-Current: is_admin() checks global admin status
-New:     has_shop_access(shop_id, min_role) checks shop-specific access
-
-Example for products table:
-┌─────────────────────────────────────────────────────────────┐
-│ BEFORE:                                                      │
-│ POLICY "Admins can manage products" USING is_admin()        │
-│                                                              │
-│ AFTER:                                                       │
-│ POLICY "Shop members can view products" FOR SELECT          │
-│   USING has_shop_access(shop_id, 'viewer')                  │
-│                                                              │
-│ POLICY "Shop admins can manage products" FOR ALL            │
-│   USING has_shop_access(shop_id, 'admin')                   │
-└─────────────────────────────────────────────────────────────┘
-```
-
-## Frontend Architecture
-
-### Shop Context
-
-```text
-┌─────────────────────────────────────────────────────────────┐
-│                    ShopContext                               │
-├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│  interface ShopContextType {                                 │
-│    currentShop: Shop | null;                                │
-│    availableShops: Shop[];                                  │
-│    userRoleInCurrentShop: ShopRole;                         │
-│    switchShop: (shopId: string) => void;                    │
-│    isLoading: boolean;                                      │
-│  }                                                          │
-│                                                              │
-│  - Stored in localStorage for persistence                   │
-│  - Synced with URL: /admin/shop/:shopSlug/...              │
-│  - All queries auto-filter by currentShop.id               │
-│                                                              │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### Shop Switcher Component (Top Bar)
-
-```text
-┌───────────────────────────────────────────────────────────────────────┐
-│ ┌──────────────────────────────────────────────────────────────────┐ │
-│ │ 🏪 chaldal ▼                    │ 🔔  👤                        │ │
-│ │ ┌────────────────────────────┐  │                                │ │
-│ │ │ ✓ chaldal           Owner  │  │                                │ │
-│ │ │   EcomX v2 Pro      Admin  │  │                                │ │
-│ │ │   My New Store      Editor │  │                                │ │
-│ │ │ ─────────────────────────  │  │                                │ │
-│ │ │ + নতুন শপ তৈরি করুন       │  │                                │ │
-│ │ └────────────────────────────┘  │                                │ │
-│ └──────────────────────────────────────────────────────────────────┘ │
-│                                                                       │
-│ ┌───────────────────────────────────────────────────────────────┐    │
-│ │ 📊 Dashboard                                                   │    │
-│ │ 📦 Products                                                    │    │
-│ │ 📄 Landing Pages                                               │    │
-│ │ 🛒 Orders                                                      │    │
-│ │ ...                                                            │    │
-│ └───────────────────────────────────────────────────────────────┘    │
-└───────────────────────────────────────────────────────────────────────┘
-```
-
-### URL Structure
-
-```text
-Current:
-  /admin/products
-  /admin/orders
-  /admin/pages/manage
-
-New (Option A - URL Based):
-  /admin/shop/chaldal/products
-  /admin/shop/chaldal/orders
-  /admin/shop/ecomx-v2-pro/pages/manage
-
-New (Option B - Context Based - Recommended):
-  /admin/products        ← shop determined by ShopContext
-  /admin/orders          ← cleaner URLs, less disruption
-  /admin/pages/manage
-```
-
-## Data Flow
-
-```text
-User Login
-    │
-    ▼
-┌──────────────────────┐
-│ Fetch user's shops   │ ← shop_members WHERE user_id = auth.uid()
-└──────────────────────┘
-    │
-    ▼
-┌──────────────────────┐
-│ Set active shop      │ ← First shop or last used (localStorage)
-└──────────────────────┘
-    │
-    ▼
-┌──────────────────────┐
-│ ShopContext provides │
-│ - currentShop.id     │
-│ - userRole           │
-└──────────────────────┘
-    │
-    ▼
-┌──────────────────────┐
-│ All queries filter   │ ← .eq('shop_id', currentShop.id)
-│ by shop_id           │
-└──────────────────────┘
-```
-
-## Database Functions
-
-```sql
--- Check if user has access to a shop with minimum role
-CREATE OR REPLACE FUNCTION has_shop_access(
-  _shop_id uuid,
-  _min_role text DEFAULT 'viewer'
-)
-RETURNS boolean
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE
-  _user_role text;
-  _role_hierarchy text[] := ARRAY['viewer', 'editor', 'admin', 'owner'];
-  _min_index int;
-  _user_index int;
-BEGIN
-  -- Get user's role in this shop
-  SELECT role INTO _user_role
-  FROM shop_members
-  WHERE shop_id = _shop_id 
-    AND user_id = auth.uid()
-    AND accepted_at IS NOT NULL;
-  
-  IF _user_role IS NULL THEN
-    -- Check if super_admin
-    IF EXISTS (
-      SELECT 1 FROM user_roles 
-      WHERE user_id = auth.uid() AND role = 'super_admin'
-    ) THEN
-      RETURN true;
-    END IF;
-    RETURN false;
-  END IF;
-  
-  -- Compare role hierarchy
-  _min_index := array_position(_role_hierarchy, _min_role);
-  _user_index := array_position(_role_hierarchy, _user_role);
-  
-  RETURN _user_index >= _min_index;
-END;
-$$;
-
--- Get user's current shop (for queries)
-CREATE OR REPLACE FUNCTION get_user_shops()
-RETURNS SETOF shops
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
-  SELECT s.*
-  FROM shops s
-  INNER JOIN shop_members sm ON sm.shop_id = s.id
-  WHERE sm.user_id = auth.uid()
-    AND sm.accepted_at IS NOT NULL
-    AND s.is_active = true
-  ORDER BY s.name;
-$$;
-```
-
-## Implementation Phases
-
-### Phase 1: Database Foundation (Week 1-2)
-
-| Task | Description |
-|------|-------------|
-| 1.1 | Create `shops` table |
-| 1.2 | Create `shop_members` table |
-| 1.3 | Update `app_role` enum |
-| 1.4 | Create `has_shop_access()` function |
-| 1.5 | Add `shop_id` column to all existing tables |
-| 1.6 | Create default shop for existing data |
-| 1.7 | Update RLS policies for all tables |
-
-### Phase 2: Frontend Core (Week 3-4)
-
-| Task | Description |
-|------|-------------|
-| 2.1 | Create `ShopContext` and `ShopProvider` |
-| 2.2 | Build `ShopSwitcher` dropdown component |
-| 2.3 | Integrate into `AdminLayout` header |
-| 2.4 | Update `AuthContext` to load shops |
-| 2.5 | Create `useCurrentShop()` hook |
-
-### Phase 3: Query Updates (Week 5-6)
-
-| Task | Description |
-|------|-------------|
-| 3.1 | Update all Supabase queries to filter by `shop_id` |
-| 3.2 | Update all insert operations to include `shop_id` |
-| 3.3 | Update edge functions to handle `shop_id` |
-| 3.4 | Update realtime subscriptions with shop filter |
-
-### Phase 4: Shop Management (Week 7-8)
-
-| Task | Description |
-|------|-------------|
-| 4.1 | Create "New Shop" dialog/page |
-| 4.2 | Build shop settings page |
-| 4.3 | Implement team management (invite, roles) |
-| 4.4 | Add shop invitation system (email) |
-| 4.5 | Create shop deletion/archive flow |
-
-### Phase 5: Polish & Testing (Week 9-10)
-
-| Task | Description |
-|------|-------------|
-| 5.1 | End-to-end testing multi-shop isolation |
-| 5.2 | Performance optimization |
-| 5.3 | Data migration tools |
-| 5.4 | Documentation |
-
-## Key Components to Create
-
-### ShopContext.tsx
-
-```tsx
-interface Shop {
-  id: string;
-  name: string;
-  slug: string;
-  logo_url: string | null;
-  plan: 'free' | 'pro' | 'enterprise';
-  settings: Record<string, any>;
-}
-
-interface ShopContextType {
-  currentShop: Shop | null;
-  availableShops: Shop[];
-  userRole: 'owner' | 'admin' | 'editor' | 'viewer' | null;
-  switchShop: (shopId: string) => Promise<void>;
-  isLoading: boolean;
-  createShop: (name: string) => Promise<Shop>;
+```typescript
+// Overview group এর পরে, Content এর আগে
+{
+  labelKey: 'sidebar.shop',
+  items: [
+    { 
+      href: '/admin/shop', 
+      labelKey: 'sidebar.myShop', 
+      icon: Store,
+      children: [
+        { href: '/admin/shop/manage', labelKey: 'sidebar.shopManage', icon: Settings },
+        { href: '/admin/shop/team', labelKey: 'sidebar.shopTeam', icon: Users },
+        { href: '/admin/shop/billing', labelKey: 'sidebar.shopBilling', icon: CreditCard },
+        { href: '/admin/shop/security', labelKey: 'sidebar.shopSecurity', icon: Shield },
+        { href: '/admin/shop/analytics', labelKey: 'sidebar.shopAnalytics', icon: BarChart3 },
+        { href: '/admin/shop/audit-log', labelKey: 'sidebar.shopAuditLog', icon: ClipboardList },
+      ]
+    },
+  ],
 }
 ```
 
-### ShopSwitcher.tsx (Header Component)
+## নতুন পেজ তৈরি
 
-```tsx
-// Dropdown in top bar showing:
-// - Current shop name with logo
-// - List of available shops with roles
-// - "Create new shop" button
-// - Search for shops (if many)
+| পেজ | Route | ফিচার |
+|-----|-------|-------|
+| ShopManage | `/admin/shop/manage` | শপ নাম, লোগো, স্লাগ, কন্ট্যাক্ট, টাইমজোন, কারেন্সি |
+| ShopBilling | `/admin/shop/billing` | প্ল্যান আপগ্রেড/ডাউনগ্রেড, পেমেন্ট মেথড, ইনভয়েস |
+| ShopSecurity | `/admin/shop/security` | 2FA সেটআপ, API Keys ম্যানেজ, সেশন দেখা |
+| ShopAnalytics | `/admin/shop/analytics` | ট্রাফিক, কনভার্সন, রেভিনিউ চার্ট |
+| ShopAuditLog | `/admin/shop/audit-log` | সব অ্যাক্টিভিটি টেবিল (ফিল্টারেবল) |
+
+## প্রতিটি পেজের বিস্তারিত
+
+### 1. Shop Manage পেজ
+```text
+┌────────────────────────────────────────────────────────────┐
+│ 🏪 শপ সেটিংস                                               │
+├────────────────────────────────────────────────────────────┤
+│ ┌──────────────────┐  ┌──────────────────────────────────┐ │
+│ │ Logo Upload      │  │ Shop Name: [chaldal           ] │ │
+│ │ [🖼️ Click to    ] │  │ Slug: [chaldal               ] │ │
+│ │ [ upload        ] │  │ Email: [info@chaldal.com     ] │ │
+│ └──────────────────┘  │ Phone: [+880 1700-000000     ] │ │
+│                       │ Address: [Dhaka, Bangladesh  ] │ │
+│                       │ Timezone: [Asia/Dhaka ▼]       │ │
+│                       │ Currency: [BDT ▼]              │ │
+│                       └──────────────────────────────────┘ │
+│                                                            │
+│ Danger Zone                                                │
+│ ┌────────────────────────────────────────────────────────┐ │
+│ │ ⚠️ শপ ডিলিট করুন - এটা undo করা যাবে না              │ │
+│ │ [Delete Shop]                                          │ │
+│ └────────────────────────────────────────────────────────┘ │
+└────────────────────────────────────────────────────────────┘
 ```
 
-### useShopQuery Hook
+### 2. Billing পেজ
+```text
+┌────────────────────────────────────────────────────────────┐
+│ 💳 বিলিং ও সাবস্ক্রিপশন                                    │
+├────────────────────────────────────────────────────────────┤
+│ Current Plan: [PRO] - ৳999/মাস                             │
+│ Renews on: 15 Feb 2026                                     │
+│                                                            │
+│ ┌──────────────┐ ┌──────────────┐ ┌──────────────────────┐ │
+│ │ FREE         │ │ PRO ✓       │ │ ENTERPRISE           │ │
+│ │ ৳0/মাস      │ │ ৳999/মাস    │ │ Contact Sales        │ │
+│ │              │ │              │ │                      │ │
+│ │ • 1 Shop     │ │ • 5 Shops   │ │ • Unlimited Shops    │ │
+│ │ • 100 Orders │ │ • Unlimited │ │ • Priority Support   │ │
+│ │ • 2 Team     │ │ • 10 Team   │ │ • Custom SLA         │ │
+│ └──────────────┘ └──────────────┘ └──────────────────────┘ │
+│                                                            │
+│ Payment History                                            │
+│ ┌────────────────────────────────────────────────────────┐ │
+│ │ Date       │ Amount │ Status  │ Invoice                │ │
+│ │ 15 Jan 26  │ ৳999   │ Paid    │ [Download PDF]        │ │
+│ │ 15 Dec 25  │ ৳999   │ Paid    │ [Download PDF]        │ │
+│ └────────────────────────────────────────────────────────┘ │
+└────────────────────────────────────────────────────────────┘
+```
 
-```tsx
-// Wrapper around useQuery that auto-adds shop_id filter
-function useShopQuery<T>(
-  key: string[],
-  queryFn: (shopId: string) => Promise<T>,
-  options?: QueryOptions
-) {
-  const { currentShop } = useShop();
-  return useQuery({
-    queryKey: [...key, currentShop?.id],
-    queryFn: () => queryFn(currentShop!.id),
-    enabled: !!currentShop,
-    ...options
-  });
+### 3. Security পেজ
+```text
+┌────────────────────────────────────────────────────────────┐
+│ 🔐 সিকিউরিটি সেটিংস                                        │
+├────────────────────────────────────────────────────────────┤
+│                                                            │
+│ Two-Factor Authentication                                  │
+│ ┌────────────────────────────────────────────────────────┐ │
+│ │ 🔒 2FA Enabled                    [Disable]            │ │
+│ └────────────────────────────────────────────────────────┘ │
+│                                                            │
+│ API Keys                                                   │
+│ ┌────────────────────────────────────────────────────────┐ │
+│ │ Name          │ Created     │ Last Used │ Actions      │ │
+│ │ Production    │ 10 Jan 26   │ Today     │ [Revoke]    │ │
+│ │ Development   │ 5 Jan 26    │ Never     │ [Revoke]    │ │
+│ │ [+ Create New API Key]                                 │ │
+│ └────────────────────────────────────────────────────────┘ │
+│                                                            │
+│ Active Sessions                                            │
+│ ┌────────────────────────────────────────────────────────┐ │
+│ │ 🖥️ Chrome on Windows - Dhaka (Current)                │ │
+│ │ 📱 Mobile App - Dhaka - 2 hours ago      [Logout]     │ │
+│ │ [Logout All Other Sessions]                            │ │
+│ └────────────────────────────────────────────────────────┘ │
+└────────────────────────────────────────────────────────────┘
+```
+
+### 4. Analytics পেজ
+```text
+┌────────────────────────────────────────────────────────────┐
+│ 📊 শপ এনালিটিক্স                                           │
+├────────────────────────────────────────────────────────────┤
+│ [Last 7 Days ▼] [Last 30 Days] [Custom Range]             │
+│                                                            │
+│ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐           │
+│ │ 12,450  │ │ 856     │ │ 3.2%    │ │ ৳45,000 │           │
+│ │ Visitors│ │ Orders  │ │ Conv.   │ │ Revenue │           │
+│ │ +12%    │ │ +8%     │ │ +0.5%   │ │ +15%    │           │
+│ └─────────┘ └─────────┘ └─────────┘ └─────────┘           │
+│                                                            │
+│ [═══════════════════════════════════════════════════════]  │
+│  Traffic & Orders Chart                                    │
+│                                                            │
+│ Top Landing Pages           │ Top Products                │
+│ /p/product-1    45%         │ Product A - 120 sold       │
+│ /p/offer-2      30%         │ Product B - 85 sold        │
+│ /p/bundle-3     25%         │ Product C - 62 sold        │
+└────────────────────────────────────────────────────────────┘
+```
+
+### 5. Audit Log পেজ
+```text
+┌────────────────────────────────────────────────────────────┐
+│ 📋 অ্যাক্টিভিটি লগ                                         │
+├────────────────────────────────────────────────────────────┤
+│ Filter: [All Actions ▼] [All Users ▼] [Date Range]        │
+│                                                            │
+│ ┌────────────────────────────────────────────────────────┐ │
+│ │ 🟢 admin@shop.com                                       │ │
+│ │    Updated product "Product A" price                   │ │
+│ │    📍 Dhaka, Bangladesh • 5 mins ago                   │ │
+│ ├────────────────────────────────────────────────────────┤ │
+│ │ 🟢 editor@shop.com                                      │ │
+│ │    Created new landing page "Winter Sale"              │ │
+│ │    📍 Chittagong • 2 hours ago                         │ │
+│ ├────────────────────────────────────────────────────────┤ │
+│ │ 🔴 unknown@email.com                                    │ │
+│ │    Failed login attempt                                │ │
+│ │    📍 Unknown location • 3 hours ago                   │ │
+│ └────────────────────────────────────────────────────────┘ │
+│                                                            │
+│ [Load More]                                                │
+└────────────────────────────────────────────────────────────┘
+```
+
+## Locale Updates
+
+```typescript
+// bn.ts এবং en.ts এ যোগ করতে হবে
+sidebar: {
+  // ... existing
+  shop: 'শপ',
+  myShop: 'আমার শপ',
+  shopManage: 'ম্যানেজ',
+  shopTeam: 'টিম',
+  shopBilling: 'বিলিং',
+  shopSecurity: 'সিকিউরিটি',
+  shopAnalytics: 'এনালিটিক্স',
+  shopAuditLog: 'অডিট লগ',
 }
 ```
 
-## Files to Create
+## Database Tables প্রয়োজন
 
-| File | Purpose |
+| টেবিল | কলাম | উদ্দেশ্য |
+|-------|------|---------|
+| `shop_audit_logs` | id, shop_id, user_id, action, entity_type, entity_id, old_data, new_data, ip_address, user_agent, created_at | সব অ্যাক্টিভিটি ট্র্যাক |
+| `shop_api_keys` | id, shop_id, name, key_hash, last_used_at, created_by, revoked_at | API Key ম্যানেজমেন্ট |
+| `shop_sessions` | id, user_id, shop_id, ip_address, user_agent, created_at, last_active_at | অ্যাক্টিভ সেশন ট্র্যাক |
+| `shop_billing` | id, shop_id, plan, stripe_customer_id, current_period_end | বিলিং ইনফো |
+| `shop_invoices` | id, shop_id, amount, status, invoice_url, created_at | পেমেন্ট হিস্ট্রি |
+
+## Implementation Steps
+
+### Phase 1: UI Structure
+1. `AdminSidebar.tsx` এ Shop গ্রুপ যোগ
+2. Locale files আপডেট
+3. Routes যোগ `App.tsx` এ
+
+### Phase 2: Pages তৈরি
+1. `ShopManage.tsx` - বেসিক সেটিংস
+2. Team পেজ আগেই আছে (refactor route to `/admin/shop/team`)
+3. অন্য পেজগুলো placeholder হিসেবে
+
+### Phase 3: Database & Backend
+1. নতুন টেবিল তৈরি
+2. RLS policies
+3. Edge functions for billing integration
+
+## ফাইল পরিবর্তন
+
+| ফাইল | পরিবর্তন |
 |------|---------|
-| `src/contexts/ShopContext.tsx` | Shop state management |
-| `src/components/admin/ShopSwitcher.tsx` | Dropdown component |
-| `src/hooks/useShop.ts` | Shop access hook |
-| `src/hooks/useShopQuery.ts` | Query wrapper with shop filter |
-| `src/pages/admin/ShopSettings.tsx` | Shop configuration page |
-| `src/pages/admin/TeamMembers.tsx` | Team management page |
-| `src/components/admin/InviteTeamMemberModal.tsx` | Invitation dialog |
-| `supabase/functions/invite-team-member/index.ts` | Email invitation |
-
-## Files to Modify
-
-| File | Changes |
-|------|---------|
-| `src/contexts/AuthContext.tsx` | Add shop loading on auth |
-| `src/components/admin/AdminLayout.tsx` | Add ShopSwitcher to header |
-| `src/components/admin/AdminSidebar.tsx` | Show shop name/logo |
-| All admin pages | Wrap queries with shop filter |
-| All edge functions | Add shop_id handling |
-
-## Security Considerations
-
-1. **Data Isolation**: RLS policies ensure users can ONLY see their shop's data
-2. **Role Hierarchy**: owner > admin > editor > viewer
-3. **Super Admin**: Platform-level access (for Ytspider team)
-4. **Invitation Flow**: Secure token-based team invitations
-5. **Shop Deletion**: Soft delete with data retention policy
-
-## Migration Strategy
-
-```text
-For Existing Users:
-┌─────────────────────────────────────────────────────────────┐
-│ 1. Create default shop "My Shop" for each existing admin   │
-│ 2. Migrate all their data to this shop (set shop_id)       │
-│ 3. Set them as 'owner' in shop_members                     │
-│ 4. First login shows "Welcome to Multi-Shop" modal         │
-└─────────────────────────────────────────────────────────────┘
-```
+| `src/components/admin/AdminSidebar.tsx` | Shop গ্রুপ যোগ, icons import |
+| `src/locales/bn.ts` | Shop translations |
+| `src/locales/en.ts` | Shop translations |
+| `src/App.tsx` | নতুন routes |
+| `src/pages/admin/ShopManage.tsx` | নতুন পেজ |
+| `src/pages/admin/ShopBilling.tsx` | নতুন পেজ |
+| `src/pages/admin/ShopSecurity.tsx` | নতুন পেজ |
+| `src/pages/admin/ShopAnalytics.tsx` | নতুন পেজ |
+| `src/pages/admin/ShopAuditLog.tsx` | নতুন পেজ |
 
 ## Summary
 
-| Feature | Description |
-|---------|-------------|
-| **Multi-Shop** | অসংখ্য শপ তৈরি ও ম্যানেজ করা যাবে |
-| **Shop Switching** | Top bar dropdown দিয়ে সহজে switch |
-| **Team Access** | প্রতিটি শপে আলাদা টিম মেম্বার |
-| **Role-Based** | Owner, Admin, Editor, Viewer roles |
-| **Data Isolation** | প্রতিটি শপের ডেটা সম্পূর্ণ আলাদা |
-| **Scalable** | Enterprise-grade multi-tenant architecture |
+এন্টারপ্রাইজ-গ্রেড শপ ম্যানেজমেন্ট সিস্টেম যোগ করা হবে সাইডবারে "Shop" ড্রপডাউন মেনু দিয়ে, যেখানে থাকবে:
+- **Manage**: শপ সেটিংস
+- **Team**: টিম ম্যানেজমেন্ট
+- **Billing**: সাবস্ক্রিপশন ও পেমেন্ট
+- **Security**: 2FA, API Keys, Sessions
+- **Analytics**: পারফরম্যান্স মেট্রিক্স
+- **Audit Log**: সব অ্যাক্টিভিটি ট্র্যাকিং
 
-এটি একটি বড় architectural পরিবর্তন যা প্রায় ৮-১০ সপ্তাহ সময় নিতে পারে সম্পূর্ণ implementation এর জন্য। আপনি চাইলে Phase-by-phase শুরু করতে পারেন।
