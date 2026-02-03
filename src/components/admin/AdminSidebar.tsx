@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import {
   LayoutDashboard,
@@ -62,86 +63,86 @@ const STORAGE_KEY = 'ytspider-sidebar-collapsed';
 
 interface NavSubItem {
   href: string;
-  label: string;
+  labelKey: string;
   icon?: React.ComponentType<{ className?: string }>;
   badge?: 'available' | 'N/A';
 }
 
 interface NavItem {
   href: string;
-  label: string;
+  labelKey: string;
   icon: React.ComponentType<{ className?: string }>;
   children?: NavSubItem[];
 }
 
 interface NavGroup {
-  label: string;
+  labelKey: string;
   items: NavItem[];
 }
 
 const navGroups: NavGroup[] = [
   {
-    label: 'Overview',
+    labelKey: 'sidebar.overview',
     items: [
-      { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
+      { href: '/admin', labelKey: 'sidebar.dashboard', icon: LayoutDashboard },
     ],
   },
   {
-    label: 'Content',
+    labelKey: 'sidebar.content',
     items: [
-      { href: '/admin/products', label: 'Products', icon: Package },
+      { href: '/admin/products', labelKey: 'sidebar.products', icon: Package },
       { 
         href: '/admin/pages', 
-        label: 'Landing Pages', 
+        labelKey: 'sidebar.landingPages', 
         icon: FileText,
         children: [
-          { href: '/admin/pages/library', label: 'Library', icon: BookOpen },
-          { href: '/admin/pages/manage', label: 'Pages', icon: FileText },
+          { href: '/admin/pages/library', labelKey: 'sidebar.library', icon: BookOpen },
+          { href: '/admin/pages/manage', labelKey: 'sidebar.pages', icon: FileText },
         ]
       },
-      { href: '/admin/media', label: 'Media', icon: Image },
+      { href: '/admin/media', labelKey: 'sidebar.media', icon: Image },
     ],
   },
   {
-    label: 'Operations',
+    labelKey: 'sidebar.operations',
     items: [
-      { href: '/admin/orders', label: 'Orders', icon: ShoppingCart },
+      { href: '/admin/orders', labelKey: 'sidebar.orders', icon: ShoppingCart },
       { 
         href: '/admin/tracking', 
-        label: 'Tracking', 
+        labelKey: 'sidebar.tracking', 
         icon: Activity,
         children: [
-          { href: '/admin/tracking', label: 'Events', icon: BarChart3 },
-          { href: '/admin/tracking/profiles', label: 'Profiles', icon: Target },
+          { href: '/admin/tracking', labelKey: 'sidebar.events', icon: BarChart3 },
+          { href: '/admin/tracking/profiles', labelKey: 'sidebar.profiles', icon: Target },
         ]
       },
       { 
         href: '/admin/inbox', 
-        label: 'Inbox', 
+        labelKey: 'sidebar.inbox', 
         icon: Inbox,
         children: [
-          { href: '/admin/inbox/messenger', label: 'Messenger', icon: MessageCircle },
-          { href: '/admin/inbox/whatsapp', label: 'WhatsApp', icon: MessageSquare },
+          { href: '/admin/inbox/messenger', labelKey: 'sidebar.messenger', icon: MessageCircle },
+          { href: '/admin/inbox/whatsapp', labelKey: 'sidebar.whatsapp', icon: MessageSquare },
         ]
       },
     ],
   },
   {
-    label: 'Settings',
+    labelKey: 'sidebar.settings',
     items: [
-      { href: '/admin/domains', label: 'Allowed Domains', icon: Globe },
-      { href: '/admin/webhooks', label: 'Webhooks', icon: Bell },
-      { href: '/admin/settings', label: 'Appearance', icon: Palette },
+      { href: '/admin/domains', labelKey: 'sidebar.allowedDomains', icon: Globe },
+      { href: '/admin/webhooks', labelKey: 'sidebar.webhooks', icon: Bell },
+      { href: '/admin/settings', labelKey: 'sidebar.appearance', icon: Palette },
       { 
         href: '/admin/api', 
-        label: 'API', 
+        labelKey: 'sidebar.api', 
         icon: Key,
         children: [
-          { href: '/admin/api/ai', label: 'AI', icon: Bot, badge: 'available' },
-          { href: '/admin/api/fraud-check', label: 'Fraud Check', icon: ShieldAlert, badge: 'available' },
-          { href: '/admin/api/courier', label: 'Courier', icon: Truck, badge: 'N/A' },
-          { href: '/admin/api/messaging/messenger', label: 'Messenger', icon: MessageCircle },
-          { href: '/admin/api/messaging/whatsapp', label: 'WhatsApp', icon: MessageSquare },
+          { href: '/admin/api/ai', labelKey: 'sidebar.ai', icon: Bot, badge: 'available' },
+          { href: '/admin/api/fraud-check', labelKey: 'sidebar.fraudCheck', icon: ShieldAlert, badge: 'available' },
+          { href: '/admin/api/courier', labelKey: 'sidebar.courier', icon: Truck, badge: 'N/A' },
+          { href: '/admin/api/messaging/messenger', labelKey: 'sidebar.messenger', icon: MessageCircle },
+          { href: '/admin/api/messaging/whatsapp', labelKey: 'sidebar.whatsapp', icon: MessageSquare },
         ]
       },
     ],
@@ -151,6 +152,7 @@ const navGroups: NavGroup[] = [
 function ApiSubMenu({ item }: { item: NavItem }) {
   const location = useLocation();
   const { state } = useSidebar();
+  const { t } = useLanguage();
   const isCollapsed = state === 'collapsed';
   
   const hasActiveChild = item.children?.some(
@@ -188,13 +190,13 @@ function ApiSubMenu({ item }: { item: NavItem }) {
             <SidebarMenuButton asChild isActive={hasActiveChild}>
               <Link to={item.children?.[0]?.href || item.href}>
                 <item.icon className="h-4 w-4" />
-                <span>{item.label}</span>
+                <span>{t(item.labelKey)}</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </TooltipTrigger>
         <TooltipContent side="right" className="flex flex-col gap-1 p-2">
-          <span className="font-medium mb-1">{item.label}</span>
+          <span className="font-medium mb-1">{t(item.labelKey)}</span>
           {item.children?.map((child) => (
             <Link 
               key={child.href} 
@@ -204,7 +206,7 @@ function ApiSubMenu({ item }: { item: NavItem }) {
                 location.pathname === child.href && "bg-accent font-medium"
               )}
             >
-              {child.label}
+              {t(child.labelKey)}
             </Link>
           ))}
         </TooltipContent>
@@ -218,7 +220,7 @@ function ApiSubMenu({ item }: { item: NavItem }) {
         <CollapsibleTrigger asChild>
           <SidebarMenuButton isActive={hasActiveChild}>
             <item.icon className="h-4 w-4" />
-            <span>{item.label}</span>
+            <span>{t(item.labelKey)}</span>
             <ChevronRight
               className={cn(
                 'ml-auto h-4 w-4 transition-transform duration-200',
@@ -236,7 +238,7 @@ function ApiSubMenu({ item }: { item: NavItem }) {
                   <SidebarMenuSubButton asChild isActive={isActive}>
                     <Link to={child.href} className="flex items-center gap-2">
                       {child.icon && <child.icon className="h-3.5 w-3.5" />}
-                      <span>{child.label}</span>
+                      <span>{t(child.labelKey)}</span>
                       {getBadge(child.badge)}
                     </Link>
                   </SidebarMenuSubButton>
@@ -253,6 +255,7 @@ function ApiSubMenu({ item }: { item: NavItem }) {
 function NavGroupCollapsible({ group }: { group: NavGroup }) {
   const location = useLocation();
   const { state } = useSidebar();
+  const { t } = useLanguage();
   const isCollapsed = state === 'collapsed';
 
   const hasActiveItem = group.items.some(
@@ -279,11 +282,11 @@ function NavGroupCollapsible({ group }: { group: NavGroup }) {
             <SidebarMenuButton
               asChild
               isActive={isActive}
-              tooltip={item.label}
+              tooltip={t(item.labelKey)}
             >
               <Link to={item.href}>
                 <item.icon className="h-4 w-4" />
-                <span>{item.label}</span>
+                <span>{t(item.labelKey)}</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -307,11 +310,11 @@ function NavGroupCollapsible({ group }: { group: NavGroup }) {
                 <SidebarMenuButton
                   asChild
                   isActive={isActive}
-                  tooltip={item.label}
+                  tooltip={t(item.labelKey)}
                 >
                   <Link to={item.href}>
                     <item.icon className="h-4 w-4" />
-                    <span>{item.label}</span>
+                    <span>{t(item.labelKey)}</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -327,7 +330,7 @@ function NavGroupCollapsible({ group }: { group: NavGroup }) {
       <SidebarGroup>
         <CollapsibleTrigger asChild>
           <SidebarGroupLabel className="cursor-pointer hover:bg-sidebar-accent hover:text-sidebar-accent-foreground rounded-md transition-colors">
-            <span className="flex-1">{group.label}</span>
+            <span className="flex-1">{t(group.labelKey)}</span>
             <ChevronDown
               className={cn(
                 'h-4 w-4 transition-transform duration-200',
@@ -349,7 +352,7 @@ function NavGroupCollapsible({ group }: { group: NavGroup }) {
                     <SidebarMenuButton asChild isActive={isActive}>
                       <Link to={item.href}>
                         <item.icon className="h-4 w-4" />
-                        <span>{item.label}</span>
+                        <span>{t(item.labelKey)}</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -365,6 +368,7 @@ function NavGroupCollapsible({ group }: { group: NavGroup }) {
 
 function SidebarCollapseButton() {
   const { state, toggleSidebar } = useSidebar();
+  const { t } = useLanguage();
   const isCollapsed = state === 'collapsed';
 
   return (
@@ -395,6 +399,7 @@ export default function AdminSidebar() {
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const { state } = useSidebar();
+  const { t } = useLanguage();
   const isCollapsed = state === 'collapsed';
 
   const handleSignOut = async () => {
@@ -419,7 +424,7 @@ export default function AdminSidebar() {
       {/* Content - scrollable */}
       <SidebarContent>
         {navGroups.map((group, index) => (
-          <div key={group.label}>
+          <div key={group.labelKey}>
             {index > 0 && !isCollapsed && <SidebarSeparator className="my-1" />}
             <NavGroupCollapsible group={group} />
           </div>
@@ -432,11 +437,11 @@ export default function AdminSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton
               onClick={handleSignOut}
-              tooltip="Sign Out"
+              tooltip={t('common.signOut')}
               className="text-muted-foreground hover:text-foreground"
             >
               <LogOut className="h-4 w-4" />
-              <span>Sign Out</span>
+              <span>{t('common.signOut')}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
@@ -444,4 +449,3 @@ export default function AdminSidebar() {
     </Sidebar>
   );
 }
-
