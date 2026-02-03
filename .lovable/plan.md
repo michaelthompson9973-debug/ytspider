@@ -1,261 +1,241 @@
 
 
-# সাইডবারে Shop মেনু এন্টারপ্রাইজ ফিচার সহ
+# Top Bar ও Sidebar রিডিজাইন - Shop Switcher ও Business মেনু
 
 ## লক্ষ্য
-সাইডবারে একটি "Shop" ড্রপডাউন মেনু যোগ করা যেখানে এন্টারপ্রাইজ-গ্রেড শপ ম্যানেজমেন্ট ফিচার থাকবে।
 
-## প্রস্তাবিত Shop মেনু স্ট্রাকচার
+1. **Top Bar** - Shop Switcher কে সেন্টারে নিয়ে যাওয়া, দুটি আলাদা কম্পোনেন্ট হিসেবে:
+   - `[+ Add New Shop]` বাটন
+   - `[Switch Shop ▼]` ড্রপডাউন
+
+2. **Sidebar** - "আমার শপ" → "Business" নাম পরিবর্তন করা (Super Admin এর জন্য)
+   - "Manage" ক্লিক করলে সব শপের লিস্ট দেখাবে (Super Admin দৃষ্টিকোণ থেকে)
+
+## নতুন Top Bar Layout
 
 ```text
-Shop ▼
-├── 🏪 Manage           - শপ সেটিংস ম্যানেজ করুন
-├── 👥 Team             - টিম মেম্বার ম্যানেজ করুন
-├── 💳 Billing          - বিলিং ও সাবস্ক্রিপশন
-├── 🔐 Security         - সিকিউরিটি সেটিংস
-├── 📊 Analytics        - শপ এনালিটিক্স
-└── 📋 Audit Log        - অ্যাক্টিভিটি হিস্ট্রি
+┌──────────────────────────────────────────────────────────────────────────┐
+│ [≡]  Ytspider          │ [+ Add Shop] [chaldal ▼] │            🔔  👤   │
+│ (mobile trigger)       │      CENTER              │            RIGHT     │
+└──────────────────────────────────────────────────────────────────────────┘
 ```
 
-## এন্টারপ্রাইজ ফিচার লিস্ট
+## পরিবর্তনসমূহ
 
-| ফিচার | বিবরণ | প্রায়োরিটি |
-|-------|-------|-----------|
-| **Manage** | শপের নাম, লোগো, কনট্যাক্ট ইনফো, টাইমজোন | High |
-| **Team** | মেম্বার ইনভাইট, রোল ম্যানেজমেন্ট (Owner, Admin, Editor, Viewer) | High |
-| **Billing** | প্ল্যান (Free/Pro/Enterprise), পেমেন্ট হিস্ট্রি, ইনভয়েস | Medium |
-| **Security** | 2FA, API Keys, Session Management, IP Whitelist | Medium |
-| **Analytics** | শপ পারফরম্যান্স, ট্রাফিক, কনভার্সন রেট | Medium |
-| **Audit Log** | সব অ্যাক্টিভিটি ট্র্যাকিং (কে, কখন, কী করেছে) | Low |
+### 1. AdminLayout.tsx - Header রিস্ট্রাকচার
 
-## সাইডবার পরিবর্তন
+**আগে:**
+```tsx
+<header className="... justify-between ...">
+  <div className="flex items-center gap-3">
+    <SidebarTrigger />
+    <span>Ytspider</span>
+    <ShopSwitcher /> {/* বামে */}
+  </div>
+  <div className="flex items-center gap-2">
+    <NotificationPanel />
+  </div>
+</header>
+```
 
-### বর্তমান navGroups স্ট্রাকচারে নতুন গ্রুপ যোগ
+**পরে:**
+```tsx
+<header className="... justify-between ...">
+  {/* Left */}
+  <div className="flex items-center gap-3">
+    <SidebarTrigger className="-ml-1 md:hidden" />
+    <span className="font-bold text-lg md:hidden">Ytspider</span>
+  </div>
+  
+  {/* Center - Shop Controls */}
+  <div className="flex items-center gap-2">
+    <ShopSwitcher />
+  </div>
+  
+  {/* Right */}
+  <div className="flex items-center gap-2">
+    <NotificationPanel />
+  </div>
+</header>
+```
 
+### 2. ShopSwitcher.tsx - UI পুনর্গঠন
+
+**নতুন ডিজাইন:**
+```text
+┌─────────────────────────────────────────────────┐
+│ [+ Add Shop]  │  [🏪 chaldal ▼]                │
+│   Button      │     Dropdown                   │
+└─────────────────────────────────────────────────┘
+```
+
+**কোড স্ট্রাকচার:**
+```tsx
+export function ShopSwitcher() {
+  return (
+    <div className="flex items-center gap-2">
+      {/* Add New Shop Button */}
+      <Button 
+        variant="outline" 
+        size="sm"
+        onClick={() => setCreateDialogOpen(true)}
+      >
+        <Plus className="h-4 w-4 mr-1" />
+        <span className="hidden sm:inline">Add Shop</span>
+      </Button>
+
+      {/* Shop Switch Dropdown */}
+      {currentShop && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm">
+              <Avatar className="h-5 w-5 mr-2" />
+              <span>{currentShop.name}</span>
+              <ChevronDown className="h-4 w-4 ml-1" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            {/* Shop list */}
+            {availableShops.map((shop) => (...))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+    </div>
+  );
+}
+```
+
+### 3. AdminSidebar.tsx - Menu রিনেম করা
+
+**আগে:**
 ```typescript
-// Overview group এর পরে, Content এর আগে
 {
   labelKey: 'sidebar.shop',
   items: [
     { 
       href: '/admin/shop', 
-      labelKey: 'sidebar.myShop', 
+      labelKey: 'sidebar.myShop',  // "আমার শপ"
       icon: Store,
+      children: [...]
+    },
+  ],
+}
+```
+
+**পরে:**
+```typescript
+{
+  labelKey: 'sidebar.business',  // "বিজনেস"
+  items: [
+    { 
+      href: '/admin/business', 
+      labelKey: 'sidebar.businessManagement',  // "বিজনেস ম্যানেজমেন্ট"
+      icon: Building2,
       children: [
-        { href: '/admin/shop/manage', labelKey: 'sidebar.shopManage', icon: Settings },
-        { href: '/admin/shop/team', labelKey: 'sidebar.shopTeam', icon: Users },
-        { href: '/admin/shop/billing', labelKey: 'sidebar.shopBilling', icon: CreditCard },
-        { href: '/admin/shop/security', labelKey: 'sidebar.shopSecurity', icon: Shield },
-        { href: '/admin/shop/analytics', labelKey: 'sidebar.shopAnalytics', icon: BarChart3 },
-        { href: '/admin/shop/audit-log', labelKey: 'sidebar.shopAuditLog', icon: ClipboardList },
+        { href: '/admin/business/shops', labelKey: 'sidebar.allShops', icon: Store },  // সব শপ লিস্ট
+        { href: '/admin/business/team', labelKey: 'sidebar.shopTeam', icon: Users },
+        { href: '/admin/business/billing', labelKey: 'sidebar.shopBilling', icon: CreditCard },
+        { href: '/admin/business/security', labelKey: 'sidebar.shopSecurity', icon: Shield },
+        { href: '/admin/business/analytics', labelKey: 'sidebar.shopAnalytics', icon: BarChart3 },
+        { href: '/admin/business/audit-log', labelKey: 'sidebar.shopAuditLog', icon: ClipboardList },
       ]
     },
   ],
 }
 ```
 
-## নতুন পেজ তৈরি
+### 4. Locale Updates
 
-| পেজ | Route | ফিচার |
-|-----|-------|-------|
-| ShopManage | `/admin/shop/manage` | শপ নাম, লোগো, স্লাগ, কন্ট্যাক্ট, টাইমজোন, কারেন্সি |
-| ShopBilling | `/admin/shop/billing` | প্ল্যান আপগ্রেড/ডাউনগ্রেড, পেমেন্ট মেথড, ইনভয়েস |
-| ShopSecurity | `/admin/shop/security` | 2FA সেটআপ, API Keys ম্যানেজ, সেশন দেখা |
-| ShopAnalytics | `/admin/shop/analytics` | ট্রাফিক, কনভার্সন, রেভিনিউ চার্ট |
-| ShopAuditLog | `/admin/shop/audit-log` | সব অ্যাক্টিভিটি টেবিল (ফিল্টারেবল) |
-
-## প্রতিটি পেজের বিস্তারিত
-
-### 1. Shop Manage পেজ
-```text
-┌────────────────────────────────────────────────────────────┐
-│ 🏪 শপ সেটিংস                                               │
-├────────────────────────────────────────────────────────────┤
-│ ┌──────────────────┐  ┌──────────────────────────────────┐ │
-│ │ Logo Upload      │  │ Shop Name: [chaldal           ] │ │
-│ │ [🖼️ Click to    ] │  │ Slug: [chaldal               ] │ │
-│ │ [ upload        ] │  │ Email: [info@chaldal.com     ] │ │
-│ └──────────────────┘  │ Phone: [+880 1700-000000     ] │ │
-│                       │ Address: [Dhaka, Bangladesh  ] │ │
-│                       │ Timezone: [Asia/Dhaka ▼]       │ │
-│                       │ Currency: [BDT ▼]              │ │
-│                       └──────────────────────────────────┘ │
-│                                                            │
-│ Danger Zone                                                │
-│ ┌────────────────────────────────────────────────────────┐ │
-│ │ ⚠️ শপ ডিলিট করুন - এটা undo করা যাবে না              │ │
-│ │ [Delete Shop]                                          │ │
-│ └────────────────────────────────────────────────────────┘ │
-└────────────────────────────────────────────────────────────┘
-```
-
-### 2. Billing পেজ
-```text
-┌────────────────────────────────────────────────────────────┐
-│ 💳 বিলিং ও সাবস্ক্রিপশন                                    │
-├────────────────────────────────────────────────────────────┤
-│ Current Plan: [PRO] - ৳999/মাস                             │
-│ Renews on: 15 Feb 2026                                     │
-│                                                            │
-│ ┌──────────────┐ ┌──────────────┐ ┌──────────────────────┐ │
-│ │ FREE         │ │ PRO ✓       │ │ ENTERPRISE           │ │
-│ │ ৳0/মাস      │ │ ৳999/মাস    │ │ Contact Sales        │ │
-│ │              │ │              │ │                      │ │
-│ │ • 1 Shop     │ │ • 5 Shops   │ │ • Unlimited Shops    │ │
-│ │ • 100 Orders │ │ • Unlimited │ │ • Priority Support   │ │
-│ │ • 2 Team     │ │ • 10 Team   │ │ • Custom SLA         │ │
-│ └──────────────┘ └──────────────┘ └──────────────────────┘ │
-│                                                            │
-│ Payment History                                            │
-│ ┌────────────────────────────────────────────────────────┐ │
-│ │ Date       │ Amount │ Status  │ Invoice                │ │
-│ │ 15 Jan 26  │ ৳999   │ Paid    │ [Download PDF]        │ │
-│ │ 15 Dec 25  │ ৳999   │ Paid    │ [Download PDF]        │ │
-│ └────────────────────────────────────────────────────────┘ │
-└────────────────────────────────────────────────────────────┘
-```
-
-### 3. Security পেজ
-```text
-┌────────────────────────────────────────────────────────────┐
-│ 🔐 সিকিউরিটি সেটিংস                                        │
-├────────────────────────────────────────────────────────────┤
-│                                                            │
-│ Two-Factor Authentication                                  │
-│ ┌────────────────────────────────────────────────────────┐ │
-│ │ 🔒 2FA Enabled                    [Disable]            │ │
-│ └────────────────────────────────────────────────────────┘ │
-│                                                            │
-│ API Keys                                                   │
-│ ┌────────────────────────────────────────────────────────┐ │
-│ │ Name          │ Created     │ Last Used │ Actions      │ │
-│ │ Production    │ 10 Jan 26   │ Today     │ [Revoke]    │ │
-│ │ Development   │ 5 Jan 26    │ Never     │ [Revoke]    │ │
-│ │ [+ Create New API Key]                                 │ │
-│ └────────────────────────────────────────────────────────┘ │
-│                                                            │
-│ Active Sessions                                            │
-│ ┌────────────────────────────────────────────────────────┐ │
-│ │ 🖥️ Chrome on Windows - Dhaka (Current)                │ │
-│ │ 📱 Mobile App - Dhaka - 2 hours ago      [Logout]     │ │
-│ │ [Logout All Other Sessions]                            │ │
-│ └────────────────────────────────────────────────────────┘ │
-└────────────────────────────────────────────────────────────┘
-```
-
-### 4. Analytics পেজ
-```text
-┌────────────────────────────────────────────────────────────┐
-│ 📊 শপ এনালিটিক্স                                           │
-├────────────────────────────────────────────────────────────┤
-│ [Last 7 Days ▼] [Last 30 Days] [Custom Range]             │
-│                                                            │
-│ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐           │
-│ │ 12,450  │ │ 856     │ │ 3.2%    │ │ ৳45,000 │           │
-│ │ Visitors│ │ Orders  │ │ Conv.   │ │ Revenue │           │
-│ │ +12%    │ │ +8%     │ │ +0.5%   │ │ +15%    │           │
-│ └─────────┘ └─────────┘ └─────────┘ └─────────┘           │
-│                                                            │
-│ [═══════════════════════════════════════════════════════]  │
-│  Traffic & Orders Chart                                    │
-│                                                            │
-│ Top Landing Pages           │ Top Products                │
-│ /p/product-1    45%         │ Product A - 120 sold       │
-│ /p/offer-2      30%         │ Product B - 85 sold        │
-│ /p/bundle-3     25%         │ Product C - 62 sold        │
-└────────────────────────────────────────────────────────────┘
-```
-
-### 5. Audit Log পেজ
-```text
-┌────────────────────────────────────────────────────────────┐
-│ 📋 অ্যাক্টিভিটি লগ                                         │
-├────────────────────────────────────────────────────────────┤
-│ Filter: [All Actions ▼] [All Users ▼] [Date Range]        │
-│                                                            │
-│ ┌────────────────────────────────────────────────────────┐ │
-│ │ 🟢 admin@shop.com                                       │ │
-│ │    Updated product "Product A" price                   │ │
-│ │    📍 Dhaka, Bangladesh • 5 mins ago                   │ │
-│ ├────────────────────────────────────────────────────────┤ │
-│ │ 🟢 editor@shop.com                                      │ │
-│ │    Created new landing page "Winter Sale"              │ │
-│ │    📍 Chittagong • 2 hours ago                         │ │
-│ ├────────────────────────────────────────────────────────┤ │
-│ │ 🔴 unknown@email.com                                    │ │
-│ │    Failed login attempt                                │ │
-│ │    📍 Unknown location • 3 hours ago                   │ │
-│ └────────────────────────────────────────────────────────┘ │
-│                                                            │
-│ [Load More]                                                │
-└────────────────────────────────────────────────────────────┘
-```
-
-## Locale Updates
-
+**bn.ts:**
 ```typescript
-// bn.ts এবং en.ts এ যোগ করতে হবে
 sidebar: {
   // ... existing
-  shop: 'শপ',
-  myShop: 'আমার শপ',
-  shopManage: 'ম্যানেজ',
-  shopTeam: 'টিম',
-  shopBilling: 'বিলিং',
-  shopSecurity: 'সিকিউরিটি',
-  shopAnalytics: 'এনালিটিক্স',
-  shopAuditLog: 'অডিট লগ',
+  business: 'বিজনেস',
+  businessManagement: 'বিজনেস ম্যানেজমেন্ট',
+  allShops: 'সব শপ',
+  // ... rest unchanged
 }
 ```
 
-## Database Tables প্রয়োজন
+**en.ts:**
+```typescript
+sidebar: {
+  // ... existing
+  business: 'Business',
+  businessManagement: 'Business Management',
+  allShops: 'All Shops',
+  // ... rest unchanged
+}
+```
 
-| টেবিল | কলাম | উদ্দেশ্য |
-|-------|------|---------|
-| `shop_audit_logs` | id, shop_id, user_id, action, entity_type, entity_id, old_data, new_data, ip_address, user_agent, created_at | সব অ্যাক্টিভিটি ট্র্যাক |
-| `shop_api_keys` | id, shop_id, name, key_hash, last_used_at, created_by, revoked_at | API Key ম্যানেজমেন্ট |
-| `shop_sessions` | id, user_id, shop_id, ip_address, user_agent, created_at, last_active_at | অ্যাক্টিভ সেশন ট্র্যাক |
-| `shop_billing` | id, shop_id, plan, stripe_customer_id, current_period_end | বিলিং ইনফো |
-| `shop_invoices` | id, shop_id, amount, status, invoice_url, created_at | পেমেন্ট হিস্ট্রি |
+### 5. Routes আপডেট (App.tsx)
 
-## Implementation Steps
+```tsx
+// Old routes → New routes
+'/admin/shop/manage'    → '/admin/business/shops'     // Shops লিস্ট
+'/admin/shop/team'      → '/admin/business/team'
+'/admin/shop/billing'   → '/admin/business/billing'
+'/admin/shop/security'  → '/admin/business/security'
+'/admin/shop/analytics' → '/admin/business/analytics'
+'/admin/shop/audit-log' → '/admin/business/audit-log'
+```
 
-### Phase 1: UI Structure
-1. `AdminSidebar.tsx` এ Shop গ্রুপ যোগ
-2. Locale files আপডেট
-3. Routes যোগ `App.tsx` এ
+### 6. ShopManage.tsx → AllShops.tsx রিনেম
 
-### Phase 2: Pages তৈরি
-1. `ShopManage.tsx` - বেসিক সেটিংস
-2. Team পেজ আগেই আছে (refactor route to `/admin/shop/team`)
-3. অন্য পেজগুলো placeholder হিসেবে
+**নতুন পেজ বিহেভিয়র:**
+- সুপার অ্যাডমিন হিসেবে সব শপের লিস্ট দেখাবে
+- প্রতিটি শপ ম্যানেজ করার অপশন থাকবে
+- শপ অ্যাক্টিভ/ইনঅ্যাক্টিভ করার অপশন
 
-### Phase 3: Database & Backend
-1. নতুন টেবিল তৈরি
-2. RLS policies
-3. Edge functions for billing integration
+```text
+┌────────────────────────────────────────────────────────────┐
+│ 🏪 সব শপ                                    [+ নতুন শপ]  │
+├────────────────────────────────────────────────────────────┤
+│ ┌──────────────────────────────────────────────────────┐   │
+│ │ Shop Name    │ Owner      │ Plan   │ Status │ Action│   │
+│ │ chaldal      │ John Doe   │ Pro    │ Active │ [⚙️]  │   │
+│ │ EcomX v2 Pro │ Jane Smith │ Free   │ Active │ [⚙️]  │   │
+│ │ My Store     │ Admin      │ Free   │ Inactive│ [⚙️] │   │
+│ └──────────────────────────────────────────────────────┘   │
+└────────────────────────────────────────────────────────────┘
+```
 
 ## ফাইল পরিবর্তন
 
 | ফাইল | পরিবর্তন |
 |------|---------|
-| `src/components/admin/AdminSidebar.tsx` | Shop গ্রুপ যোগ, icons import |
-| `src/locales/bn.ts` | Shop translations |
-| `src/locales/en.ts` | Shop translations |
-| `src/App.tsx` | নতুন routes |
-| `src/pages/admin/ShopManage.tsx` | নতুন পেজ |
-| `src/pages/admin/ShopBilling.tsx` | নতুন পেজ |
-| `src/pages/admin/ShopSecurity.tsx` | নতুন পেজ |
-| `src/pages/admin/ShopAnalytics.tsx` | নতুন পেজ |
-| `src/pages/admin/ShopAuditLog.tsx` | নতুন পেজ |
+| `src/components/admin/AdminLayout.tsx` | Header restructure - center shop switcher |
+| `src/components/admin/ShopSwitcher.tsx` | Split into Add button + Switch dropdown |
+| `src/components/admin/AdminSidebar.tsx` | Rename Shop → Business, update paths |
+| `src/locales/bn.ts` | Add business translations |
+| `src/locales/en.ts` | Add business translations |
+| `src/App.tsx` | Update routes from /shop/ to /business/ |
+| `src/pages/admin/ShopManage.tsx` | Rename & refactor to show all shops list |
 
-## Summary
+## Visual Summary
 
-এন্টারপ্রাইজ-গ্রেড শপ ম্যানেজমেন্ট সিস্টেম যোগ করা হবে সাইডবারে "Shop" ড্রপডাউন মেনু দিয়ে, যেখানে থাকবে:
-- **Manage**: শপ সেটিংস
-- **Team**: টিম ম্যানেজমেন্ট
-- **Billing**: সাবস্ক্রিপশন ও পেমেন্ট
-- **Security**: 2FA, API Keys, Sessions
-- **Analytics**: পারফরম্যান্স মেট্রিক্স
-- **Audit Log**: সব অ্যাক্টিভিটি ট্র্যাকিং
+```text
+TOP BAR (CENTER):
+┌─────────────────────────────────────────────────────────────────┐
+│  [≡] Ytspider   │   [+ Add Shop] [🏪 chaldal ▼]   │    🔔      │
+└─────────────────────────────────────────────────────────────────┘
+
+SIDEBAR:
+┌─────────────────────┐
+│ 📊 Dashboard        │
+├─────────────────────┤
+│ 🏢 Business ▼       │  ← নতুন নাম
+│   ├── 🏪 All Shops  │  ← শপ লিস্ট ম্যানেজমেন্ট
+│   ├── 👥 Team       │
+│   ├── 💳 Billing    │
+│   ├── 🔐 Security   │
+│   ├── 📊 Analytics  │
+│   └── 📋 Audit Log  │
+├─────────────────────┤
+│ 📦 Content ▼        │
+│   ...               │
+└─────────────────────┘
+```
+
+এই পরিবর্তনগুলো Shop Switcher কে আরও প্রফেশনাল এবং ব্যবহারযোগ্য করবে, এবং "Business" মেনু Super Admin এর জন্য সব শপ ম্যানেজ করার কেন্দ্রীয় জায়গা হবে।
 
