@@ -1,304 +1,335 @@
 
-
-# Section Builder - Master Responsive Resizable Layout & Smart Code Editor
+# Landing Pages Master Management Dashboard
 
 ## Overview
-পুরো Section Builder canvas টাকে VS Code এর মতো smooth, resizable panels দিয়ে তৈরি করা হবে যেখানে প্রতিটা panel টেনে ছোট-বড় করা যাবে। পাশাপাশি code editor গুলোকে Monaco Editor দিয়ে upgrade করা হবে যেটা syntax highlighting, auto-completion, এবং professional IDE experience দেবে।
+Landing Pages ম্যানেজমেন্ট পেজটিকে একটি professional, feature-rich ড্যাশবোর্ডে রূপান্তর করা হবে - আরো স্ট্যাটস কার্ড, কুইক অ্যাকশন বার, বাল্ক সিলেকশন, এবং উন্নত টাইপোগ্রাফি সহ।
 
-## Current Problems
-- Fixed column layout (`col-span-3`, `col-span-5`, `col-span-4`) - সাইজ টেনে পরিবর্তন করা যায় না
-- Plain textarea code editor - কোন syntax highlighting নেই
-- Line numbers manually maintained - sync issues থাকতে পারে
-- Mobile/Desktop layout আলাদা, resizing নেই
+## Current State
+- ৩টি সিম্পল স্ট্যাটস কার্ড (Total, Published, Draft)
+- সার্চ + গ্রিড/লিস্ট ভিউ টগল
+- Individual কার্ড অ্যাকশন
 
-## Solution Architecture
+## Proposed Changes
+
+### 1. Enhanced Stats Cards (6 Cards)
 
 ```text
-Before (Fixed Grid):
-┌──────────────┬──────────────────┬────────────────┐
-│  Section     │     Editor       │    Preview     │
-│  List        │                  │                │
-│  (col-3)     │    (col-5)       │    (col-4)     │
-│  FIXED       │    FIXED         │    FIXED       │
-└──────────────┴──────────────────┴────────────────┘
-
-After (Resizable Panels - VS Code Style):
-┌──────────────╫──────────────────╫────────────────┐
-│  Section     ║     Editor       ║    Preview     │
-│  List        ║  + Monaco        ║                │
-│              ║                  ║                │
-│  ← DRAG →    ║    ← DRAG →      ║   ← DRAG →     │
-└──────────────╫──────────────────╫────────────────┘
-       ↕              ↕                  ↕
-   (10-30%)       (30-60%)           (20-50%)
+┌──────────────┬──────────────┬──────────────┐
+│ 📄 মোট পেজ   │ 🌐 পাবলিশড  │ ✏️ ড্রাফট   │
+│     12       │      8       │      4       │
+└──────────────┴──────────────┴──────────────┘
+┌──────────────┬──────────────┬──────────────┐
+│ 📦 অর্ডার    │ 💰 রেভিনিউ  │ 👁️ ভিউজ    │
+│    156       │   ৳45,200   │    2,340     │
+└──────────────┴──────────────┴──────────────┘
 ```
 
-## Implementation Plan
+**New Stats to Add:**
+- মোট অর্ডার (সব পেজ থেকে)
+- মোট রেভিনিউ
+- সপ্তাহে তৈরি (এই সপ্তাহে নতুন পেজ)
 
-### Part 1: Install Monaco Editor
+### 2. Quick Actions Bar (Always Visible)
 
-**File:** `package.json`
-
-Add dependency:
-```json
-"@monaco-editor/react": "^4.6.0"
-```
-
-### Part 2: Create Smart Code Editor Component
-
-**New File:** `src/components/admin/landing-page-editor/SmartCodeEditor.tsx`
-
-Features:
-- Monaco Editor integration
-- HTML/CSS/JS syntax highlighting
-- Auto-completion for HTML tags
-- Bracket matching
-- Dark theme (VS Code style)
-- Line numbers (automatic)
-- Word wrap toggle
-- Minimap (optional)
-- Find & Replace (Ctrl+F)
-- Head/Body tab support
-- Real-time validation
-
-```tsx
-interface SmartCodeEditorProps {
-  value: string;
-  onChange: (value: string) => void;
-  language?: 'html' | 'css' | 'javascript';
-  theme?: 'vs-dark' | 'light';
-  height?: string;
-  placeholder?: string;
-}
-```
-
-### Part 3: Resizable Panel Layout
-
-**File:** `src/components/admin/landing-page-editor/SectionBuilder.tsx`
-
-Replace CSS Grid with `ResizablePanelGroup`:
-
-```tsx
-import { 
-  ResizablePanelGroup, 
-  ResizablePanel, 
-  ResizableHandle 
-} from '@/components/ui/resizable';
-
-// Desktop Layout - Resizable 3 columns
-<ResizablePanelGroup 
-  direction="horizontal" 
-  autoSaveId="section-builder-layout"
->
-  {/* Left: Section List */}
-  <ResizablePanel 
-    defaultSize={20} 
-    minSize={10} 
-    maxSize={30}
-    collapsible
-    collapsedSize={4}
-  >
-    <SectionList ... />
-  </ResizablePanel>
-
-  <ResizableHandle withHandle />
-
-  {/* Center: Editor */}
-  <ResizablePanel 
-    defaultSize={45} 
-    minSize={30}
-  >
-    <SectionEditor ... />
-  </ResizablePanel>
-
-  <ResizableHandle withHandle />
-
-  {/* Right: Preview/Theme/Products */}
-  <ResizablePanel 
-    defaultSize={35} 
-    minSize={20}
-  >
-    <FullPagePreview ... />
-  </ResizablePanel>
-</ResizablePanelGroup>
-```
-
-Key features:
-- `autoSaveId`: localStorage এ panel sizes save করবে
-- `collapsible`: Section list fully collapse করা যাবে
-- `minSize/maxSize`: Minimum/Maximum resize limits
-- `withHandle`: Visible drag handle (GripVertical icon)
-
-### Part 4: Update SectionEditor with Smart Code Editor
-
-**File:** `src/components/admin/landing-page-editor/SectionEditor.tsx`
-
-Replace textarea with SmartCodeEditor:
-
-```tsx
-// Before: Plain textarea
-<textarea
-  className="flex-1 w-full h-full font-mono ..."
-  value={html}
-  onChange={(e) => setHtml(e.target.value)}
-/>
-
-// After: Monaco Editor
-<SmartCodeEditor
-  value={html}
-  onChange={(newHtml) => {
-    setHtml(newHtml);
-    setIsDirty(true);
-  }}
-  language="html"
-  theme="vs-dark"
-  height="100%"
-/>
-```
-
-### Part 5: Update Fullscreen Code Modal
-
-**File:** `src/components/admin/landing-page-editor/FullscreenCodeModal.tsx`
-
-Replace textarea with Monaco Editor:
-- Remove manual line number sync
-- Use Monaco's built-in features
-- Keep Head/Body tab structure
-- Add minimap toggle
-- Add find/replace support
-
-### Part 6: Responsive Breakpoints
-
-Desktop (lg+):
 ```text
-ResizablePanelGroup (horizontal)
-├── SectionList (10-30%)
-├── Editor (30-60%)
-└── Preview (20-50%)
+┌────────────────────────────────────────────────────────────────┐
+│ [+ নতুন পেজ] [📋 টেমপ্লেট] [📊 Analytics] [⚡ Bulk Import]     │
+└────────────────────────────────────────────────────────────────┘
 ```
 
-Tablet (md):
+**Quick Actions:**
+- নতুন পেজ তৈরি
+- টেমপ্লেট থেকে তৈরি
+- Analytics দেখুন
+- Bulk Import
+
+### 3. Bulk Selection & Actions Bar
+
+Orders পেজের মতো multi-select এবং floating action bar:
+
 ```text
-ResizablePanelGroup (horizontal)
-├── SectionList (collapsible)
-└── Editor+Preview (tabbed)
+Selected: [x] ৩টি সিলেক্টেড [X]
+──────────────────────────────
+[Publish] [Unpublish] [Delete]
 ```
 
-Mobile (sm):
+### 4. Enhanced Card Design
+
+**Grid Card Structure:**
 ```text
-Bottom Navigation Tabs
-├── Sections Tab
-├── Editor Tab
-└── Preview Tab
+┌─────────────────────────────────────────┐
+│ [ ] ☐ Checkbox                          │
+│ ┌───────────────────────────────────┐   │
+│ │  🖼️  Preview Thumbnail             │   │
+│ │     (first section preview)        │   │
+│ └───────────────────────────────────┘   │
+│ /product-landing          [Published] ●  │
+│ 🛍️ Premium Product                      │
+│ ─────────────────────────────────────   │
+│ 📦 12 orders  💰 ৳15,200  📅 2 days ago │
+│ ─────────────────────────────────────   │
+│ [Edit Builder] [•••]                    │
+└─────────────────────────────────────────┘
 ```
 
-## Files to Create/Modify
+### 5. Improved Typography & Spacing
 
-| File | Action | Description |
-|------|--------|-------------|
-| `package.json` | Modify | Add @monaco-editor/react |
-| `SmartCodeEditor.tsx` | Create | Monaco Editor wrapper component |
-| `SectionBuilder.tsx` | Modify | Replace grid with ResizablePanelGroup |
-| `SectionEditor.tsx` | Modify | Use SmartCodeEditor instead of textarea |
-| `FullscreenCodeModal.tsx` | Modify | Upgrade to Monaco Editor |
+| Element | Before | After |
+|---------|--------|-------|
+| Page Title | `text-2xl` | `text-2xl sm:text-3xl font-heading tracking-tight` |
+| Card Title | `text-base` | `text-lg font-semibold font-heading` |
+| Stats Number | `text-xl` | `text-2xl sm:text-3xl font-bold font-digit` |
+| Meta Text | `text-xs` | `text-xs sm:text-sm text-muted-foreground` |
 
-## Technical Details
+### 6. Filter Tabs (Status Filter)
 
-### Monaco Editor Configuration
+```text
+[সব] [পাবলিশড ●8] [ড্রাফট ●4] [এই সপ্তাহে ●2]
+```
+
+## Technical Implementation
+
+### File: `src/pages/admin/LandingPages.tsx`
+
+**New State Variables:**
+```tsx
+const [selectedIds, setSelectedIds] = useState<string[]>([]);
+const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft'>('all');
+```
+
+**Enhanced Stats Query:**
+```tsx
+const { data: enhancedStats } = useQuery({
+  queryKey: ['landing-pages-stats'],
+  queryFn: async () => {
+    const [pagesData, ordersData] = await Promise.all([
+      supabase.from('landing_pages').select('id, published, created_at'),
+      supabase.from('orders')
+        .select('landing_page_id, total')
+        .not('landing_page_id', 'is', null),
+    ]);
+    
+    const thisWeekStart = new Date();
+    thisWeekStart.setDate(thisWeekStart.getDate() - 7);
+    
+    return {
+      total: pagesData.data?.length ?? 0,
+      published: pagesData.data?.filter(p => p.published).length ?? 0,
+      draft: pagesData.data?.filter(p => !p.published).length ?? 0,
+      thisWeek: pagesData.data?.filter(p => 
+        new Date(p.created_at) >= thisWeekStart
+      ).length ?? 0,
+      totalOrders: ordersData.data?.length ?? 0,
+      totalRevenue: ordersData.data?.reduce((sum, o) => sum + (Number(o.total) || 0), 0) ?? 0,
+    };
+  },
+});
+```
+
+**Quick Actions Bar Component:**
+```tsx
+<div className="flex flex-wrap items-center gap-2 p-3 bg-muted/30 rounded-lg border">
+  <Button onClick={() => { resetForm(); setDialogOpen(true); }}>
+    <Plus className="mr-2 h-4 w-4" />
+    নতুন পেজ
+  </Button>
+  <Button variant="outline">
+    <Layout className="mr-2 h-4 w-4" />
+    টেমপ্লেট
+  </Button>
+  <Button variant="outline">
+    <BarChart3 className="mr-2 h-4 w-4" />
+    Analytics
+  </Button>
+  <Button variant="outline">
+    <Upload className="mr-2 h-4 w-4" />
+    Bulk Import
+  </Button>
+</div>
+```
+
+**Bulk Actions Bar (Floating):**
+```tsx
+{selectedIds.length > 0 && (
+  <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-background border rounded-lg shadow-lg px-4 py-3">
+    <span className="font-medium">{selectedIds.length}টি সিলেক্টেড</span>
+    <Button size="icon" variant="ghost" onClick={() => setSelectedIds([])}>
+      <X className="h-4 w-4" />
+    </Button>
+    <div className="h-6 w-px bg-border" />
+    <Button size="sm" variant="outline" onClick={handleBulkPublish}>
+      <Globe className="mr-2 h-4 w-4" />
+      Publish
+    </Button>
+    <Button size="sm" variant="outline" onClick={handleBulkUnpublish}>
+      <EyeOff className="mr-2 h-4 w-4" />
+      Unpublish
+    </Button>
+    <Button size="sm" variant="destructive" onClick={handleBulkDelete}>
+      <Trash2 className="mr-2 h-4 w-4" />
+      Delete
+    </Button>
+  </div>
+)}
+```
+
+**Status Filter Tabs:**
+```tsx
+<div className="flex items-center gap-1 p-1 bg-muted/50 rounded-lg w-fit">
+  {[
+    { key: 'all', label: 'সব', count: enhancedStats?.total },
+    { key: 'published', label: 'পাবলিশড', count: enhancedStats?.published },
+    { key: 'draft', label: 'ড্রাফট', count: enhancedStats?.draft },
+  ].map((tab) => (
+    <Button
+      key={tab.key}
+      variant={statusFilter === tab.key ? 'default' : 'ghost'}
+      size="sm"
+      onClick={() => setStatusFilter(tab.key)}
+    >
+      {tab.label}
+      <Badge variant="secondary" className="ml-2">{tab.count}</Badge>
+    </Button>
+  ))}
+</div>
+```
+
+**Enhanced Card with Checkbox & Stats:**
+```tsx
+<Card className="group relative">
+  {/* Checkbox */}
+  <div className="absolute top-3 left-3 z-10">
+    <Checkbox
+      checked={selectedIds.includes(page.id)}
+      onCheckedChange={(checked) => {
+        setSelectedIds(prev => 
+          checked 
+            ? [...prev, page.id] 
+            : prev.filter(id => id !== page.id)
+        );
+      }}
+    />
+  </div>
+  
+  <CardHeader>
+    {/* Title & Badge */}
+  </CardHeader>
+  
+  <CardContent>
+    {/* Page Stats Row */}
+    <div className="flex items-center gap-4 text-xs text-muted-foreground mb-3 py-2 border-t border-b">
+      <div className="flex items-center gap-1.5">
+        <ShoppingCart className="h-3.5 w-3.5" />
+        <span>{pageStats[page.id]?.orders ?? 0} অর্ডার</span>
+      </div>
+      <div className="flex items-center gap-1.5">
+        <Wallet className="h-3.5 w-3.5" />
+        <span>৳{(pageStats[page.id]?.revenue ?? 0).toLocaleString()}</span>
+      </div>
+      <div className="flex items-center gap-1.5">
+        <Clock className="h-3.5 w-3.5" />
+        <span>{formatDistanceToNow(new Date(page.updated_at), { addSuffix: true, locale: bn })}</span>
+      </div>
+    </div>
+    
+    {/* Actions */}
+  </CardContent>
+</Card>
+```
+
+## Stats Cards Layout (6 Cards - 2 Rows)
 
 ```tsx
-const editorOptions: editor.IStandaloneEditorConstructionOptions = {
-  minimap: { enabled: false }, // Toggle-able
-  fontSize: 14,
-  fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
-  wordWrap: 'on',
-  lineNumbers: 'on',
-  renderLineHighlight: 'all',
-  bracketPairColorization: { enabled: true },
-  formatOnPaste: true,
-  autoClosingBrackets: 'always',
-  autoClosingTags: true,
-  tabSize: 2,
-  scrollBeyondLastLine: false,
-};
+<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+  {/* Row 1: Page Stats */}
+  <StatCard
+    icon={FileText}
+    label="মোট পেজ"
+    value={enhancedStats?.total}
+    color="primary"
+  />
+  <StatCard
+    icon={Globe}
+    label="পাবলিশড"
+    value={enhancedStats?.published}
+    color="green"
+  />
+  <StatCard
+    icon={Pencil}
+    label="ড্রাফট"
+    value={enhancedStats?.draft}
+    color="amber"
+  />
+  
+  {/* Row 2: Performance Stats */}
+  <StatCard
+    icon={ShoppingCart}
+    label="মোট অর্ডার"
+    value={enhancedStats?.totalOrders}
+    color="blue"
+  />
+  <StatCard
+    icon={Wallet}
+    label="মোট রেভিনিউ"
+    value={`৳${enhancedStats?.totalRevenue?.toLocaleString()}`}
+    color="purple"
+  />
+  <StatCard
+    icon={TrendingUp}
+    label="এই সপ্তাহে"
+    value={enhancedStats?.thisWeek}
+    subtext="নতুন পেজ"
+    color="indigo"
+  />
+</div>
 ```
 
-### ResizablePanel Props
+## Files to Modify
 
-```tsx
-<ResizablePanel
-  defaultSize={20}      // Initial size (percentage)
-  minSize={10}          // Minimum size when dragging
-  maxSize={30}          // Maximum size when dragging
-  collapsible={true}    // Can collapse to 0
-  collapsedSize={4}     // Size when collapsed (icon-only)
-  onCollapse={() => {}} // Callback when collapsed
-  onExpand={() => {}}   // Callback when expanded
-/>
-```
-
-### localStorage Persistence
-
-```tsx
-// Panel sizes automatically saved
-<ResizablePanelGroup autoSaveId="section-builder-layout">
-
-// Format in localStorage:
-// "react-resizable-panels:section-builder-layout" = [20, 45, 35]
-```
+| File | Changes |
+|------|---------|
+| `src/pages/admin/LandingPages.tsx` | Complete redesign with enhanced stats, quick actions, bulk selection, and improved UI |
 
 ## Visual Result
 
-### Desktop (1920px+)
+### Desktop View
 ```text
-┌────────────────────────────────────────────────────────────────┐
-│ [<] Section Builder                     [Save] [Theme] [Preview]│
-├───────╫────────────────────────────────╫───────────────────────┤
-│ [▶]   ║ ┌─────────────────────────────┐║ ┌──────────────────┐ │
-│ 📄 H  ║ │ Section Name: [Hero      ] ║ │ ┌──────────────┐ │ │
-│ 📄 F  ╫─│─────────────────────────────│─║─│   PREVIEW    │ │ │
-│ 📄 P  ║ │ [Editor] [Preview] [HTML]   │ ║ │              │ │ │
-│ 🛒 C  ║ │                             │ ║ │   📱 375px   │ │ │
-│       ║ │ <section class="hero">      │ ║ │              │ │ │
-│ [+]   ║ │   <h1>Welcome</h1>          │ ║ └──────────────┘ │ │
-│       ║ │ </section>                  │ ║                  │ │
-├───────╫─└─────────────────────────────┘─╫──────────────────────┤
-    ↕                    ↕                          ↕
- Draggable          Draggable                  Draggable
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ ল্যান্ডিং পেজ                                              [+ নতুন পেজ]    │
+│ আপনার সকল ল্যান্ডিং পেজ ম্যানেজ করুন                                        │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ ┌──────────┬──────────┬──────────┬──────────┬──────────┬──────────┐          │
+│ │📄 মোট    │🌐 পাবলিশ │✏️ ড্রাফট │📦 অর্ডার│💰 রেভিনিউ│📈 এই সপ্তাহ│         │
+│ │   12     │    8     │    4     │   156    │ ৳45,200 │    2      │          │
+│ └──────────┴──────────┴──────────┴──────────┴──────────┴──────────┘          │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Quick Actions: [+ পেজ] [📋 টেমপ্লেট] [📊 Analytics] [⚡ Import]              │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ [সব ●12] [পাবলিশড ●8] [ড্রাফট ●4]         🔍 [Search...]  [Grid] [List]     │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ ┌────────────────┐ ┌────────────────┐ ┌────────────────┐                     │
+│ │[☐] /product-1  │ │[☐] /product-2  │ │[☐] /promo-page │                     │
+│ │ Premium Product│ │ Basic Product  │ │ Special Offer  │                     │
+│ │────────────────│ │────────────────│ │────────────────│                     │
+│ │📦 45  💰 ৳12K │ │📦 23  💰 ৳8K  │ │📦 88  💰 ৳25K │                     │
+│ │[Edit] [•••]    │ │[Edit] [•••]    │ │[Edit] [•••]    │                     │
+│ └────────────────┘ └────────────────┘ └────────────────┘                     │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+                    ┌─────────────────────────────────────────┐
+                    │ 3টি সিলেক্টেড [X] | [Publish] [Delete]  │ ← Floating bar
+                    └─────────────────────────────────────────┘
 ```
 
-### Tablet (768px - 1024px)
-```text
-┌──────────────────────────────────────────┐
-│ [≡] Section Builder        [Save]        │
-├──────╫───────────────────────────────────┤
-│ [▶]  ║ [Editor Tab] [Preview Tab]        │
-│ 📄 H ║ ┌───────────────────────────────┐ │
-│ 📄 F ║ │ Monaco Editor                 │ │
-│ [+]  ║ │ Full width                    │ │
-└──────╫─└───────────────────────────────┘─┘
-    ↕
-Collapsible
-```
-
-## Smart Code Editor Features
+## Key Features Summary
 
 | Feature | Description |
 |---------|-------------|
-| Syntax Highlighting | HTML, CSS, JavaScript রঙিন হবে |
-| Auto-complete | `<div` লিখলে suggestions আসবে |
-| Bracket Matching | `{}`, `[]`, `()` highlight হবে |
-| Auto-close Tags | `<div>` লিখলে `</div>` auto add হবে |
-| Format on Paste | Code paste করলে auto format হবে |
-| Find & Replace | Ctrl+F দিয়ে search করা যাবে |
-| Multi-cursor | Alt+Click দিয়ে multiple cursor |
-| Code Folding | Section collapse করা যাবে |
-| Error Hints | Invalid HTML red underline |
-
-## Mobile UX Preserved
-
-- Bottom navigation tabs unchanged
-- Swipe gestures work
-- Fullscreen code modal available
-- Touch-friendly controls
-
+| **6 Stats Cards** | Page counts + Revenue + Orders + This week |
+| **Quick Actions** | Always visible action buttons |
+| **Bulk Selection** | Checkbox on each card |
+| **Floating Actions** | Publish/Unpublish/Delete selected |
+| **Status Tabs** | Filter by All/Published/Draft |
+| **Page Stats** | Orders & Revenue per page |
+| **Better Typography** | `font-heading`, `font-digit`, proper sizing |
+| **Smooth Animations** | Entry animations, hover effects |
