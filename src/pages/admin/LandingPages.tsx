@@ -326,45 +326,24 @@ export default function LandingPages() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-3 gap-3 sm:gap-4">
-          <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 sm:p-3 rounded-xl bg-primary/10">
-                  <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-                </div>
-                <div>
-                  <p className="text-xs sm:text-sm text-muted-foreground font-medium">মোট পেজ</p>
-                  <p className="text-xl sm:text-2xl font-bold font-digit">{totalPages}</p>
-                </div>
-              </div>
+          <Card className="border-l-4 border-l-primary border-t-0 border-r-0 border-b-0 bg-card shadow-sm">
+            <CardContent className="p-4 sm:p-5">
+              <p className="text-2xl sm:text-3xl font-bold font-digit tracking-tight">{totalPages}</p>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">মোট পেজ</p>
             </CardContent>
           </Card>
           
-          <Card className="bg-gradient-to-br from-green-500/5 to-green-500/10 border-green-500/20">
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 sm:p-3 rounded-xl bg-green-500/10">
-                  <Globe className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
-                </div>
-                <div>
-                  <p className="text-xs sm:text-sm text-muted-foreground font-medium">পাবলিশড</p>
-                  <p className="text-xl sm:text-2xl font-bold font-digit text-green-600">{publishedPages}</p>
-                </div>
-              </div>
+          <Card className="border-l-4 border-l-emerald-600 border-t-0 border-r-0 border-b-0 bg-card shadow-sm">
+            <CardContent className="p-4 sm:p-5">
+              <p className="text-2xl sm:text-3xl font-bold font-digit tracking-tight text-emerald-600">{publishedPages}</p>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">পাবলিশড</p>
             </CardContent>
           </Card>
           
-          <Card className="bg-gradient-to-br from-amber-500/5 to-amber-500/10 border-amber-500/20">
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 sm:p-3 rounded-xl bg-amber-500/10">
-                  <Pencil className="h-5 w-5 sm:h-6 sm:w-6 text-amber-600" />
-                </div>
-                <div>
-                  <p className="text-xs sm:text-sm text-muted-foreground font-medium">ড্রাফট</p>
-                  <p className="text-xl sm:text-2xl font-bold font-digit text-amber-600">{draftPages}</p>
-                </div>
-              </div>
+          <Card className="border-l-4 border-l-amber-500 border-t-0 border-r-0 border-b-0 bg-card shadow-sm">
+            <CardContent className="p-4 sm:p-5">
+              <p className="text-2xl sm:text-3xl font-bold font-digit tracking-tight text-amber-600">{draftPages}</p>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">ড্রাফট</p>
             </CardContent>
           </Card>
         </div>
