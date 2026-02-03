@@ -1,241 +1,162 @@
 
 
-# Top Bar ও Sidebar রিডিজাইন - Shop Switcher ও Business মেনু
+# ShopManage.tsx কে AllShops.tsx এ রূপান্তর - সব শপ লিস্ট দেখানো
 
-## লক্ষ্য
+## সমস্যা
+বর্তমানে `ShopManage.tsx` পেজটি `currentShop` এর উপর নির্ভর করছে এবং shop selected না থাকলে "No shop selected" দেখায়। কিন্তু এটি `/admin/business/shops` route - যেখানে Super Admin সব শপ দেখবে।
 
-1. **Top Bar** - Shop Switcher কে সেন্টারে নিয়ে যাওয়া, দুটি আলাদা কম্পোনেন্ট হিসেবে:
-   - `[+ Add New Shop]` বাটন
-   - `[Switch Shop ▼]` ড্রপডাউন
+## সমাধান
+পেজটিকে সম্পূর্ণ রিফ্যাক্টর করে **সব শপের লিস্ট** দেখানো হবে।
 
-2. **Sidebar** - "আমার শপ" → "Business" নাম পরিবর্তন করা (Super Admin এর জন্য)
-   - "Manage" ক্লিক করলে সব শপের লিস্ট দেখাবে (Super Admin দৃষ্টিকোণ থেকে)
-
-## নতুন Top Bar Layout
+## নতুন পেজ ডিজাইন
 
 ```text
-┌──────────────────────────────────────────────────────────────────────────┐
-│ [≡]  Ytspider          │ [+ Add Shop] [chaldal ▼] │            🔔  👤   │
-│ (mobile trigger)       │      CENTER              │            RIGHT     │
-└──────────────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────┐
+│ 🏪 All Shops                                      [+ Create Shop] │
+├────────────────────────────────────────────────────────────────────┤
+│                                                                    │
+│ ┌────────────────────────────────────────────────────────────────┐ │
+│ │ Shop Name     │ Owner       │ Plan       │ Status   │ Actions  │ │
+│ ├───────────────┼─────────────┼────────────┼──────────┼──────────┤ │
+│ │ 🏪 chaldal    │ owner@...   │ Pro        │ ✓ Active │ [⚙️] [🗑]│ │
+│ │ 🏪 EcomX v2   │ admin@...   │ Free       │ ✓ Active │ [⚙️] [🗑]│ │
+│ │ 🏪 My Store   │ user@...    │ Enterprise │ ○ Inactive│ [⚙️] [🗑]│ │
+│ └────────────────────────────────────────────────────────────────┘ │
+│                                                                    │
+│ কোনো শপ না থাকলে:                                                  │
+│ ┌────────────────────────────────────────────────────────────────┐ │
+│ │            🏪                                                   │ │
+│ │        No shops yet                                            │ │
+│ │   Create your first shop to get started                        │ │
+│ │              [+ Create Shop]                                   │ │
+│ └────────────────────────────────────────────────────────────────┘ │
+└────────────────────────────────────────────────────────────────────┘
 ```
 
-## পরিবর্তনসমূহ
+## প্রযুক্তিগত পরিবর্তন
 
-### 1. AdminLayout.tsx - Header রিস্ট্রাকচার
-
-**আগে:**
-```tsx
-<header className="... justify-between ...">
-  <div className="flex items-center gap-3">
-    <SidebarTrigger />
-    <span>Ytspider</span>
-    <ShopSwitcher /> {/* বামে */}
-  </div>
-  <div className="flex items-center gap-2">
-    <NotificationPanel />
-  </div>
-</header>
-```
-
-**পরে:**
-```tsx
-<header className="... justify-between ...">
-  {/* Left */}
-  <div className="flex items-center gap-3">
-    <SidebarTrigger className="-ml-1 md:hidden" />
-    <span className="font-bold text-lg md:hidden">Ytspider</span>
-  </div>
-  
-  {/* Center - Shop Controls */}
-  <div className="flex items-center gap-2">
-    <ShopSwitcher />
-  </div>
-  
-  {/* Right */}
-  <div className="flex items-center gap-2">
-    <NotificationPanel />
-  </div>
-</header>
-```
-
-### 2. ShopSwitcher.tsx - UI পুনর্গঠন
-
-**নতুন ডিজাইন:**
+### 1. ফাইল রিনেম
 ```text
-┌─────────────────────────────────────────────────┐
-│ [+ Add Shop]  │  [🏪 chaldal ▼]                │
-│   Button      │     Dropdown                   │
-└─────────────────────────────────────────────────┘
+src/pages/admin/ShopManage.tsx → src/pages/admin/AllShops.tsx
 ```
 
-**কোড স্ট্রাকচার:**
+### 2. ডেটা ফেচিং পরিবর্তন
+
+**আগে (ভুল):**
 ```tsx
-export function ShopSwitcher() {
+const { currentShop } = useShop();
+// currentShop এর উপর নির্ভরশীল
+if (!currentShop) return "No shop selected"
+```
+
+**পরে (সঠিক):**
+```tsx
+// সব শপ ফেচ করা (Super Admin view)
+const { data: shops, isLoading } = useQuery({
+  queryKey: ['all-shops'],
+  queryFn: async () => {
+    const { data, error } = await supabase
+      .from('shops')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data;
+  },
+});
+```
+
+### 3. নতুন কম্পোনেন্ট স্ট্রাকচার
+
+```tsx
+export default function AllShops() {
+  const { t } = useLanguage();
+  const { data: shops, isLoading } = useQuery({...});
+  
   return (
-    <div className="flex items-center gap-2">
-      {/* Add New Shop Button */}
-      <Button 
-        variant="outline" 
-        size="sm"
-        onClick={() => setCreateDialogOpen(true)}
-      >
-        <Plus className="h-4 w-4 mr-1" />
-        <span className="hidden sm:inline">Add Shop</span>
-      </Button>
-
-      {/* Shop Switch Dropdown */}
-      {currentShop && (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm">
-              <Avatar className="h-5 w-5 mr-2" />
-              <span>{currentShop.name}</span>
-              <ChevronDown className="h-4 w-4 ml-1" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            {/* Shop list */}
-            {availableShops.map((shop) => (...))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+    <AdminLayout>
+      {/* Header with Create Button */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1>{t('sidebar.allShops')}</h1>
+          <p>Manage all shops in the system</p>
+        </div>
+        <Button onClick={() => setCreateDialogOpen(true)}>
+          <Plus /> Create Shop
+        </Button>
+      </div>
+      
+      {/* Shops Table */}
+      {isLoading ? (
+        <Skeleton />
+      ) : shops?.length === 0 ? (
+        <EmptyState />
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Shop Name</TableHead>
+              <TableHead>Owner</TableHead>
+              <TableHead>Plan</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {shops.map((shop) => (
+              <TableRow key={shop.id}>
+                <TableCell>{shop.name}</TableCell>
+                <TableCell>{shop.owner_id}</TableCell>
+                <TableCell><Badge>{shop.plan}</Badge></TableCell>
+                <TableCell>
+                  <Switch checked={shop.is_active} />
+                </TableCell>
+                <TableCell>
+                  <Button variant="ghost" size="icon">
+                    <Settings />
+                  </Button>
+                  <Button variant="ghost" size="icon">
+                    <Trash2 />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       )}
-    </div>
+    </AdminLayout>
   );
 }
 ```
 
-### 3. AdminSidebar.tsx - Menu রিনেম করা
+### 4. ফিচার যোগ করা
 
-**আগে:**
-```typescript
-{
-  labelKey: 'sidebar.shop',
-  items: [
-    { 
-      href: '/admin/shop', 
-      labelKey: 'sidebar.myShop',  // "আমার শপ"
-      icon: Store,
-      children: [...]
-    },
-  ],
-}
-```
+| ফিচার | বিবরণ |
+|-------|-------|
+| **Shop List** | সব শপের টেবিল view |
+| **Create Shop** | নতুন শপ তৈরি করার ডায়ালগ |
+| **Toggle Status** | শপ Active/Inactive করা |
+| **Edit Shop** | শপ সেটিংস এডিট করা |
+| **Delete Shop** | শপ ডিলিট করা (confirmation সহ) |
+| **Empty State** | কোনো শপ না থাকলে সুন্দর UI |
 
-**পরে:**
-```typescript
-{
-  labelKey: 'sidebar.business',  // "বিজনেস"
-  items: [
-    { 
-      href: '/admin/business', 
-      labelKey: 'sidebar.businessManagement',  // "বিজনেস ম্যানেজমেন্ট"
-      icon: Building2,
-      children: [
-        { href: '/admin/business/shops', labelKey: 'sidebar.allShops', icon: Store },  // সব শপ লিস্ট
-        { href: '/admin/business/team', labelKey: 'sidebar.shopTeam', icon: Users },
-        { href: '/admin/business/billing', labelKey: 'sidebar.shopBilling', icon: CreditCard },
-        { href: '/admin/business/security', labelKey: 'sidebar.shopSecurity', icon: Shield },
-        { href: '/admin/business/analytics', labelKey: 'sidebar.shopAnalytics', icon: BarChart3 },
-        { href: '/admin/business/audit-log', labelKey: 'sidebar.shopAuditLog', icon: ClipboardList },
-      ]
-    },
-  ],
-}
-```
-
-### 4. Locale Updates
-
-**bn.ts:**
-```typescript
-sidebar: {
-  // ... existing
-  business: 'বিজনেস',
-  businessManagement: 'বিজনেস ম্যানেজমেন্ট',
-  allShops: 'সব শপ',
-  // ... rest unchanged
-}
-```
-
-**en.ts:**
-```typescript
-sidebar: {
-  // ... existing
-  business: 'Business',
-  businessManagement: 'Business Management',
-  allShops: 'All Shops',
-  // ... rest unchanged
-}
-```
-
-### 5. Routes আপডেট (App.tsx)
+### 5. App.tsx Route Update
 
 ```tsx
-// Old routes → New routes
-'/admin/shop/manage'    → '/admin/business/shops'     // Shops লিস্ট
-'/admin/shop/team'      → '/admin/business/team'
-'/admin/shop/billing'   → '/admin/business/billing'
-'/admin/shop/security'  → '/admin/business/security'
-'/admin/shop/analytics' → '/admin/business/analytics'
-'/admin/shop/audit-log' → '/admin/business/audit-log'
+// Route unchanged but component import changes
+<Route path="/admin/business/shops" element={
+  <ProtectedRoute><AllShops /></ProtectedRoute>
+} />
 ```
 
-### 6. ShopManage.tsx → AllShops.tsx রিনেম
-
-**নতুন পেজ বিহেভিয়র:**
-- সুপার অ্যাডমিন হিসেবে সব শপের লিস্ট দেখাবে
-- প্রতিটি শপ ম্যানেজ করার অপশন থাকবে
-- শপ অ্যাক্টিভ/ইনঅ্যাক্টিভ করার অপশন
-
-```text
-┌────────────────────────────────────────────────────────────┐
-│ 🏪 সব শপ                                    [+ নতুন শপ]  │
-├────────────────────────────────────────────────────────────┤
-│ ┌──────────────────────────────────────────────────────┐   │
-│ │ Shop Name    │ Owner      │ Plan   │ Status │ Action│   │
-│ │ chaldal      │ John Doe   │ Pro    │ Active │ [⚙️]  │   │
-│ │ EcomX v2 Pro │ Jane Smith │ Free   │ Active │ [⚙️]  │   │
-│ │ My Store     │ Admin      │ Free   │ Inactive│ [⚙️] │   │
-│ └──────────────────────────────────────────────────────┘   │
-└────────────────────────────────────────────────────────────┘
-```
-
-## ফাইল পরিবর্তন
+## ফাইল পরিবর্তন সারাংশ
 
 | ফাইল | পরিবর্তন |
 |------|---------|
-| `src/components/admin/AdminLayout.tsx` | Header restructure - center shop switcher |
-| `src/components/admin/ShopSwitcher.tsx` | Split into Add button + Switch dropdown |
-| `src/components/admin/AdminSidebar.tsx` | Rename Shop → Business, update paths |
-| `src/locales/bn.ts` | Add business translations |
-| `src/locales/en.ts` | Add business translations |
-| `src/App.tsx` | Update routes from /shop/ to /business/ |
-| `src/pages/admin/ShopManage.tsx` | Rename & refactor to show all shops list |
+| `src/pages/admin/ShopManage.tsx` | সম্পূর্ণ রিফ্যাক্টর করে AllShops হিসেবে, শপ লিস্ট টেবিল দেখানো |
+| `src/App.tsx` | Import নাম আপডেট (যদি ফাইল rename করা হয়) |
 
-## Visual Summary
-
-```text
-TOP BAR (CENTER):
-┌─────────────────────────────────────────────────────────────────┐
-│  [≡] Ytspider   │   [+ Add Shop] [🏪 chaldal ▼]   │    🔔      │
-└─────────────────────────────────────────────────────────────────┘
-
-SIDEBAR:
-┌─────────────────────┐
-│ 📊 Dashboard        │
-├─────────────────────┤
-│ 🏢 Business ▼       │  ← নতুন নাম
-│   ├── 🏪 All Shops  │  ← শপ লিস্ট ম্যানেজমেন্ট
-│   ├── 👥 Team       │
-│   ├── 💳 Billing    │
-│   ├── 🔐 Security   │
-│   ├── 📊 Analytics  │
-│   └── 📋 Audit Log  │
-├─────────────────────┤
-│ 📦 Content ▼        │
-│   ...               │
-└─────────────────────┘
-```
-
-এই পরিবর্তনগুলো Shop Switcher কে আরও প্রফেশনাল এবং ব্যবহারযোগ্য করবে, এবং "Business" মেনু Super Admin এর জন্য সব শপ ম্যানেজ করার কেন্দ্রীয় জায়গা হবে।
+## মূল পয়েন্ট
+- এই পেজ **Super Admin এর জন্য** - সব শপ দেখবে ও ম্যানেজ করবে
+- **Top bar এর Shop Switcher** হলো শুধু Quick Action - কোন পেজে কাজ করতে চাই সেটার জন্য
+- এই পেজে `currentShop` এর দরকার নেই - সরাসরি `shops` টেবিল থেকে সব ডেটা আনবে
 
