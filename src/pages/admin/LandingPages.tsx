@@ -3,9 +3,11 @@ import { DeleteConfirmDialog } from '@/components/admin/landing-page-editor/Dele
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useShop } from '@/contexts/ShopContext';
+import { ShopGuard } from '@/components/admin/ShopGuard';
 import AdminLayout from '@/components/admin/AdminLayout';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -147,6 +149,7 @@ function StatCard({ icon: Icon, label, value, subtext, gradient, iconBg, iconCol
 }
 
 export default function LandingPages() {
+  const { currentShop } = useShop();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<PageForm>(defaultForm);
@@ -166,8 +169,9 @@ export default function LandingPages() {
 
   // Fetch landing pages
   const { data: pages, isLoading } = useQuery({
-    queryKey: ['landing-pages'],
+    queryKey: ['landing-pages', currentShop?.id],
     queryFn: async () => {
+      if (!currentShop) return [];
       const { data, error } = await supabase
         .from('landing_pages')
         .select(`
@@ -175,19 +179,22 @@ export default function LandingPages() {
           products (name),
           tracking_profiles (name)
         `)
+        .eq('shop_id', currentShop.id)
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data as LandingPage[];
     },
+    enabled: !!currentShop,
   });
 
   // Fetch enhanced stats (orders data)
   const { data: enhancedStats } = useQuery({
-    queryKey: ['landing-pages-enhanced-stats'],
+    queryKey: ['landing-pages-enhanced-stats', currentShop?.id],
     queryFn: async () => {
+      if (!currentShop) return null;
       const [pagesResult, ordersResult] = await Promise.all([
-        supabase.from('landing_pages').select('id, published, created_at'),
-        supabase.from('orders').select('landing_page_id, total').not('landing_page_id', 'is', null),
+        supabase.from('landing_pages').select('id, published, created_at').eq('shop_id', currentShop.id),
+        supabase.from('orders').select('landing_page_id, total').eq('shop_id', currentShop.id).not('landing_page_id', 'is', null),
       ]);
 
       const pagesData = pagesResult.data ?? [];
@@ -218,19 +225,23 @@ export default function LandingPages() {
         pageStats,
       };
     },
+    enabled: !!currentShop,
   });
 
   const { data: products } = useQuery({
-    queryKey: ['products-select'],
+    queryKey: ['products-select', currentShop?.id],
     queryFn: async () => {
+      if (!currentShop) return [];
       const { data, error } = await supabase
         .from('products')
         .select('id, name')
+        .eq('shop_id', currentShop.id)
         .eq('active', true)
         .order('name');
       if (error) throw error;
       return data;
     },
+    enabled: !!currentShop,
   });
 
   // Filter pages based on search query and status filter
@@ -257,6 +268,8 @@ export default function LandingPages() {
 
   const saveMutation = useMutation({
     mutationFn: async (data: PageForm) => {
+      if (!currentShop) throw new Error('No shop selected');
+      
       if (editingId) {
         const { error } = await supabase
           .from('landing_pages')
@@ -278,13 +291,14 @@ export default function LandingPages() {
           published: data.published,
           html_content: '',
           created_by: user?.id,
+          shop_id: currentShop.id,
         }]);
         if (error) throw error;
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['landing-pages'] });
-      queryClient.invalidateQueries({ queryKey: ['landing-pages-enhanced-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['landing-pages', currentShop?.id] });
+      queryClient.invalidateQueries({ queryKey: ['landing-pages-enhanced-stats', currentShop?.id] });
       setDialogOpen(false);
       resetForm();
       toast({ title: editingId ? 'পেজ আপডেট হয়েছে' : 'নতুন পেজ তৈরি হয়েছে' });
@@ -300,8 +314,8 @@ export default function LandingPages() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['landing-pages'] });
-      queryClient.invalidateQueries({ queryKey: ['landing-pages-enhanced-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['landing-pages', currentShop?.id] });
+      queryClient.invalidateQueries({ queryKey: ['landing-pages-enhanced-stats', currentShop?.id] });
       toast({ title: 'পেজ ডিলিট হয়েছে' });
     },
     onError: (error) => {
@@ -311,6 +325,8 @@ export default function LandingPages() {
 
   const duplicateMutation = useMutation({
     mutationFn: async (page: LandingPage) => {
+      if (!currentShop) throw new Error('No shop selected');
+      
       const { data: newPage, error: pageError } = await supabase
         .from('landing_pages')
         .insert({
@@ -321,6 +337,7 @@ export default function LandingPages() {
           published: false,
           html_content: page.html_content,
           created_by: user?.id,
+          shop_id: currentShop.id,
         })
         .select()
         .single();
@@ -524,6 +541,7 @@ export default function LandingPages() {
 
   return (
     <AdminLayout>
+      <ShopGuard>
       <div className="space-y-5">
         {/* Header with Quick Actions */}
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
@@ -1081,6 +1099,7 @@ export default function LandingPages() {
           description="আপনি কি নিশ্চিত যে এই ল্যান্ডিং পেজটি ডিলিট করতে চান? সকল সেকশন এবং সেটিংস স্থায়ীভাবে মুছে যাবে। এই কাজটি আর ফেরানো যাবে না।"
         />
       </div>
+      </ShopGuard>
     </AdminLayout>
   );
 }

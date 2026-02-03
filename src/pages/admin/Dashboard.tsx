@@ -1,5 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useShop } from '@/contexts/ShopContext';
+import { ShopGuard } from '@/components/admin/ShopGuard';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useDashboardRealtime } from '@/hooks/useDashboardRealtime';
 import AdminLayout from '@/components/admin/AdminLayout';
@@ -22,20 +24,24 @@ import {
 
 export default function Dashboard() {
   const { t } = useLanguage();
+  const { currentShop } = useShop();
   
   // Enable real-time updates
   useDashboardRealtime();
 
   const { data: stats, isLoading: statsLoading } = useQuery({
-    queryKey: ['dashboard-stats'],
+    queryKey: ['dashboard-stats', currentShop?.id],
     queryFn: async () => {
+      if (!currentShop) return null;
+      
       const [products, orders, newOrders, delivered, cancelled, todayOrders] = await Promise.all([
-        supabase.from('products').select('id', { count: 'exact', head: true }).eq('active', true),
-        supabase.from('orders').select('id', { count: 'exact', head: true }),
-        supabase.from('orders').select('id', { count: 'exact', head: true }).eq('status', 'new'),
-        supabase.from('orders').select('id', { count: 'exact', head: true }).eq('status', 'delivered'),
-        supabase.from('orders').select('id', { count: 'exact', head: true }).eq('status', 'cancelled'),
+        supabase.from('products').select('id', { count: 'exact', head: true }).eq('active', true).eq('shop_id', currentShop.id),
+        supabase.from('orders').select('id', { count: 'exact', head: true }).eq('shop_id', currentShop.id),
+        supabase.from('orders').select('id', { count: 'exact', head: true }).eq('status', 'new').eq('shop_id', currentShop.id),
+        supabase.from('orders').select('id', { count: 'exact', head: true }).eq('status', 'delivered').eq('shop_id', currentShop.id),
+        supabase.from('orders').select('id', { count: 'exact', head: true }).eq('status', 'cancelled').eq('shop_id', currentShop.id),
         supabase.from('orders').select('id', { count: 'exact', head: true })
+          .eq('shop_id', currentShop.id)
           .gte('created_at', new Date().toISOString().split('T')[0]),
       ]);
 
@@ -43,6 +49,7 @@ export default function Dashboard() {
       const { data: revenueData } = await supabase
         .from('orders')
         .select('total')
+        .eq('shop_id', currentShop.id)
         .not('status', 'eq', 'cancelled');
       
       const totalRevenue = revenueData?.reduce((sum, order) => sum + (Number(order.total) || 0), 0) ?? 0;
@@ -56,6 +63,7 @@ export default function Dashboard() {
       const { data: lastWeekData } = await supabase
         .from('orders')
         .select('total')
+        .eq('shop_id', currentShop.id)
         .gte('created_at', lastWeekStart.toISOString())
         .lt('created_at', thisWeekStart.toISOString())
         .not('status', 'eq', 'cancelled');
@@ -63,6 +71,7 @@ export default function Dashboard() {
       const { data: thisWeekData } = await supabase
         .from('orders')
         .select('total')
+        .eq('shop_id', currentShop.id)
         .gte('created_at', thisWeekStart.toISOString())
         .not('status', 'eq', 'cancelled');
 
@@ -83,6 +92,7 @@ export default function Dashboard() {
         revenueTrend,
       };
     },
+    enabled: !!currentShop,
   });
 
   const kpiCards = [
@@ -153,42 +163,44 @@ export default function Dashboard() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">{t('dashboard.title')}</h1>
-        </div>
+      <ShopGuard>
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold">{t('dashboard.title')}</h1>
+          </div>
 
-        {/* KPI Cards */}
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-          {statsLoading
-            ? Array.from({ length: 6 }).map((_, i) => <KpiCardSkeleton key={i} />)
-            : kpiCards.map((card) => (
-                <KpiCard
-                  key={card.key}
-                  title={card.title}
-                  value={card.value}
-                  subtitle={card.subtitle}
-                  icon={card.icon}
-                  trend={card.trend}
-                  gradient={card.gradient}
-                  iconBg={card.iconBg}
-                  iconColor={card.iconColor}
-                />
-              ))}
-        </div>
+          {/* KPI Cards */}
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+            {statsLoading
+              ? Array.from({ length: 6 }).map((_, i) => <KpiCardSkeleton key={i} />)
+              : kpiCards.map((card) => (
+                  <KpiCard
+                    key={card.key}
+                    title={card.title}
+                    value={card.value}
+                    subtitle={card.subtitle}
+                    icon={card.icon}
+                    trend={card.trend}
+                    gradient={card.gradient}
+                    iconBg={card.iconBg}
+                    iconColor={card.iconColor}
+                  />
+                ))}
+          </div>
 
-        {/* Charts Row */}
-        <div className="grid gap-6 lg:grid-cols-2">
-          <SalesChart />
-          <BestSellingProducts />
-        </div>
+          {/* Charts Row */}
+          <div className="grid gap-6 lg:grid-cols-2">
+            <SalesChart />
+            <BestSellingProducts />
+          </div>
 
-        {/* Orders Row */}
-        <div className="grid gap-6 lg:grid-cols-2">
-          <RecentOrdersTable />
-          <OrderStatusChart />
+          {/* Orders Row */}
+          <div className="grid gap-6 lg:grid-cols-2">
+            <RecentOrdersTable />
+            <OrderStatusChart />
+          </div>
         </div>
-      </div>
+      </ShopGuard>
     </AdminLayout>
   );
 }

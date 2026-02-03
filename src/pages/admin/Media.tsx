@@ -2,6 +2,8 @@ import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useShop } from '@/contexts/ShopContext';
+import { ShopGuard } from '@/components/admin/ShopGuard';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,6 +31,7 @@ import { UploadProgressList } from '@/components/admin/UploadProgressList';
 import { Copy, Trash2, FolderPlus, Image, Video, File, Zap, Loader2, CheckSquare, Square, X } from 'lucide-react';
 
 export default function Media() {
+  const { currentShop } = useShop();
   const [folder, setFolder] = useState('root');
   const [newFolder, setNewFolder] = useState('');
   const [folderDialogOpen, setFolderDialogOpen] = useState(false);
@@ -59,9 +62,10 @@ export default function Media() {
   const clearSelection = () => setSelectedIds(new Set());
 
   const { data: media, isLoading } = useQuery({
-    queryKey: ['media', folder],
+    queryKey: ['media', folder, currentShop?.id],
     queryFn: async () => {
-      let query = supabase.from('media').select('*').order('created_at', { ascending: false });
+      if (!currentShop) return [];
+      let query = supabase.from('media').select('*').eq('shop_id', currentShop.id).order('created_at', { ascending: false });
       if (folder !== 'all') {
         query = query.eq('folder', folder);
       }
@@ -69,18 +73,22 @@ export default function Media() {
       if (error) throw error;
       return data;
     },
+    enabled: !!currentShop,
   });
 
   const { data: folders } = useQuery({
-    queryKey: ['media-folders'],
+    queryKey: ['media-folders', currentShop?.id],
     queryFn: async () => {
+      if (!currentShop) return [];
       const { data, error } = await supabase
         .from('media')
-        .select('folder');
+        .select('folder')
+        .eq('shop_id', currentShop.id);
       if (error) throw error;
       const uniqueFolders = [...new Set(data.map(m => m.folder).filter(Boolean))];
       return uniqueFolders as string[];
     },
+    enabled: !!currentShop,
   });
 
   const deleteMutation = useMutation({
@@ -209,6 +217,7 @@ export default function Media() {
 
   return (
     <AdminLayout>
+      <ShopGuard>
       <div className="space-y-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <h1 className="text-2xl font-bold">Media Library</h1>
@@ -489,6 +498,7 @@ export default function Media() {
           </DialogContent>
         </Dialog>
       </div>
+      </ShopGuard>
     </AdminLayout>
   );
 }
