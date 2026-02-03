@@ -28,6 +28,11 @@ import InboxMessenger from "./pages/admin/InboxMessenger";
 import InboxWhatsapp from "./pages/admin/InboxWhatsapp";
 import Settings from "./pages/admin/Settings";
 import TeamMembers from "./pages/admin/TeamMembers";
+import ShopManage from "./pages/admin/ShopManage";
+import ShopBilling from "./pages/admin/ShopBilling";
+import ShopSecurity from "./pages/admin/ShopSecurity";
+import ShopAnalytics from "./pages/admin/ShopAnalytics";
+import ShopAuditLog from "./pages/admin/ShopAuditLog";
 import LandingPage from "./pages/LandingPage";
 import ThankYou from "./pages/ThankYou";
 import NotFound from "./pages/NotFound";
@@ -69,7 +74,14 @@ const App = () => (
                   <Route path="/admin/api/messaging/messenger" element={<ProtectedRoute requireAdmin><ApiMessenger /></ProtectedRoute>} />
                   <Route path="/admin/api/messaging/whatsapp" element={<ProtectedRoute requireAdmin><ApiWhatsapp /></ProtectedRoute>} />
                   <Route path="/admin/settings" element={<ProtectedRoute requireAdmin><Settings /></ProtectedRoute>} />
-                  <Route path="/admin/team" element={<ProtectedRoute requireAdmin><TeamMembers /></ProtectedRoute>} />
+                  {/* Shop Management Routes */}
+                  <Route path="/admin/shop" element={<Navigate to="/admin/shop/manage" replace />} />
+                  <Route path="/admin/shop/manage" element={<ProtectedRoute requireAdmin><ShopManage /></ProtectedRoute>} />
+                  <Route path="/admin/shop/team" element={<ProtectedRoute requireAdmin><TeamMembers /></ProtectedRoute>} />
+                  <Route path="/admin/shop/billing" element={<ProtectedRoute requireAdmin><ShopBilling /></ProtectedRoute>} />
+                  <Route path="/admin/shop/security" element={<ProtectedRoute requireAdmin><ShopSecurity /></ProtectedRoute>} />
+                  <Route path="/admin/shop/analytics" element={<ProtectedRoute requireAdmin><ShopAnalytics /></ProtectedRoute>} />
+                  <Route path="/admin/shop/audit-log" element={<ProtectedRoute requireAdmin><ShopAuditLog /></ProtectedRoute>} />
                   <Route path="/thank-you" element={<ThankYou />} />
                   <Route path="/p/:slug" element={<LandingPage />} />
                   <Route path="*" element={<NotFound />} />
