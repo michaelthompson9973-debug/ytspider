@@ -7,6 +7,7 @@ import {
 } from '@/components/ui/sidebar';
 import AdminSidebar from './AdminSidebar';
 import { NotificationPanel } from './dashboard/NotificationPanel';
+import { ShopSwitcher } from './ShopSwitcher';
 
 const STORAGE_KEY = 'ytspider-sidebar-collapsed';
 
@@ -28,13 +29,21 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     <>
       <AdminSidebar />
       <SidebarInset>
-        {/* Header with trigger and notifications */}
+        {/* Header with trigger, shop switcher, and notifications */}
         <header className="sticky top-0 z-40 flex h-14 items-center justify-between gap-4 border-b bg-background px-4">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <SidebarTrigger className="-ml-1 md:hidden" />
             <span className="font-bold text-lg md:hidden">Ytspider</span>
+            {/* Shop Switcher - visible on larger screens in header */}
+            <div className="hidden md:block">
+              <ShopSwitcher />
+            </div>
           </div>
           <div className="flex items-center gap-2">
+            {/* Shop Switcher - visible on mobile */}
+            <div className="md:hidden">
+              <ShopSwitcher />
+            </div>
             <NotificationPanel />
           </div>
         </header>
