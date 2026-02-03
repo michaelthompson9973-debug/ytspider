@@ -33,37 +33,35 @@ export function KpiCard({
   }
 
   return (
-    <Card className="relative overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-      <div className={cn('absolute inset-0 bg-gradient-to-br opacity-10', gradient)} />
-      <CardContent className="p-6 relative">
-        <div className="flex items-start justify-between">
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-muted-foreground">{title}</p>
-            <p className="text-3xl font-bold tracking-tight">{value}</p>
+    <Card className="border shadow-sm hover:shadow-md transition-shadow">
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="space-y-1 min-w-0">
+            <p className="text-xs font-medium text-muted-foreground">{title}</p>
+            <p className="text-2xl font-semibold tracking-tight font-digit">{value}</p>
             {subtitle && (
-              <p className="text-xs text-muted-foreground">{subtitle}</p>
+              <p className="text-[11px] text-muted-foreground">{subtitle}</p>
             )}
             {trend && (
               <div className="flex items-center gap-1">
                 <span
                   className={cn(
-                    'text-xs font-medium',
+                    'text-[11px] font-medium',
                     trend.isPositive ? 'text-green-600' : 'text-red-600'
                   )}
                 >
                   {trend.isPositive ? '↑' : '↓'} {Math.abs(trend.value)}%
                 </span>
-                <span className="text-xs text-muted-foreground">vs last week</span>
               </div>
             )}
           </div>
           <div
             className={cn(
-              'flex h-14 w-14 items-center justify-center rounded-2xl',
+              'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg',
               iconBg
             )}
           >
-            <Icon className={cn('h-7 w-7', iconColor)} />
+            <Icon className={cn('h-5 w-5', iconColor)} />
           </div>
         </div>
       </CardContent>
@@ -73,15 +71,15 @@ export function KpiCard({
 
 export function KpiCardSkeleton() {
   return (
-    <Card className="border-0 shadow-lg">
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between animate-pulse">
-          <div className="space-y-3">
-            <div className="h-4 w-24 bg-muted rounded" />
-            <div className="h-8 w-32 bg-muted rounded" />
+    <Card className="border shadow-sm">
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between gap-3 animate-pulse">
+          <div className="space-y-2">
             <div className="h-3 w-20 bg-muted rounded" />
+            <div className="h-6 w-24 bg-muted rounded" />
+            <div className="h-2.5 w-16 bg-muted rounded" />
           </div>
-          <div className="h-14 w-14 bg-muted rounded-2xl" />
+          <div className="h-10 w-10 bg-muted rounded-lg" />
         </div>
       </CardContent>
     </Card>
