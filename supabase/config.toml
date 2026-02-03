@@ -70,3 +70,6 @@ verify_jwt = false
 
 [functions.facebook-pages]
 verify_jwt = false
+
+[functions.ai-reply-suggest]
+verify_jwt = false

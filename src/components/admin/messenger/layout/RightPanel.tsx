@@ -1,5 +1,6 @@
 import { MessengerConversation, ControlPanelTab } from '../types';
 import { useCustomerProfile, useCustomerLabels, useCustomerOrders } from '../hooks';
+import { AITrainingPanel, AutoReplyRulesPanel } from '../ai';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
@@ -309,11 +310,10 @@ export function RightPanel({ conversation, activeTab, onTabChange }: RightPanelP
           </TabsContent>
 
           {/* AI Tab */}
-          <TabsContent value="ai" className="p-4 mt-0 space-y-4">
-            <div className="text-center text-muted-foreground py-8">
-              <Bot className="h-12 w-12 mx-auto opacity-50 mb-2" />
-              <p className="text-sm">AI ট্রেনিং সেটিংস</p>
-              <p className="text-xs mt-1">শীঘ্রই আসছে...</p>
+          <TabsContent value="ai" className="p-4 mt-0 space-y-6">
+            <AITrainingPanel />
+            <div className="border-t pt-4">
+              <AutoReplyRulesPanel />
             </div>
           </TabsContent>
 
