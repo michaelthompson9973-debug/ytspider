@@ -1,6 +1,8 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useShop } from '@/contexts/ShopContext';
+import { ShopGuard } from '@/components/admin/ShopGuard';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useToast } from '@/hooks/use-toast';
 import { useOrderNotification } from '@/hooks/useOrderNotification';
@@ -34,6 +36,7 @@ import {
 const PAGE_SIZE = 15;
 
 export default function Orders() {
+  const { currentShop } = useShop();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -67,13 +70,16 @@ export default function Orders() {
 
   // Fetch orders with filters
   const { data: ordersData, isLoading: isLoadingOrders } = useQuery({
-    queryKey: ['orders', search, dateFilter, statusFilter, currentPage, pageSize],
+    queryKey: ['orders', search, dateFilter, statusFilter, currentPage, pageSize, currentShop?.id],
     queryFn: async () => {
+      if (!currentShop) return { orders: [], totalCount: 0 };
+      
       const dateRange = getDateRange(dateFilter);
       
       let query = supabase
         .from('orders')
         .select('*, products(name), landing_pages(slug)', { count: 'exact' })
+        .eq('shop_id', currentShop.id)
         .order('created_at', { ascending: false });
 
       // Apply status filter
@@ -105,6 +111,7 @@ export default function Orders() {
       
       return { orders: data as Order[], totalCount: count || 0 };
     },
+    enabled: !!currentShop,
   });
 
   const orders = ordersData?.orders || [];
@@ -113,11 +120,14 @@ export default function Orders() {
 
   // Fetch status counts
   const { data: statusCounts = [] } = useQuery({
-    queryKey: ['order-counts'],
+    queryKey: ['order-counts', currentShop?.id],
     queryFn: async () => {
+      if (!currentShop) return [];
+      
       const { data, error } = await supabase
         .from('orders')
-        .select('status');
+        .select('status')
+        .eq('shop_id', currentShop.id);
       
       if (error) throw error;
 
@@ -131,6 +141,7 @@ export default function Orders() {
         count,
       }));
     },
+    enabled: !!currentShop,
   });
 
   // Fetch courier history for visible orders
@@ -197,16 +208,19 @@ export default function Orders() {
 
   // Fetch products for item editing
   const { data: products = [] } = useQuery({
-    queryKey: ['products-list'],
+    queryKey: ['products-list', currentShop?.id],
     queryFn: async () => {
+      if (!currentShop) return [];
       const { data, error } = await supabase
         .from('products')
         .select('id, name, price')
+        .eq('shop_id', currentShop.id)
         .eq('active', true)
         .order('name');
       if (error) throw error;
       return data;
     },
+    enabled: !!currentShop,
   });
 
   // Update order status mutation
@@ -430,6 +444,7 @@ export default function Orders() {
 
   return (
     <AdminLayout>
+      <ShopGuard>
       <div className="space-y-6">
         {/* Header */}
         <OrdersHeader
@@ -600,6 +615,7 @@ export default function Orders() {
           isChecking={fraudCheckMutation.isPending}
         />
       </div>
+      </ShopGuard>
     </AdminLayout>
   );
 }
