@@ -545,8 +545,8 @@ export default function LandingPages() {
           </Button>
         </div>
 
-        {/* Enhanced Stats Cards - 6 Cards with Gradient Backgrounds */}
-        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
+        {/* Stats Cards - 5 Cards in Single Row */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4">
           <StatCard
             icon={FileText}
             label="মোট পেজ"
@@ -576,14 +576,6 @@ export default function LandingPages() {
             label="মোট অর্ডার"
             value={enhancedStats?.totalOrders ?? 0}
             gradient="from-blue-500 via-blue-600 to-indigo-700"
-            iconBg="bg-white/20 backdrop-blur-sm"
-            iconColor="text-white"
-          />
-          <StatCard
-            icon={Wallet}
-            label="মোট রেভিনিউ"
-            value={`৳${(enhancedStats?.totalRevenue ?? 0).toLocaleString('bn-BD')}`}
-            gradient="from-purple-500 via-purple-600 to-violet-700"
             iconBg="bg-white/20 backdrop-blur-sm"
             iconColor="text-white"
           />
