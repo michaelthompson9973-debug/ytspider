@@ -102,31 +102,47 @@ interface LandingPage {
 
 type StatusFilter = 'all' | 'published' | 'draft';
 
-// Stat Card Component
+// Stat Card Component with Gradient Background
 interface StatCardProps {
   icon: React.ElementType;
   label: string;
   value: string | number;
   subtext?: string;
-  borderColor: string;
+  gradient: string;
+  iconBg: string;
+  iconColor: string;
 }
 
-function StatCard({ icon: Icon, label, value, subtext, borderColor }: StatCardProps) {
+function StatCard({ icon: Icon, label, value, subtext, gradient, iconBg, iconColor }: StatCardProps) {
   return (
-    <Card className={cn("border-l-4 shadow-sm hover:shadow-md transition-shadow", borderColor)}>
-      <CardContent className="p-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-muted/50">
-            <Icon className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-xs text-muted-foreground font-medium truncate">{label}</p>
-            <p className="text-xl sm:text-2xl font-bold font-digit tracking-tight">{value}</p>
-            {subtext && <p className="text-[10px] text-muted-foreground">{subtext}</p>}
-          </div>
+    <div className={cn(
+      "relative overflow-hidden rounded-xl p-4 sm:p-5",
+      "bg-gradient-to-br shadow-md hover:shadow-lg transition-all duration-300",
+      "hover:scale-[1.02] hover:-translate-y-0.5",
+      gradient
+    )}>
+      {/* Decorative circles */}
+      <div className="absolute -top-4 -right-4 h-16 w-16 rounded-full bg-white/10 blur-xl" />
+      <div className="absolute -bottom-2 -left-2 h-12 w-12 rounded-full bg-white/5" />
+      
+      <div className="relative z-10 flex items-start gap-3">
+        <div className={cn(
+          "flex-shrink-0 p-2.5 sm:p-3 rounded-xl shadow-sm",
+          iconBg
+        )}>
+          <Icon className={cn("h-4 w-4 sm:h-5 sm:w-5", iconColor)} />
         </div>
-      </CardContent>
-    </Card>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs sm:text-sm font-medium text-white/80 truncate mb-0.5">{label}</p>
+          <p className="text-xl sm:text-2xl lg:text-3xl font-bold font-digit tracking-tight text-white drop-shadow-sm">
+            {value}
+          </p>
+          {subtext && (
+            <p className="text-[10px] sm:text-xs text-white/70 mt-0.5">{subtext}</p>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -529,44 +545,56 @@ export default function LandingPages() {
           </Button>
         </div>
 
-        {/* Enhanced Stats Cards - 6 Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        {/* Enhanced Stats Cards - 6 Cards with Gradient Backgrounds */}
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
           <StatCard
             icon={FileText}
             label="মোট পেজ"
             value={enhancedStats?.total ?? 0}
-            borderColor="border-l-primary"
+            gradient="from-slate-700 via-slate-800 to-slate-900"
+            iconBg="bg-white/20 backdrop-blur-sm"
+            iconColor="text-white"
           />
           <StatCard
             icon={Globe}
             label="পাবলিশড"
             value={enhancedStats?.published ?? 0}
-            borderColor="border-l-emerald-600"
+            gradient="from-emerald-500 via-emerald-600 to-teal-700"
+            iconBg="bg-white/20 backdrop-blur-sm"
+            iconColor="text-white"
           />
           <StatCard
             icon={Pencil}
             label="ড্রাফট"
             value={enhancedStats?.draft ?? 0}
-            borderColor="border-l-amber-500"
+            gradient="from-amber-400 via-orange-500 to-orange-600"
+            iconBg="bg-white/20 backdrop-blur-sm"
+            iconColor="text-white"
           />
           <StatCard
             icon={ShoppingCart}
             label="মোট অর্ডার"
             value={enhancedStats?.totalOrders ?? 0}
-            borderColor="border-l-blue-500"
+            gradient="from-blue-500 via-blue-600 to-indigo-700"
+            iconBg="bg-white/20 backdrop-blur-sm"
+            iconColor="text-white"
           />
           <StatCard
             icon={Wallet}
             label="মোট রেভিনিউ"
             value={`৳${(enhancedStats?.totalRevenue ?? 0).toLocaleString('bn-BD')}`}
-            borderColor="border-l-purple-500"
+            gradient="from-purple-500 via-purple-600 to-violet-700"
+            iconBg="bg-white/20 backdrop-blur-sm"
+            iconColor="text-white"
           />
           <StatCard
             icon={TrendingUp}
             label="এই সপ্তাহে"
             value={enhancedStats?.thisWeek ?? 0}
             subtext="নতুন পেজ"
-            borderColor="border-l-indigo-500"
+            gradient="from-pink-500 via-rose-500 to-red-600"
+            iconBg="bg-white/20 backdrop-blur-sm"
+            iconColor="text-white"
           />
         </div>
 
