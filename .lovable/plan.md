@@ -1,194 +1,215 @@
 
+# Admin Panel Settings - Theme Customization System
 
-# 🔐 Facebook Login দিয়ে Page Connect করার সিস্টেম
+## Overview
 
-## বর্তমান সমস্যা
+Admin panel এ একটি নতুন **Settings** পেজ তৈরি করব যেখানে থাকবে:
+- 4-5টি Pre-built Theme Color Presets (এক ক্লিকে পুরো admin panel এর look বদলে যাবে)
+- Custom color picker দিয়ে নিজের মতো করে সাজানোর অপশন
+- Smooth transitions এবং better UX feel
+- LocalStorage এ save হবে (browser refresh এর পরেও থাকবে)
 
-এখন manually Page ID, Page Name, এবং Page Access Token দিতে হয় যা:
-- জটিল এবং সময়সাপেক্ষ
-- User-friendly না
-- Meta Developer Console এ যেতে হয়
-
-## নতুন সমাধান: Login with Facebook
+## Theme Presets Design
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
-│ 📄 Messenger Pages                                                      │
+│ ⚙️ Settings                                                             │
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                         │
-│  ┌──────────────────────────────────────────────────────────────────┐  │
-│  │             🔵 Login with Facebook                                │  │
-│  │                                                                   │  │
-│  │  আপনার Facebook অ্যাকাউন্ট দিয়ে লগইন করুন এবং                   │  │
-│  │  পেজ সিলেক্ট করে সংযুক্ত করুন                                    │  │
-│  │                                                                   │  │
-│  │  [🔵 Login with Facebook]    [Manual setup ↗]                     │  │
-│  └──────────────────────────────────────────────────────────────────┘  │
+│  🎨 Theme Settings                                                      │
+│  ─────────────────────────────────────────────────────────────────────  │
 │                                                                         │
-│  ↓ লগইন করার পর Page List দেখাবে ↓                                    │
+│  Choose a Theme                                                         │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐     │
+│  │ Default  │ │  Ocean   │ │  Forest  │ │  Sunset  │ │  Slate   │     │
+│  │  ●───────│ │  ●───────│ │  ●───────│ │  ●───────│ │  ●───────│     │
+│  │  [Blue]  │ │  [Teal]  │ │  [Green] │ │ [Orange] │ │  [Gray]  │     │
+│  │   ✓      │ │          │ │          │ │          │ │          │     │
+│  └──────────┘ └──────────┘ └──────────┘ └──────────┘ └──────────┘     │
 │                                                                         │
-│  ┌──────────────────────────────────────────────────────────────────┐  │
-│  │ 📱 আপনার Pages                                                    │  │
-│  ├──────────────────────────────────────────────────────────────────┤  │
-│  │  ☑ My Shop Page (1234567890)                      [Connect]       │  │
-│  │  ☐ Store 2 (0987654321)                           [Connect]       │  │
-│  │  ☑ Another Page (5678901234)           ✓ Connected                │  │
-│  └──────────────────────────────────────────────────────────────────┘  │
+│  ─────────────────────────────────────────────────────────────────────  │
+│                                                                         │
+│  Custom Colors                                                          │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │  Primary Color      [🎨] #3B82F6                                 │   │
+│  │  Sidebar Background [🎨] #F8F9FA                                 │   │
+│  │  Accent Color       [🎨] #F1F5F9                                 │   │
+│  └─────────────────────────────────────────────────────────────────┘   │
+│                                                                         │
+│  ─────────────────────────────────────────────────────────────────────  │
+│                                                                         │
+│  Appearance                                                             │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │  ☀️ Light Mode    🌙 Dark Mode    💻 System                      │   │
+│  └─────────────────────────────────────────────────────────────────┘   │
+│                                                                         │
+│       [Reset to Defaults]                      [Apply Changes]         │
 │                                                                         │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-## কীভাবে কাজ করবে
+## Color Theme Presets (5টি)
+
+| Theme Name | Primary | Sidebar BG | Accent | Description |
+|------------|---------|------------|--------|-------------|
+| Default | `#222E3C` | `#F8F9FA` | `#F1F5F9` | Clean professional blue-gray |
+| Ocean | `#0891B2` | `#F0FDFA` | `#CCFBF1` | Calming teal/cyan tones |
+| Forest | `#16A34A` | `#F0FDF4` | `#DCFCE7` | Fresh green nature feel |
+| Sunset | `#EA580C` | `#FFF7ED` | `#FFEDD5` | Warm orange energy |
+| Slate | `#475569` | `#F8FAFC` | `#F1F5F9` | Neutral gray minimal |
+
+## Implementation Architecture
 
 ```text
-User                     Frontend                    Facebook                  Backend
-  |                         |                           |                         |
-  |--[Login with FB]------->|                           |                         |
-  |                         |--[FB.login() popup]------>|                         |
-  |                         |<--[user access token]-----|                         |
-  |                         |                           |                         |
-  |                         |--[/me/accounts API]------>|                         |
-  |                         |<--[pages list + tokens]---|                         |
-  |                         |                           |                         |
-  |<--[Show pages list]-----|                           |                         |
-  |                         |                           |                         |
-  |--[Select page]--------->|                           |                         |
-  |                         |------[Save to DB]---------|------------------------>|
-  |                         |<-----[Success]------------|-------------------------|
+┌─────────────────────────────────────────────────────────────────────────┐
+│                        Admin Theme System                               │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  ┌──────────────────┐    ┌──────────────────┐    ┌─────────────────┐  │
+│  │ AdminThemeContext│───▶│ CSS Variables    │───▶│ All Admin UI    │  │
+│  │                  │    │ (document.style) │    │ Components      │  │
+│  └────────┬─────────┘    └──────────────────┘    └─────────────────┘  │
+│           │                                                             │
+│           ▼                                                             │
+│  ┌──────────────────┐                                                   │
+│  │ localStorage     │                                                   │
+│  │ (admin-theme)    │                                                   │
+│  └──────────────────┘                                                   │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
-## প্রয়োজনীয় Secrets
+## UX Improvements
 
-Facebook OAuth এর জন্য দুটি secret লাগবে:
+1. **Smooth Transitions**
+   - সব color change এ `transition-colors duration-200` যোগ হবে
+   - Theme switch এ subtle fade effect
 
-| Secret | Description |
-|--------|-------------|
-| `FACEBOOK_APP_ID` | Meta Developer Console থেকে App ID |
-| `FACEBOOK_APP_SECRET` | Meta Developer Console থেকে App Secret |
+2. **Hover States Enhancement**
+   - Sidebar items এ better hover feedback
+   - Button hover states আরও responsive
 
-## Implementation Plan
+3. **Visual Feedback**
+   - Theme select এ animated checkmark
+   - Color picker এ live preview
+   - Save button এ success animation
 
-### Phase 1: Facebook SDK Integration
+4. **Consistency**
+   - সব admin page এ একই color scheme
+   - Cards, buttons, inputs সব consistent হবে
 
-| ফাইল | পরিবর্তন |
-|------|----------|
-| `index.html` | Facebook SDK script যোগ করা |
-| `src/hooks/useFacebookLogin.ts` | নতুন - FB Login hook |
-| `src/components/admin/messenger/FacebookLoginButton.tsx` | নতুন - Login button component |
-| `src/components/admin/messenger/PageSelector.tsx` | নতুন - Page list এবং selection UI |
-| `src/components/admin/messenger/AddPageModal.tsx` | আপডেট - Tab দিয়ে Facebook Login ও Manual দুটো অপশন |
-| `src/pages/admin/ApiMessenger.tsx` | আপডেট - Facebook login integration |
+## Files to Create/Modify
 
-### Phase 2: Backend (Edge Function)
-
-| ফাইল | পরিবর্তন |
-|------|----------|
-| `supabase/functions/facebook-pages/index.ts` | নতুন - Long-lived token exchange এবং page subscription |
+| File | Action | Purpose |
+|------|--------|---------|
+| `src/contexts/AdminThemeContext.tsx` | Create | Theme state management ও CSS variable injection |
+| `src/pages/admin/Settings.tsx` | Create | Settings page with theme controls |
+| `src/components/admin/settings/ThemePresetCard.tsx` | Create | Individual theme preset card |
+| `src/components/admin/settings/ColorPicker.tsx` | Create | Custom color input component |
+| `src/components/admin/settings/AppearanceToggle.tsx` | Create | Light/Dark/System toggle |
+| `src/App.tsx` | Modify | AdminThemeProvider wrap করা |
+| `src/components/admin/AdminSidebar.tsx` | Modify | Settings nav item যোগ করা |
+| `src/index.css` | Modify | Admin-specific CSS variables ও transitions |
 
 ## Technical Details
 
-### Facebook SDK Initialization (index.html)
-```html
-<script>
-  window.fbAsyncInit = function() {
-    FB.init({
-      appId: 'YOUR_APP_ID',
-      cookie: true,
-      xfbml: true,
-      version: 'v18.0'
-    });
-  };
-</script>
-<script async defer crossorigin="anonymous" 
-  src="https://connect.facebook.net/en_US/sdk.js">
-</script>
-```
-
-### useFacebookLogin Hook
+### AdminThemeContext
 ```typescript
-export function useFacebookLogin() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [pages, setPages] = useState<FacebookPage[]>([]);
-  
-  const login = async () => {
-    // FB.login() with pages_show_list, pages_messaging permissions
-    // Then call /me/accounts to get pages
+interface AdminTheme {
+  preset: 'default' | 'ocean' | 'forest' | 'sunset' | 'slate' | 'custom';
+  colors: {
+    primary: string;
+    sidebarBg: string;
+    sidebarFg: string;
+    accent: string;
+    accentFg: string;
   };
-  
-  return { login, isLoading, pages };
+  mode: 'light' | 'dark' | 'system';
 }
+
+// CSS Variables inject করবে:
+// --admin-primary, --admin-sidebar-bg, --admin-accent, etc.
 ```
 
-### Page List Response (Graph API)
-```json
-{
-  "data": [
-    {
-      "id": "1234567890",
-      "name": "My Shop",
-      "access_token": "EAAG...",
-      "category": "Shopping & Retail"
-    }
-  ]
-}
+### Theme Preset Structure
+```typescript
+const themePresets = {
+  default: {
+    primary: '222.2 47.4% 11.2%',
+    sidebarBg: '0 0% 98%',
+    accent: '210 40% 96.1%',
+  },
+  ocean: {
+    primary: '189 94% 43%',
+    sidebarBg: '166 76% 97%',
+    accent: '167 85% 89%',
+  },
+  // ... more presets
+};
 ```
 
-### Long-Lived Token Exchange
-Short-lived token (1 hour) → Long-lived token (60 days)
-```
-GET /oauth/access_token?
-  grant_type=fb_exchange_token&
-  client_id={app-id}&
-  client_secret={app-secret}&
-  fb_exchange_token={short-lived-token}
+### LocalStorage Persistence
+```typescript
+const STORAGE_KEY = 'ytspider-admin-theme';
+
+// Load on init
+const stored = localStorage.getItem(STORAGE_KEY);
+const initial = stored ? JSON.parse(stored) : defaultTheme;
+
+// Save on change
+useEffect(() => {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(theme));
+}, [theme]);
 ```
 
-## AddPageModal Tab Design
+## Navigation Update
+
+Sidebar এ Settings group এ নতুন item যোগ হবে:
 
 ```text
-┌─────────────────────────────────────────────────────────────────────────┐
-│ ✚ নতুন Facebook Page যোগ করুন                                    [✕] │
-├─────────────────────────────────────────────────────────────────────────┤
-│  [🔵 Facebook Login]    [📝 Manual Setup]                               │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                         │
-│  Facebook Login Tab:                                                    │
-│  ┌─────────────────────────────────────────────────────────────────┐   │
-│  │  🔵 Login with Facebook                                          │   │
-│  │                                                                   │   │
-│  │  আপনার Facebook অ্যাকাউন্ট দিয়ে লগইন করুন                       │   │
-│  │  প্রয়োজনীয় permissions:                                         │   │
-│  │  • pages_show_list                                                │   │
-│  │  • pages_messaging                                                │   │
-│  │  • pages_read_engagement                                          │   │
-│  │                                                                   │   │
-│  │        [🔵 Login with Facebook]                                   │   │
-│  └─────────────────────────────────────────────────────────────────┘   │
-│                                                                         │
-│  লগইন করার পর:                                                         │
-│  ┌─────────────────────────────────────────────────────────────────┐   │
-│  │  আপনার Pages (3):                                                │   │
-│  │                                                                   │   │
-│  │  ☑ My Shop          Shopping & Retail       [Connect]             │   │
-│  │  ☑ Store 2          E-Commerce              [Connect]             │   │
-│  │  ☐ Test Page        App Page                ✓ Already Connected   │   │
-│  └─────────────────────────────────────────────────────────────────┘   │
-│                                                                         │
-└─────────────────────────────────────────────────────────────────────────┘
+Settings
+├── Allowed Domains
+├── Webhooks
+├── API (dropdown)
+└── 🆕 Appearance  ← নতুন
 ```
 
-## Security Considerations
+## Smooth UX Additions
 
-1. **App Secret শুধু Backend এ থাকবে** - Edge Function এ
-2. **Short-lived → Long-lived token exchange** Backend এ হবে
-3. **Page Access Token encrypted** database এ store হবে
-4. **Token expiry tracking** - 60 দিন পর re-auth prompt
+1. **Global Transitions** (index.css এ)
+```css
+/* Admin panel smooth transitions */
+.admin-transition {
+  @apply transition-colors duration-200 ease-in-out;
+}
 
-## Required Facebook App Settings
+[data-sidebar] {
+  @apply transition-all duration-200 ease-in-out;
+}
+```
 
-Meta Developer Console এ:
-1. App Type: Business
-2. Products: Facebook Login + Messenger
-3. Permissions: `pages_show_list`, `pages_messaging`, `pages_read_engagement`, `pages_manage_metadata`
-4. Valid OAuth Redirect URIs: আপনার domain
+2. **Hover Improvements**
+```css
+/* Enhanced hover states */
+.sidebar-item-hover {
+  @apply hover:bg-sidebar-accent/80 active:scale-[0.98];
+}
+```
+
+3. **Selection Animation**
+```css
+/* Theme selection feedback */
+.theme-card-selected {
+  @apply ring-2 ring-primary ring-offset-2 
+         transform scale-[1.02] 
+         transition-all duration-200;
+}
+```
+
+## Mobile Responsiveness
+
+Settings page মোবাইলে:
+- Theme cards 2-column grid হবে
+- Color pickers full-width হবে
+- Sticky save button bottom এ থাকবে
 
