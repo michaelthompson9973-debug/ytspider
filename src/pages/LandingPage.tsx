@@ -362,6 +362,9 @@ export default function LandingPage() {
     }
   };
 
+  // Check if there's a checkout section in sections
+  const hasCheckoutSection = sections.some(s => s.type === 'checkout');
+
   // Smooth transition from skeleton to content
   useEffect(() => {
     if (!isLoading && page) {
@@ -370,6 +373,69 @@ export default function LandingPage() {
       return () => clearTimeout(timer);
     }
   }, [isLoading, page]);
+
+  // Smart CTA button → Checkout smooth scroll
+  useEffect(() => {
+    if (!hasCheckoutSection || !showContent) return;
+
+    // CTA button detection heuristics
+    const isCtaButton = (element: Element): boolean => {
+      const text = element.textContent?.toLowerCase() || '';
+      const className = element.className?.toLowerCase() || '';
+      
+      // Bengali + English CTA keywords
+      const ctaKeywords = [
+        'অর্ডার', 'কিনুন', 'নিন', 'পান', 'বুক', 
+        'order', 'buy', 'get', 'shop', 'purchase', 'book',
+        'এখনই', 'now', 'checkout', 'cart', 'add to'
+      ];
+      
+      // Check text content
+      if (ctaKeywords.some(kw => text.includes(kw))) return true;
+      
+      // Check class names for common CTA patterns
+      const ctaClasses = ['cta', 'order', 'buy', 'action', 'primary', 'btn-primary'];
+      if (ctaClasses.some(cls => className.includes(cls))) return true;
+      
+      // Check data attribute (explicit opt-in)
+      if (element.hasAttribute('data-scroll-checkout')) return true;
+      
+      return false;
+    };
+
+    const handleButtonClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const button = target.closest('button, a, [role="button"]');
+      
+      if (!button) return;
+      
+      // Skip if explicitly disabled
+      if (button.hasAttribute('data-no-scroll')) return;
+      
+      // Skip if it's inside checkout section itself
+      if (button.closest('#checkout')) return;
+      
+      // Skip if button has explicit href to external URL
+      const href = button.getAttribute('href');
+      if (href && (href.startsWith('http') || href.startsWith('mailto:') || href.startsWith('tel:'))) return;
+      
+      // Support explicit #checkout links with smooth scroll
+      if (href === '#checkout') {
+        e.preventDefault();
+        document.getElementById('checkout')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+      }
+      
+      // Check if it's likely a CTA button
+      if (isCtaButton(button)) {
+        e.preventDefault();
+        document.getElementById('checkout')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    };
+
+    document.addEventListener('click', handleButtonClick, true);
+    return () => document.removeEventListener('click', handleButtonClick, true);
+  }, [hasCheckoutSection, showContent]);
 
   // Show skeleton while loading
   if (isLoading || !showContent) {
@@ -390,9 +456,6 @@ export default function LandingPage() {
       </div>
     );
   }
-
-  // Check if there's a checkout section in sections
-  const hasCheckoutSection = sections.some(s => s.type === 'checkout');
 
   if (orderSubmitted && !hasCheckoutSection) {
     // Only show this if order was submitted from legacy form (no checkout section)
