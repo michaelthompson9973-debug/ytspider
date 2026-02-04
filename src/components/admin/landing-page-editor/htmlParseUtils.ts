@@ -14,13 +14,29 @@ export function parseHtmlParts(fullHtml: string): HtmlParts {
   const styleRegex = /<style[^>]*>[\s\S]*?<\/style>/gi;
   const scriptRegex = /<script[^>]*>[\s\S]*?<\/script>/gi;
   
-  const styleMatches = fullHtml.match(styleRegex) || [];
-  const scriptMatches = fullHtml.match(scriptRegex) || [];
+  // Check if there's an existing <head>...</head> tag
+  const headTagRegex = /<head[^>]*>[\s\S]*?<\/head>/i;
+  const headTagMatch = fullHtml.match(headTagRegex);
   
+  let headContent: string;
   let bodyHtml = fullHtml;
-  [...styleMatches, ...scriptMatches].forEach(match => {
-    bodyHtml = bodyHtml.replace(match, '');
-  });
+  
+  if (headTagMatch) {
+    // Use existing <head> tag as-is
+    headContent = headTagMatch[0].trim();
+    bodyHtml = fullHtml.replace(headTagMatch[0], '');
+  } else {
+    // Extract styles and scripts for head
+    const styleMatches = fullHtml.match(styleRegex) || [];
+    const scriptMatches = fullHtml.match(scriptRegex) || [];
+    
+    [...styleMatches, ...scriptMatches].forEach(match => {
+      bodyHtml = bodyHtml.replace(match, '');
+    });
+    
+    const headInner = [...styleMatches, ...scriptMatches].join('\n\n');
+    headContent = headInner ? `<head>\n${headInner}\n</head>` : '';
+  }
   
   // Keep only <body>...</body> if present, otherwise return remaining content
   const bodyTagRegex = /<body[^>]*>[\s\S]*?<\/body>/i;
@@ -28,7 +44,7 @@ export function parseHtmlParts(fullHtml: string): HtmlParts {
   const bodyContent = bodyMatch ? bodyMatch[0].trim() : bodyHtml.trim();
   
   return {
-    head: [...styleMatches, ...scriptMatches].join('\n\n'),
+    head: headContent,
     body: bodyContent
   };
 }
