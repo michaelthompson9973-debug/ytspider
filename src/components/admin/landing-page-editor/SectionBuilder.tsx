@@ -181,7 +181,7 @@ export function SectionBuilder({ landingPageId, gtmId, slug, onBack }: SectionBu
             >
               <a href={`/p/${slug}?preview=true`} target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="h-4 w-4 mr-1" />
-                <span className="hidden sm:inline">Preview</span>
+                <span className="hidden sm:inline">View Live</span>
               </a>
             </Button>
           )}
@@ -204,7 +204,7 @@ export function SectionBuilder({ landingPageId, gtmId, slug, onBack }: SectionBu
               onClick={() => setRightPanel('preview')}
             >
               <Eye className="h-4 w-4 mr-1" />
-              Preview
+              Canvas
             </Button>
             <Button
               variant={rightPanel === 'theme' ? 'default' : 'outline'}
