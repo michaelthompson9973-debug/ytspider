@@ -1393,6 +1393,87 @@ export type Database = {
         }
         Relationships: []
       }
+      pricing_plans: {
+        Row: {
+          created_at: string | null
+          currency: string
+          description: string | null
+          description_en: string | null
+          duration_days: number
+          features: Json | null
+          id: string
+          is_active: boolean | null
+          is_contact_sales: boolean | null
+          is_featured: boolean | null
+          max_landing_pages: number
+          max_orders_per_month: number | null
+          max_products: number
+          max_shops: number
+          max_team_members: number
+          name: string
+          name_en: string
+          price_monthly: number
+          price_yearly: number | null
+          slug: string
+          sort_order: number | null
+          stripe_price_id_monthly: string | null
+          stripe_price_id_yearly: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          currency?: string
+          description?: string | null
+          description_en?: string | null
+          duration_days?: number
+          features?: Json | null
+          id?: string
+          is_active?: boolean | null
+          is_contact_sales?: boolean | null
+          is_featured?: boolean | null
+          max_landing_pages?: number
+          max_orders_per_month?: number | null
+          max_products?: number
+          max_shops?: number
+          max_team_members?: number
+          name: string
+          name_en: string
+          price_monthly?: number
+          price_yearly?: number | null
+          slug: string
+          sort_order?: number | null
+          stripe_price_id_monthly?: string | null
+          stripe_price_id_yearly?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          currency?: string
+          description?: string | null
+          description_en?: string | null
+          duration_days?: number
+          features?: Json | null
+          id?: string
+          is_active?: boolean | null
+          is_contact_sales?: boolean | null
+          is_featured?: boolean | null
+          max_landing_pages?: number
+          max_orders_per_month?: number | null
+          max_products?: number
+          max_shops?: number
+          max_team_members?: number
+          name?: string
+          name_en?: string
+          price_monthly?: number
+          price_yearly?: number | null
+          slug?: string
+          sort_order?: number | null
+          stripe_price_id_monthly?: string | null
+          stripe_price_id_yearly?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           active: boolean
@@ -1469,6 +1550,103 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      purchases: {
+        Row: {
+          amount: number
+          completed_at: string | null
+          created_at: string | null
+          currency: string | null
+          email: string
+          full_name: string | null
+          id: string
+          ip_address: string | null
+          password_hash: string | null
+          payment_intent_id: string | null
+          payment_provider: string
+          payment_session_id: string | null
+          payment_status: string | null
+          phone: string | null
+          plan_id: string
+          plan_snapshot: Json
+          shop_id: string | null
+          shop_name: string
+          shop_slug: string | null
+          subscription_id: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          amount: number
+          completed_at?: string | null
+          created_at?: string | null
+          currency?: string | null
+          email: string
+          full_name?: string | null
+          id?: string
+          ip_address?: string | null
+          password_hash?: string | null
+          payment_intent_id?: string | null
+          payment_provider?: string
+          payment_session_id?: string | null
+          payment_status?: string | null
+          phone?: string | null
+          plan_id: string
+          plan_snapshot: Json
+          shop_id?: string | null
+          shop_name: string
+          shop_slug?: string | null
+          subscription_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          completed_at?: string | null
+          created_at?: string | null
+          currency?: string | null
+          email?: string
+          full_name?: string | null
+          id?: string
+          ip_address?: string | null
+          password_hash?: string | null
+          payment_intent_id?: string | null
+          payment_provider?: string
+          payment_session_id?: string | null
+          payment_status?: string | null
+          phone?: string | null
+          plan_id?: string
+          plan_snapshot?: Json
+          shop_id?: string | null
+          shop_name?: string
+          shop_slug?: string | null
+          subscription_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchases_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "pricing_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchases_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchases_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       quick_replies: {
         Row: {
@@ -1722,6 +1900,7 @@ export type Database = {
       shops: {
         Row: {
           created_at: string
+          expires_at: string | null
           id: string
           is_active: boolean
           logo_url: string | null
@@ -1730,10 +1909,12 @@ export type Database = {
           plan: Database["public"]["Enums"]["shop_plan"]
           settings: Json
           slug: string
+          subscription_id: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
+          expires_at?: string | null
           id?: string
           is_active?: boolean
           logo_url?: string | null
@@ -1742,10 +1923,12 @@ export type Database = {
           plan?: Database["public"]["Enums"]["shop_plan"]
           settings?: Json
           slug: string
+          subscription_id?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
+          expires_at?: string | null
           id?: string
           is_active?: boolean
           logo_url?: string | null
@@ -1754,9 +1937,87 @@ export type Database = {
           plan?: Database["public"]["Enums"]["shop_plan"]
           settings?: Json
           slug?: string
+          subscription_id?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "shops_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscriptions: {
+        Row: {
+          amount_paid: number
+          canceled_at: string | null
+          created_at: string | null
+          currency: string | null
+          expires_at: string
+          id: string
+          payment_provider: string | null
+          plan_id: string
+          shop_id: string | null
+          starts_at: string
+          status: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          amount_paid?: number
+          canceled_at?: string | null
+          created_at?: string | null
+          currency?: string | null
+          expires_at: string
+          id?: string
+          payment_provider?: string | null
+          plan_id: string
+          shop_id?: string | null
+          starts_at?: string
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          amount_paid?: number
+          canceled_at?: string | null
+          created_at?: string | null
+          currency?: string | null
+          expires_at?: string
+          id?: string
+          payment_provider?: string | null
+          plan_id?: string
+          shop_id?: string | null
+          starts_at?: string
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "pricing_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriptions_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tracking_event_logs: {
         Row: {
@@ -1935,6 +2196,7 @@ export type Database = {
         Args: never
         Returns: {
           created_at: string
+          expires_at: string | null
           id: string
           is_active: boolean
           logo_url: string | null
@@ -1943,6 +2205,7 @@ export type Database = {
           plan: Database["public"]["Enums"]["shop_plan"]
           settings: Json
           slug: string
+          subscription_id: string | null
           updated_at: string
         }[]
         SetofOptions: {
