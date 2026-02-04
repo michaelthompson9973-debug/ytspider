@@ -20,7 +20,7 @@ interface ShopStats {
   pagesCount: number;
 }
 
-export default function PlatformDashboard() {
+export function PlatformDashboard() {
   const { t } = useLanguage();
   const { availableShops } = useShop();
 

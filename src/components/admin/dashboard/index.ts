@@ -4,5 +4,5 @@ export { BestSellingProducts, BestSellingProductsSkeleton } from './BestSellingP
 export { RecentOrdersTable, RecentOrdersTableSkeleton } from './RecentOrdersTable';
 export { OrderStatusChart, OrderStatusChartSkeleton } from './OrderStatusChart';
 export { NotificationPanel } from './NotificationPanel';
-export { default as PlatformDashboard } from './PlatformDashboard';
+export { PlatformDashboard } from './PlatformDashboard';
 export { ShopPerformanceTable, ShopPerformanceTableSkeleton } from './ShopPerformanceTable';
