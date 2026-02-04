@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
 
-export type ShopRole = 'owner' | 'admin' | 'editor' | 'viewer';
+export type ShopRole = 'owner' | 'admin' | 'manager' | 'editor' | 'support' | 'viewer';
 export type ShopPlan = 'free' | 'pro' | 'enterprise';
 
 export interface Shop {
@@ -339,7 +339,7 @@ export function useShopAccess(minRole: ShopRole = 'viewer'): boolean {
   
   if (!userRole) return false;
   
-  const hierarchy: ShopRole[] = ['viewer', 'editor', 'admin', 'owner'];
+  const hierarchy: ShopRole[] = ['viewer', 'support', 'editor', 'manager', 'admin', 'owner'];
   const minIndex = hierarchy.indexOf(minRole);
   const userIndex = hierarchy.indexOf(userRole);
   

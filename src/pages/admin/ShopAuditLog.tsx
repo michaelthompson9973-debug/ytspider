@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Select,
   SelectContent,
@@ -13,103 +14,85 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ClipboardList, Search, User, Package, FileText, ShoppingCart, Settings, Shield } from 'lucide-react';
+import { 
+  ClipboardList, 
+  Search, 
+  User, 
+  Package, 
+  FileText, 
+  ShoppingCart, 
+  Settings, 
+  Shield,
+  Loader2,
+  RefreshCw,
+  Palette,
+  MessageSquare,
+  Users,
+} from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { useActivityLog, ActionType, EntityType } from '@/hooks/useActivityLog';
 
-const actionIcons: Record<string, React.ComponentType<{ className?: string }>> = {
+const entityIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   product: Package,
   landing_page: FileText,
   order: ShoppingCart,
-  settings: Settings,
+  shop_settings: Settings,
+  shop_theme: Palette,
   security: Shield,
-  user: User,
+  team_member: Users,
+  invitation: User,
+  messenger: MessageSquare,
+  section: FileText,
 };
 
-const mockAuditLogs = [
-  {
-    id: '1',
-    user: 'admin@shop.com',
-    action: 'update',
-    entity: 'product',
-    entityName: 'Premium Winter Jacket',
-    details: 'Updated price from ৳1,500 to ৳1,299',
-    location: 'Dhaka, Bangladesh',
-    timestamp: new Date(Date.now() - 5 * 60 * 1000),
-    status: 'success',
-  },
-  {
-    id: '2',
-    user: 'editor@shop.com',
-    action: 'create',
-    entity: 'landing_page',
-    entityName: 'Winter Sale Campaign',
-    details: 'Created new landing page',
-    location: 'Chittagong, Bangladesh',
-    timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
-    status: 'success',
-  },
-  {
-    id: '3',
-    user: 'admin@shop.com',
-    action: 'update',
-    entity: 'order',
-    entityName: 'Order #1234',
-    details: 'Changed status from "pending" to "shipped"',
-    location: 'Dhaka, Bangladesh',
-    timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000),
-    status: 'success',
-  },
-  {
-    id: '4',
-    user: 'unknown@email.com',
-    action: 'login_failed',
-    entity: 'security',
-    entityName: 'Authentication',
-    details: 'Failed login attempt - invalid password',
-    location: 'Unknown',
-    timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000),
-    status: 'failed',
-  },
-  {
-    id: '5',
-    user: 'admin@shop.com',
-    action: 'delete',
-    entity: 'product',
-    entityName: 'Old Product',
-    details: 'Deleted product from catalog',
-    location: 'Dhaka, Bangladesh',
-    timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000),
-    status: 'success',
-  },
-  {
-    id: '6',
-    user: 'viewer@shop.com',
-    action: 'export',
-    entity: 'order',
-    entityName: 'Orders Export',
-    details: 'Exported 150 orders to CSV',
-    location: 'Sylhet, Bangladesh',
-    timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-    status: 'success',
-  },
-];
+const actionLabels: Record<ActionType, string> = {
+  create: 'তৈরি',
+  update: 'আপডেট',
+  delete: 'ডিলিট',
+  view: 'দেখা',
+  export: 'এক্সপোর্ট',
+  login: 'লগইন',
+  login_failed: 'লগইন ব্যর্থ',
+  logout: 'লগআউট',
+  invite: 'ইনভাইট',
+  role_change: 'রোল পরিবর্তন',
+  settings_change: 'সেটিংস পরিবর্তন',
+  theme_change: 'থিম পরিবর্তন',
+};
+
+const entityLabels: Record<EntityType, string> = {
+  product: 'প্রোডাক্ট',
+  order: 'অর্ডার',
+  landing_page: 'ল্যান্ডিং পেজ',
+  section: 'সেকশন',
+  messenger: 'মেসেঞ্জার',
+  team_member: 'টিম মেম্বার',
+  shop_settings: 'শপ সেটিংস',
+  shop_theme: 'শপ থিম',
+  invitation: 'ইনভাইটেশন',
+  security: 'সিকিউরিটি',
+};
 
 export default function ShopAuditLog() {
   const { t } = useLanguage();
   const { currentShop } = useShop();
+  const { logs, isLoading, refetch } = useActivityLog();
   const [searchQuery, setSearchQuery] = useState('');
   const [actionFilter, setActionFilter] = useState('all');
-  const [userFilter, setUserFilter] = useState('all');
+  const [entityFilter, setEntityFilter] = useState('all');
 
-  const uniqueUsers = [...new Set(mockAuditLogs.map(log => log.user))];
+  const uniqueUsers = [...new Set(logs.map(log => log.user_id))];
+  const uniqueActions = [...new Set(logs.map(log => log.action))];
+  const uniqueEntities = [...new Set(logs.map(log => log.entity_type))];
 
-  const filteredLogs = mockAuditLogs.filter(log => {
-    const matchesSearch = log.entityName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          log.details.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          log.user.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredLogs = logs.filter(log => {
+    const matchesSearch = 
+      log.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      log.entity_type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      log.user_id.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesAction = actionFilter === 'all' || log.action === actionFilter;
-    const matchesUser = userFilter === 'all' || log.user === userFilter;
-    return matchesSearch && matchesAction && matchesUser;
+    const matchesEntity = entityFilter === 'all' || log.entity_type === entityFilter;
+    return matchesSearch && matchesAction && matchesEntity;
   });
 
   if (!currentShop) {
@@ -126,12 +109,18 @@ export default function ShopAuditLog() {
     <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-3">
-          <ClipboardList className="h-8 w-8 text-primary" />
-          <div>
-            <h1 className="text-2xl font-bold">{t('sidebar.shopAuditLog')}</h1>
-            <p className="text-muted-foreground">Track all activities in your shop</p>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <ClipboardList className="h-8 w-8 text-primary" />
+            <div>
+              <h1 className="text-2xl font-bold">{t('sidebar.shopAuditLog')}</h1>
+              <p className="text-muted-foreground">আপনার শপের সকল কার্যকলাপ ট্র্যাক করুন</p>
+            </div>
           </div>
+          <Button variant="outline" size="sm" onClick={() => refetch()}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            রিফ্রেশ
+          </Button>
         </div>
 
         {/* Filters */}
@@ -141,7 +130,7 @@ export default function ShopAuditLog() {
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search activities..."
+                  placeholder="খুঁজুন..."
                   className="pl-9"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -149,25 +138,27 @@ export default function ShopAuditLog() {
               </div>
               <Select value={actionFilter} onValueChange={setActionFilter}>
                 <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="All Actions" />
+                  <SelectValue placeholder="সব অ্যাকশন" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Actions</SelectItem>
-                  <SelectItem value="create">Create</SelectItem>
-                  <SelectItem value="update">Update</SelectItem>
-                  <SelectItem value="delete">Delete</SelectItem>
-                  <SelectItem value="export">Export</SelectItem>
-                  <SelectItem value="login_failed">Failed Login</SelectItem>
+                  <SelectItem value="all">সব অ্যাকশন</SelectItem>
+                  {uniqueActions.map(action => (
+                    <SelectItem key={action} value={action}>
+                      {actionLabels[action as ActionType] || action}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
-              <Select value={userFilter} onValueChange={setUserFilter}>
-                <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="All Users" />
+              <Select value={entityFilter} onValueChange={setEntityFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="সব এন্টিটি" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Users</SelectItem>
-                  {uniqueUsers.map(user => (
-                    <SelectItem key={user} value={user}>{user}</SelectItem>
+                  <SelectItem value="all">সব এন্টিটি</SelectItem>
+                  {uniqueEntities.map(entity => (
+                    <SelectItem key={entity} value={entity}>
+                      {entityLabels[entity as EntityType] || entity}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -178,53 +169,85 @@ export default function ShopAuditLog() {
         {/* Activity Log */}
         <Card>
           <CardHeader>
-            <CardTitle>Activity Log</CardTitle>
+            <CardTitle>অ্যাক্টিভিটি লগ</CardTitle>
             <CardDescription>
-              Showing {filteredLogs.length} of {mockAuditLogs.length} activities
+              {isLoading ? 'লোড হচ্ছে...' : `${filteredLogs.length} টি কার্যকলাপ দেখাচ্ছে`}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-1">
-              {filteredLogs.map((log) => {
-                const IconComponent = actionIcons[log.entity] || User;
-                return (
-                  <div key={log.id} className="p-4 border rounded-lg hover:bg-accent/50 transition-colors">
-                    <div className="flex items-start gap-4">
-                      <div className={`p-2 rounded-full ${log.status === 'success' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
-                        <IconComponent className="h-4 w-4" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-medium">{log.user}</span>
-                          <Badge variant={log.status === 'success' ? 'outline' : 'destructive'} className="text-xs">
-                            {log.action.replace('_', ' ')}
-                          </Badge>
-                          <span className="text-muted-foreground">•</span>
-                          <span className="text-sm text-muted-foreground">{log.entityName}</span>
+            {isLoading ? (
+              <div className="space-y-4">
+                {[1, 2, 3, 4, 5].map(i => (
+                  <div key={i} className="flex gap-4 p-4">
+                    <Skeleton className="h-10 w-10 rounded-full" />
+                    <div className="flex-1 space-y-2">
+                      <Skeleton className="h-4 w-1/3" />
+                      <Skeleton className="h-3 w-1/2" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : filteredLogs.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <ClipboardList className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>কোনো কার্যকলাপ পাওয়া যায়নি</p>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {filteredLogs.map((log) => {
+                  const IconComponent = entityIcons[log.entity_type] || User;
+                  const isError = log.action === 'login_failed' || log.action === 'delete';
+                  
+                  return (
+                    <div key={log.id} className="p-4 border rounded-lg hover:bg-accent/50 transition-colors">
+                      <div className="flex items-start gap-4">
+                        <div className={`p-2 rounded-full ${isError ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' : 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'}`}>
+                          <IconComponent className="h-4 w-4" />
                         </div>
-                        <p className="text-sm text-muted-foreground mt-1">{log.details}</p>
-                        <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-                          <span>📍 {log.location}</span>
-                          <span>•</span>
-                          <span>{formatDistanceToNow(log.timestamp, { addSuffix: true })}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-medium text-sm">
+                              User {log.user_id.substring(0, 8)}...
+                            </span>
+                            <Badge variant={isError ? 'destructive' : 'outline'} className="text-xs">
+                              {actionLabels[log.action as ActionType] || log.action}
+                            </Badge>
+                            <span className="text-muted-foreground">•</span>
+                            <span className="text-sm text-muted-foreground">
+                              {entityLabels[log.entity_type as EntityType] || log.entity_type}
+                            </span>
+                          </div>
+                          
+                          {/* Show data changes if available */}
+                          {(log.old_data || log.new_data) && (
+                            <div className="mt-2 text-xs bg-muted/50 p-2 rounded">
+                              {log.old_data && (
+                                <div className="text-red-600 dark:text-red-400">
+                                  - {JSON.stringify(log.old_data)}
+                                </div>
+                              )}
+                              {log.new_data && (
+                                <div className="text-green-600 dark:text-green-400">
+                                  + {JSON.stringify(log.new_data)}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          
+                          <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                            {log.user_agent && (
+                              <>
+                                <span>🖥️ {log.user_agent.substring(0, 50)}...</span>
+                                <span>•</span>
+                              </>
+                            )}
+                            <span>{formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}</span>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-            
-            {filteredLogs.length > 0 && (
-              <div className="mt-6 text-center">
-                <Button variant="outline">Load More</Button>
-              </div>
-            )}
-
-            {filteredLogs.length === 0 && (
-              <div className="text-center py-12 text-muted-foreground">
-                <ClipboardList className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No activities found matching your filters</p>
+                  );
+                })}
               </div>
             )}
           </CardContent>

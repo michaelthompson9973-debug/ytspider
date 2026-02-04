@@ -34,6 +34,7 @@ import ShopAnalytics from "./pages/admin/ShopAnalytics";
 import ShopAuditLog from "./pages/admin/ShopAuditLog";
 import LandingPage from "./pages/LandingPage";
 import ThankYou from "./pages/ThankYou";
+import AcceptInvite from "./pages/AcceptInvite";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -81,6 +82,7 @@ const App = () => (
                 <Route path="/admin/business/analytics" element={<ProtectedRoute requireAdmin><ShopAnalytics /></ProtectedRoute>} />
                 <Route path="/admin/business/audit-log" element={<ProtectedRoute requireAdmin><ShopAuditLog /></ProtectedRoute>} />
                 <Route path="/thank-you" element={<ThankYou />} />
+                <Route path="/accept-invite" element={<AcceptInvite />} />
                 <Route path="/p/:slug" element={<LandingPage />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>

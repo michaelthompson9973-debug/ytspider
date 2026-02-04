@@ -35,14 +35,18 @@ import { toast } from 'sonner';
 const roleLabels: Record<ShopRole, string> = {
   owner: 'Owner',
   admin: 'Admin',
+  manager: 'Manager',
   editor: 'Editor',
+  support: 'Support',
   viewer: 'Viewer',
 };
 
 const roleBadgeVariants: Record<ShopRole, 'default' | 'secondary' | 'outline'> = {
   owner: 'default',
   admin: 'secondary',
+  manager: 'secondary',
   editor: 'outline',
+  support: 'outline',
   viewer: 'outline',
 };
 
