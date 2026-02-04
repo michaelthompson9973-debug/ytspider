@@ -36,6 +36,10 @@ import LandingPage from "./pages/LandingPage";
 import ThankYou from "./pages/ThankYou";
 import AcceptInvite from "./pages/AcceptInvite";
 import NotFound from "./pages/NotFound";
+import Pricing from "./pages/Pricing";
+import Checkout from "./pages/Checkout";
+import PurchaseSuccess from "./pages/PurchaseSuccess";
+import PricingPlans from "./pages/admin/PricingPlans";
 
 const queryClient = new QueryClient();
 
@@ -81,6 +85,10 @@ const App = () => (
                 <Route path="/admin/business/security" element={<ProtectedRoute requireAdmin><ShopSecurity /></ProtectedRoute>} />
                 <Route path="/admin/business/analytics" element={<ProtectedRoute requireAdmin><ShopAnalytics /></ProtectedRoute>} />
                 <Route path="/admin/business/audit-log" element={<ProtectedRoute requireAdmin><ShopAuditLog /></ProtectedRoute>} />
+                <Route path="/admin/platform/pricing" element={<ProtectedRoute requireAdmin><PricingPlans /></ProtectedRoute>} />
+                <Route path="/pricing" element={<Pricing />} />
+                <Route path="/checkout" element={<Checkout />} />
+                <Route path="/purchase-success" element={<PurchaseSuccess />} />
                 <Route path="/thank-you" element={<ThankYou />} />
                 <Route path="/accept-invite" element={<AcceptInvite />} />
                 <Route path="/p/:slug" element={<LandingPage />} />

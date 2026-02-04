@@ -36,6 +36,7 @@ import {
   Shield,
   ClipboardList,
   Building2,
+  DollarSign,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -111,6 +112,7 @@ const navGroups: NavGroup[] = [
           { href: '/admin/business/audit-log', labelKey: 'sidebar.shopAuditLog', icon: ClipboardList },
         ]
       },
+      { href: '/admin/platform/pricing', labelKey: 'sidebar.pricingPlans', icon: DollarSign },
     ],
   },
   {
