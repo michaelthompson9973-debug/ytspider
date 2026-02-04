@@ -1,7 +1,7 @@
-import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useShop } from '@/contexts/ShopContext';
 
 export interface LandingPageProduct {
   id: string;
@@ -19,6 +19,7 @@ export interface LandingPageProduct {
 export function useProducts(landingPageId: string) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { currentShop } = useShop();
 
   // Fetch products linked to this landing page
   const { data: products = [], isLoading } = useQuery({
@@ -50,19 +51,23 @@ export function useProducts(landingPageId: string) {
     enabled: !!landingPageId,
   });
 
-  // Fetch all available products for selection
+  // Fetch all available products for selection - filtered by current shop
   const { data: availableProducts = [] } = useQuery({
-    queryKey: ['available-products'],
+    queryKey: ['available-products', currentShop?.id],
     queryFn: async () => {
+      if (!currentShop?.id) return [];
+      
       const { data, error } = await supabase
         .from('products')
         .select('id, name, price, images')
+        .eq('shop_id', currentShop.id)
         .eq('active', true)
         .order('name', { ascending: true });
 
       if (error) throw error;
       return data || [];
     },
+    enabled: !!currentShop?.id,
   });
 
   // Add a product to the landing page
