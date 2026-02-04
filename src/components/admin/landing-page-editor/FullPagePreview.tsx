@@ -8,6 +8,7 @@ import { Section, ThemeConfig, CheckoutConfig, defaultCheckoutConfig, defaultChe
 import { generateFullHTML, generatePreviewHTML, generateCheckoutPreviewHTML } from './themeUtils';
 import { parseHtmlParts } from './htmlParseUtils';
 import { cn } from '@/lib/utils';
+import { FullscreenPreviewModal } from './FullscreenPreviewModal';
 
 interface FullPagePreviewProps {
   sections: Section[];
@@ -33,6 +34,7 @@ export const FullPagePreview = forwardRef<HTMLDivElement, FullPagePreviewProps>(
     const [codeTab, setCodeTab] = useState<CodeTab>('full');
     const [headCode, setHeadCode] = useState('');
     const [bodyCode, setBodyCode] = useState('');
+    const [fullscreenOpen, setFullscreenOpen] = useState(false);
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -255,8 +257,8 @@ export const FullPagePreview = forwardRef<HTMLDivElement, FullPagePreviewProps>(
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8"
-                  onClick={handleOpenRealPreview}
-                  title={landingPage?.slug ? `/p/${landingPage.slug}?preview=true` : 'Preview link'}
+                  onClick={() => setFullscreenOpen(true)}
+                  title="Fullscreen Preview"
                 >
                   <Maximize2 className="h-4 w-4" />
                 </Button>
@@ -359,6 +361,14 @@ export const FullPagePreview = forwardRef<HTMLDivElement, FullPagePreviewProps>(
           )}
         </div>
 
+        <FullscreenPreviewModal
+          open={fullscreenOpen}
+          onOpenChange={setFullscreenOpen}
+          sections={sections}
+          themeConfig={themeConfig}
+          landingPageId={landingPageId}
+          gtmId={gtmId}
+        />
       </div>
     );
   }
