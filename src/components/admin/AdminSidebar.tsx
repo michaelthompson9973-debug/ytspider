@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useShop } from '@/contexts/ShopContext';
 import { cn } from '@/lib/utils';
 import {
   LayoutDashboard,
@@ -425,7 +426,22 @@ export default function AdminSidebar() {
   const { signOut } = useAuth();
   const { state } = useSidebar();
   const { t } = useLanguage();
+  const { currentShop } = useShop();
   const isCollapsed = state === 'collapsed';
+  const isPlatformMode = !currentShop;
+
+  // Filter nav groups based on Platform Mode
+  const filteredNavGroups = useMemo(() => {
+    if (isPlatformMode) {
+      // In Platform Mode, only show Overview, Business, and Settings
+      return navGroups.filter(g => 
+        g.labelKey === 'sidebar.overview' || 
+        g.labelKey === 'sidebar.business' ||
+        g.labelKey === 'sidebar.settings'
+      );
+    }
+    return navGroups;
+  }, [isPlatformMode]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -448,7 +464,7 @@ export default function AdminSidebar() {
 
       {/* Content - scrollable */}
       <SidebarContent>
-        {navGroups.map((group, index) => (
+        {filteredNavGroups.map((group, index) => (
           <div key={group.labelKey}>
             {index > 0 && !isCollapsed && <SidebarSeparator className="my-1" />}
             <NavGroupCollapsible group={group} />

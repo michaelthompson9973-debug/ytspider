@@ -12,6 +12,7 @@ import {
   BestSellingProducts,
   RecentOrdersTable,
   OrderStatusChart,
+  PlatformDashboard,
 } from '@/components/admin/dashboard';
 import {
   Wallet,
@@ -28,6 +29,23 @@ export default function Dashboard() {
   
   // Enable real-time updates
   useDashboardRealtime();
+
+  // Platform Mode - show Platform Dashboard
+  if (!currentShop) {
+    return (
+      <AdminLayout>
+        <PlatformDashboard />
+      </AdminLayout>
+    );
+  }
+
+  // Shop Mode - show shop-specific dashboard
+  return <ShopDashboard />;
+}
+
+function ShopDashboard() {
+  const { t } = useLanguage();
+  const { currentShop } = useShop();
 
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['dashboard-stats', currentShop?.id],

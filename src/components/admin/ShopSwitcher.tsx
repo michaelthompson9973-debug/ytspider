@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useShop, Shop, ShopRole } from '@/contexts/ShopContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,6 +28,7 @@ import {
   Plus, 
   Check, 
   Loader2,
+  Building2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -45,7 +47,8 @@ const roleBadgeVariants: Record<ShopRole, 'default' | 'secondary' | 'outline'> =
 };
 
 export function ShopSwitcher() {
-  const { currentShop, availableShops, userRole, switchShop, createShop, isLoading } = useShop();
+  const { t } = useLanguage();
+  const { currentShop, availableShops, userRole, switchShop, createShop, isLoading, enterPlatformMode } = useShop();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [newShopName, setNewShopName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
@@ -98,20 +101,73 @@ export function ShopSwitcher() {
     );
   }
 
-  // No shop exists - show only create button
+  // Platform Mode - show Platform trigger with shop dropdown
   if (!currentShop) {
     return (
       <>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="gap-2"
-          onClick={() => setCreateDialogOpen(true)}
-        >
-          <Plus className="h-4 w-4" />
-          <span>নতুন শপ তৈরি করুন</span>
-        </Button>
-        
+        <div className="flex items-center gap-2">
+          {/* Add New Shop Button */}
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setCreateDialogOpen(true)}
+            className="gap-1"
+          >
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline">Add Shop</span>
+          </Button>
+
+          {/* Platform Mode Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="gap-2">
+                <Building2 className="h-4 w-4" />
+                <span className="hidden sm:inline font-medium">{t('platform.platform')}</span>
+                <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            
+            <DropdownMenuContent align="center" className="w-[260px]">
+              <DropdownMenuLabel className="flex items-center gap-2">
+                <Store className="h-4 w-4" />
+                Switch Shop
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              
+              {/* Platform Option */}
+              <DropdownMenuItem className="flex items-center gap-3 cursor-pointer">
+                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Building2 className="h-4 w-4 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <span className="font-medium">{t('platform.platform')}</span>
+                </div>
+                <Check className="h-4 w-4 text-primary" />
+              </DropdownMenuItem>
+              
+              <DropdownMenuSeparator />
+              
+              {availableShops.map((shop) => (
+                <DropdownMenuItem
+                  key={shop.id}
+                  onClick={() => handleSwitchShop(shop)}
+                  className="flex items-center gap-3 cursor-pointer"
+                >
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={shop.logo_url || undefined} alt={shop.name} />
+                    <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                      {getShopInitials(shop.name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <span className="font-medium truncate">{shop.name}</span>
+                  </div>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
         <CreateShopDialog 
           open={createDialogOpen}
           onOpenChange={setCreateDialogOpen}
@@ -124,6 +180,7 @@ export function ShopSwitcher() {
     );
   }
 
+  // Shop Mode
   return (
     <>
       <div className="flex items-center gap-2">
@@ -158,6 +215,21 @@ export function ShopSwitcher() {
               <Store className="h-4 w-4" />
               Switch Shop
             </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            
+            {/* Platform Option */}
+            <DropdownMenuItem 
+              onClick={enterPlatformMode}
+              className="flex items-center gap-3 cursor-pointer"
+            >
+              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                <Building2 className="h-4 w-4 text-primary" />
+              </div>
+              <div className="flex-1">
+                <span className="font-medium">{t('platform.platform')}</span>
+              </div>
+            </DropdownMenuItem>
+            
             <DropdownMenuSeparator />
             
             {availableShops.map((shop) => (

@@ -1,4 +1,22 @@
 export const bn = {
+  platform: {
+    title: 'প্ল্যাটফর্ম ওভারভিউ',
+    platform: 'প্ল্যাটফর্ম',
+    totalRevenue: 'মোট আয়',
+    totalOrders: 'মোট অর্ডার',
+    activeShops: 'সক্রিয় শপ',
+    totalPages: 'মোট পেজ',
+    totalProducts: 'মোট প্রোডাক্ট',
+    shopPerformance: 'শপ পারফরম্যান্স',
+    shopName: 'শপের নাম',
+    orders: 'অর্ডার',
+    revenue: 'আয়',
+    products: 'প্রোডাক্ট',
+    pages: 'পেজ',
+    status: 'স্ট্যাটাস',
+    viewShop: 'শপ দেখুন',
+    allShopsOverview: 'সব শপের সামগ্রিক অবস্থা',
+  },
   common: {
     save: 'সেভ করুন',
     cancel: 'বাতিল',

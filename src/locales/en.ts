@@ -1,4 +1,22 @@
 export const en = {
+  platform: {
+    title: 'Platform Overview',
+    platform: 'Platform',
+    totalRevenue: 'Total Revenue',
+    totalOrders: 'Total Orders',
+    activeShops: 'Active Shops',
+    totalPages: 'Total Pages',
+    totalProducts: 'Total Products',
+    shopPerformance: 'Shop Performance',
+    shopName: 'Shop Name',
+    orders: 'Orders',
+    revenue: 'Revenue',
+    products: 'Products',
+    pages: 'Pages',
+    status: 'Status',
+    viewShop: 'View Shop',
+    allShopsOverview: 'All Shops Overview',
+  },
   common: {
     save: 'Save',
     cancel: 'Cancel',
