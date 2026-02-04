@@ -166,4 +166,78 @@ export const bn = {
     slate: 'স্লেট',
     slateDesc: 'নিউট্রাল মিনিমাল',
   },
+  billing: {
+    title: 'বিলিং ও সাবস্ক্রিপশন',
+    subtitle: 'আপনার প্ল্যান ও পেমেন্ট ম্যানেজ করুন',
+    
+    // Usage
+    usage: 'আপনার ব্যবহার',
+    thisMonth: 'এই মাসে',
+    orders: 'অর্ডার',
+    teamMembers: 'টিম মেম্বার',
+    pages: 'পেজ',
+    shops: 'শপ',
+    limitReached: 'লিমিটে পৌঁছে গেছেন',
+    limitReachedWarning: 'আপনি কিছু রিসোর্সের লিমিটে পৌঁছে গেছেন',
+    upgradeNow: 'আপগ্রেড করুন',
+    
+    // Current Plan
+    currentPlan: 'বর্তমান প্ল্যান',
+    planLabel: 'প্ল্যান',
+    active: 'সক্রিয়',
+    nextBilling: 'পরবর্তী বিলিং',
+    monthlyCost: 'মাসিক খরচ',
+    changePlan: 'প্ল্যান পরিবর্তন করুন',
+    
+    // Plans
+    planComparison: 'প্ল্যান তুলনা',
+    free: 'ফ্রি',
+    pro: 'প্রো',
+    enterprise: 'এন্টারপ্রাইজ',
+    mostPopular: 'সবচেয়ে জনপ্রিয়',
+    contactSales: 'সেলস টিমে যোগাযোগ করুন',
+    perMonth: '/মাস',
+    freeForever: 'চিরকালের জন্য বিনামূল্যে',
+    whatYouGet: 'যা পাবেন',
+    whatUnlocks: 'আপগ্রেড করলে যা unlock হবে',
+    upgradeNowBtn: 'এখনই আপগ্রেড করুন',
+    currentPlanBtn: 'বর্তমান প্ল্যান',
+    unlimitedOrders: 'আনলিমিটেড অর্ডার প্রসেস',
+    
+    // Features
+    features: {
+      shops: 'শপ',
+      ordersPerMonth: 'অর্ডার/মাস',
+      teamMembers: 'টিম মেম্বার',
+      basicSupport: 'বেসিক সাপোর্ট',
+      prioritySupport: 'প্রায়োরিটি সাপোর্ট',
+      analytics: 'এনালিটিক্স ড্যাশবোর্ড',
+      customBranding: 'কাস্টম ব্র্যান্ডিং',
+      customSLA: 'কাস্টম SLA',
+      dedicatedManager: 'ডেডিকেটেড অ্যাকাউন্ট ম্যানেজার',
+      unlimited: 'আনলিমিটেড',
+    },
+    
+    // Payment
+    paymentMethod: 'পেমেন্ট মেথড',
+    addCard: 'নতুন কার্ড যোগ করুন',
+    defaultCard: 'ডিফল্ট',
+    expires: 'মেয়াদ',
+    
+    // History
+    billingHistory: 'বিলিং হিস্ট্রি',
+    date: 'তারিখ',
+    invoiceId: 'ইনভয়েস ID',
+    amount: 'পরিমাণ',
+    status: 'স্ট্যাটাস',
+    paid: 'পরিশোধিত',
+    pending: 'পেন্ডিং',
+    failed: 'ব্যর্থ',
+    downloadPdf: 'PDF ডাউনলোড',
+    viewAllInvoices: 'সব ইনভয়েস দেখুন',
+    
+    // Empty states
+    noPaymentMethod: 'কোনো পেমেন্ট মেথড নেই',
+    noInvoices: 'কোনো ইনভয়েস নেই',
+  },
 };

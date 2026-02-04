@@ -166,4 +166,78 @@ export const en = {
     slate: 'Slate',
     slateDesc: 'Neutral minimal',
   },
+  billing: {
+    title: 'Billing & Subscription',
+    subtitle: 'Manage your plan and payments',
+    
+    // Usage
+    usage: 'Your Usage',
+    thisMonth: 'This Month',
+    orders: 'Orders',
+    teamMembers: 'Team Members',
+    pages: 'Pages',
+    shops: 'Shops',
+    limitReached: 'Limit Reached',
+    limitReachedWarning: 'You have reached the limit on some resources',
+    upgradeNow: 'Upgrade Now',
+    
+    // Current Plan
+    currentPlan: 'Current Plan',
+    planLabel: 'Plan',
+    active: 'Active',
+    nextBilling: 'Next Billing',
+    monthlyCost: 'Monthly Cost',
+    changePlan: 'Change Plan',
+    
+    // Plans
+    planComparison: 'Plan Comparison',
+    free: 'Free',
+    pro: 'Pro',
+    enterprise: 'Enterprise',
+    mostPopular: 'Most Popular',
+    contactSales: 'Contact Sales',
+    perMonth: '/month',
+    freeForever: 'Free forever',
+    whatYouGet: 'What you get',
+    whatUnlocks: 'What unlocks with upgrade',
+    upgradeNowBtn: 'Upgrade Now',
+    currentPlanBtn: 'Current Plan',
+    unlimitedOrders: 'Unlimited order processing',
+    
+    // Features
+    features: {
+      shops: 'Shops',
+      ordersPerMonth: 'Orders/month',
+      teamMembers: 'Team Members',
+      basicSupport: 'Basic Support',
+      prioritySupport: 'Priority Support',
+      analytics: 'Analytics Dashboard',
+      customBranding: 'Custom Branding',
+      customSLA: 'Custom SLA',
+      dedicatedManager: 'Dedicated Account Manager',
+      unlimited: 'Unlimited',
+    },
+    
+    // Payment
+    paymentMethod: 'Payment Method',
+    addCard: 'Add New Card',
+    defaultCard: 'Default',
+    expires: 'Expires',
+    
+    // History
+    billingHistory: 'Billing History',
+    date: 'Date',
+    invoiceId: 'Invoice ID',
+    amount: 'Amount',
+    status: 'Status',
+    paid: 'Paid',
+    pending: 'Pending',
+    failed: 'Failed',
+    downloadPdf: 'Download PDF',
+    viewAllInvoices: 'View All Invoices',
+    
+    // Empty states
+    noPaymentMethod: 'No payment method',
+    noInvoices: 'No invoices yet',
+  },
 };
