@@ -1,228 +1,220 @@
 
-# Shop তৈরি ও Multi-tenant Data Isolation বাস্তবায়ন
+# Platform Mode বাস্তবায়ন
 
-## সমস্যা বিশ্লেষণ
-
-বর্তমানে:
-- Shop তৈরি হলে শুধু `shops` ও `shop_members` টেবিলে ডেটা যায়
-- **Products, Orders, Landing Pages, Media** ইত্যাদি পেজগুলো `shop_id` ফিল্টার ছাড়া সব ডেটা দেখায়
-- নতুন ডেটা insert করার সময় `shop_id` যোগ হচ্ছে না
-
-## লক্ষ্য
-
-প্রতিটি Shop এর নিজস্ব আলাদা:
-- Products
-- Orders  
-- Landing Pages
-- Media
-- Tracking Profiles
-- API Keys
-- Courier Credentials
-- Allowed Domains
-- Component Library
-- AI Training Data
-- Messenger Connections
-- এবং আরও অনেক কিছু
+## সারসংক্ষেপ
+Super Admin লগইন করলে প্রথমে **Platform Mode** এ থাকবে যেখানে সব শপের সামগ্রিক ডেটা দেখতে পাবে। চাইলে নির্দিষ্ট শপে সুইচ করতে পারবে।
 
 ---
 
-## প্রযুক্তিগত পরিবর্তন
+## UI পরিবর্তন
 
-### ১. useShopQuery Hook ব্যবহার করা
+### ShopSwitcher এ Platform Option
 
-বর্তমানে `useShopQuery` hook আছে কিন্তু ব্যবহার হচ্ছে না। এটি ব্যবহার করে সব queries shop-aware করতে হবে।
+```text
+┌─────────────────────────────────────────────────────┐
+│ [🏢 Platform ▼]  [+ Add Shop]                       │  ← Platform Mode এ
+│ [🏪 chaldal ▼]   [+ Add Shop]                       │  ← Shop Mode এ
+└─────────────────────────────────────────────────────┘
 
-```typescript
-// আগে (Products.tsx)
-const { data: products } = useQuery({
-  queryKey: ['products'],
-  queryFn: async () => {
-    const { data } = await supabase.from('products').select('*');
-    return data;
-  },
-});
-
-// পরে (shop-aware)
-const { data: products } = useShopQuery(
-  ['products'],
-  async (shopId) => {
-    const { data } = await supabase
-      .from('products')
-      .select('*')
-      .eq('shop_id', shopId);
-    return data;
-  }
-);
+ড্রপডাউন মেনু:
+┌─────────────────────────────────────┐
+│ 🏢 Platform                    ✓   │  ← Platform Mode অপশন
+├─────────────────────────────────────┤
+│ 🏪 chaldal                         │
+│ 🏪 EcomX v2 Pro                    │
+└─────────────────────────────────────┘
 ```
 
-### ২. Insert Operations এ shop_id যোগ করা
+### Sidebar পরিবর্তন
 
-```typescript
-// Products insert - আগে
-const { error } = await supabase.from('products').insert([{
-  name: data.name,
-  price: data.price,
-  // shop_id নেই!
-}]);
+**Platform Mode এ (currentShop = null):**
+```text
+┌─────────────────────────────┐
+│ 🏢 Ytspider                 │
+├─────────────────────────────┤
+│ 📊 Overview                 │
+│   └─ Dashboard (Platform)   │
+├─────────────────────────────┤
+│ 🏪 Business                 │
+│   ├─ All Shops              │
+│   ├─ Team                   │
+│   ├─ Billing                │
+│   ├─ Security               │
+│   ├─ Analytics              │
+│   └─ Audit Log              │
+├─────────────────────────────┤
+│ ⚙️ Settings                 │
+│   └─ Appearance             │
+└─────────────────────────────┘
 
-// পরে
-const { error } = await supabase.from('products').insert([{
-  name: data.name,
-  price: data.price,
-  shop_id: currentShop.id, // যোগ করা হবে
-}]);
+❌ Content (Products, Pages, Media)      ← লুকানো
+❌ Operations (Orders, Tracking, Inbox)  ← লুকানো
+❌ API Settings                          ← লুকানো
 ```
 
-### ৩. পেজ-ভিত্তিক পরিবর্তন
+**Shop Mode এ (currentShop !== null):**
+সব মেনু দেখা যাবে ✅
 
-| পেজ | Query পরিবর্তন | Insert পরিবর্তন |
-|-----|---------------|-----------------|
-| `Products.tsx` | `.eq('shop_id', shopId)` | `shop_id` যোগ |
-| `Orders.tsx` | `.eq('shop_id', shopId)` | N/A (public insert) |
-| `LandingPages.tsx` | `.eq('shop_id', shopId)` | `shop_id` যোগ |
-| `Media.tsx` | `.eq('shop_id', shopId)` | `shop_id` যোগ |
-| `TrackingProfiles.tsx` | `.eq('shop_id', shopId)` | `shop_id` যোগ |
-| `ApiAi.tsx` | `.eq('shop_id', shopId)` | `shop_id` যোগ |
-| `ApiCourier.tsx` | `.eq('shop_id', shopId)` | `shop_id` যোগ |
-| `AllowedDomains.tsx` | `.eq('shop_id', shopId)` | `shop_id` যোগ |
-| `ComponentLibrary.tsx` | `.eq('shop_id', shopId)` | `shop_id` যোগ |
-| `ApiMessenger.tsx` | `.eq('shop_id', shopId)` | `shop_id` যোগ |
-| `InboxMessenger.tsx` | `.eq('shop_id', shopId)` | N/A |
-| `Dashboard.tsx` | `.eq('shop_id', shopId)` | N/A |
+### Platform Dashboard
 
-### ৪. Shop তৈরির সময় কিছু default ডেটা (ঐচ্ছিক)
-
-```typescript
-// ShopContext.tsx - createShop function এ
-const createShop = async (name: string): Promise<Shop> => {
-  // 1. Shop তৈরি
-  const { data: shop } = await supabase.from('shops').insert({...}).select().single();
-  
-  // 2. Shop member হিসেবে owner যোগ
-  await supabase.from('shop_members').insert({...});
-  
-  // 3. (ঐচ্ছিক) Default tracking profile বা অন্য কিছু তৈরি
-  // await supabase.from('tracking_profiles').insert({
-  //   shop_id: shop.id,
-  //   name: 'Default Profile',
-  //   is_active: true,
-  // });
-  
-  return shop;
-};
-```
-
-### ৫. "No Shop Selected" Guard Component
-
-যখন shop নির্বাচন করা নেই তখন একটি সুন্দর UI দেখানো:
-
-```tsx
-// নতুন component: ShopGuard.tsx
-export function ShopGuard({ children }: { children: React.ReactNode }) {
-  const { currentShop, isLoading } = useShop();
-  
-  if (isLoading) return <LoadingSkeleton />;
-  
-  if (!currentShop) {
-    return (
-      <div className="flex flex-col items-center justify-center h-[60vh]">
-        <Store className="h-16 w-16 text-muted-foreground/50 mb-4" />
-        <h2>কোনো শপ নির্বাচন করা হয়নি</h2>
-        <p>উপরের মেনু থেকে একটি শপ নির্বাচন করুন বা নতুন শপ তৈরি করুন</p>
-      </div>
-    );
-  }
-  
-  return children;
-}
+```text
+┌────────────────────────────────────────────────────────────────┐
+│ 🏢 Platform Overview              [সব শপের সামগ্রিক অবস্থা]   │
+├────────────────────────────────────────────────────────────────┤
+│                                                                │
+│ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐           │
+│ │ মোট আয়  │ │মোট অর্ডার │ │ সক্রিয় শপ │ │ মোট পেজ  │           │
+│ │৳1,25,000 │ │   850    │ │    5     │ │   23     │           │
+│ └──────────┘ └──────────┘ └──────────┘ └──────────┘           │
+│                                                                │
+│ ┌──────────────────────────────────────────────────────────┐   │
+│ │ শপ পারফরম্যান্স                                          │   │
+│ ├──────────────────────────────────────────────────────────┤   │
+│ │ Shop      │ Orders │ Revenue  │ Products │ Status       │   │
+│ ├───────────┼────────┼──────────┼──────────┼──────────────┤   │
+│ │ chaldal   │  250   │ ৳45,000  │    32    │ ✅ Active    │   │
+│ │ EcomX v2  │  180   │ ৳35,000  │    28    │ ✅ Active    │   │
+│ └──────────────────────────────────────────────────────────┘   │
+└────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## ফাইল পরিবর্তন তালিকা
+## ফাইল পরিবর্তন
 
 ### নতুন ফাইল তৈরি
 | ফাইল | উদ্দেশ্য |
 |------|---------|
-| `src/components/admin/ShopGuard.tsx` | Shop না থাকলে fallback UI দেখানো |
+| `src/components/admin/dashboard/PlatformDashboard.tsx` | সব শপের সামগ্রিক ড্যাশবোর্ড |
+| `src/components/admin/dashboard/ShopPerformanceTable.tsx` | শপ-ভিত্তিক পারফরম্যান্স টেবিল |
 
 ### বিদ্যমান ফাইল আপডেট
 | ফাইল | পরিবর্তন |
 |------|---------|
-| `src/pages/admin/Products.tsx` | useShop ব্যবহার, query ও insert এ shop_id |
-| `src/pages/admin/Orders.tsx` | Query এ shop_id ফিল্টার |
-| `src/pages/admin/LandingPages.tsx` | useShop ব্যবহার, query ও insert এ shop_id |
-| `src/pages/admin/Media.tsx` | useShop ব্যবহার, query ও insert এ shop_id |
-| `src/pages/admin/TrackingProfiles.tsx` | useShop ব্যবহার, query ও insert এ shop_id |
-| `src/pages/admin/ApiAi.tsx` | useShop ব্যবহার, query ও insert এ shop_id |
-| `src/pages/admin/ApiCourier.tsx` | useShop ব্যবহার, query ও insert এ shop_id |
-| `src/pages/admin/AllowedDomains.tsx` | useShop ব্যবহার, query ও insert এ shop_id |
-| `src/pages/admin/ComponentLibrary.tsx` | useShop ব্যবহার, query ও insert এ shop_id |
-| `src/pages/admin/ApiMessenger.tsx` | useShop ব্যবহার, query ও insert এ shop_id |
-| `src/pages/admin/InboxMessenger.tsx` | Query এ shop_id ফিল্টার |
-| `src/pages/admin/Dashboard.tsx` | Query এ shop_id ফিল্টার |
-| `src/hooks/useBulkUpload.ts` | shop_id parameter যোগ |
-| `src/hooks/useTrackingProfiles.ts` | shop_id ফিল্টার |
-| `src/hooks/useCourierCredentials.ts` | shop_id ফিল্টার |
-| `src/components/admin/MediaPickerDialog.tsx` | shop_id ফিল্টার |
+| `src/contexts/ShopContext.tsx` | `isPlatformMode`, `enterPlatformMode()` যোগ, প্রথম লোডে শপ auto-select বন্ধ |
+| `src/components/admin/AdminSidebar.tsx` | Platform Mode এ শুধু Overview, Business ও Settings দেখানো |
+| `src/components/admin/ShopSwitcher.tsx` | Platform option যোগ, UI আপডেট |
+| `src/pages/admin/Dashboard.tsx` | Platform Mode এ PlatformDashboard দেখানো |
+| `src/locales/en.ts` | Platform Mode translations |
+| `src/locales/bn.ts` | Platform Mode translations |
+| `src/components/admin/dashboard/index.ts` | নতুন exports যোগ |
 
 ---
 
-## উদাহরণ: Products.tsx পরিবর্তন
+## বিস্তারিত পরিবর্তন
+
+### ১. ShopContext.tsx
 
 ```typescript
-// আগে
-export default function Products() {
-  const { data: products } = useQuery({
-    queryKey: ['products'],
-    queryFn: async () => {
-      const { data } = await supabase.from('products').select('*')
-        .order('created_at', { ascending: false });
-      return data;
-    },
-  });
-  
-  // Insert
-  const { error } = await supabase.from('products').insert([{
-    name: data.name,
-    price: data.price,
-  }]);
+interface ShopContextType {
+  // ... existing
+  isPlatformMode: boolean;
+  enterPlatformMode: () => void;
 }
 
-// পরে
-export default function Products() {
-  const { currentShop } = useShop();
-  
-  const { data: products } = useQuery({
-    queryKey: ['products', currentShop?.id],
-    queryFn: async () => {
-      if (!currentShop) return [];
-      const { data } = await supabase.from('products')
-        .select('*')
-        .eq('shop_id', currentShop.id)
-        .order('created_at', { ascending: false });
-      return data;
-    },
-    enabled: !!currentShop,
-  });
-  
-  // Insert
-  const { error } = await supabase.from('products').insert([{
-    name: data.name,
-    price: data.price,
-    shop_id: currentShop.id, // নতুন যোগ
-  }]);
-  
-  // Shop না থাকলে fallback
-  if (!currentShop) {
-    return (
-      <AdminLayout>
-        <ShopGuard>
-          <div />
-        </ShopGuard>
-      </AdminLayout>
-    );
-  }
+// fetchShops এ পরিবর্তন
+if (savedShopId && savedShop) {
+  setCurrentShop(savedShop);
+} else {
+  // প্রথম শপে auto-switch বন্ধ - Platform Mode এ থাকবে
+  setCurrentShop(null);
+}
+
+// নতুন computed value
+const isPlatformMode = currentShop === null;
+
+// নতুন function
+const enterPlatformMode = () => {
+  setCurrentShop(null);
+  setUserRole(null);
+  localStorage.removeItem(STORAGE_KEY);
+};
+```
+
+### ২. AdminSidebar.tsx
+
+```typescript
+const { currentShop } = useShop();
+const isPlatformMode = !currentShop;
+
+// Platform Mode এ restricted menu
+const filteredNavGroups = isPlatformMode 
+  ? navGroups.filter(g => 
+      ['sidebar.overview', 'sidebar.business', 'sidebar.settings'].includes(g.labelKey)
+    )
+  : navGroups;
+```
+
+### ৩. ShopSwitcher.tsx
+
+```typescript
+// Platform Mode dropdown option
+<DropdownMenuItem onClick={enterPlatformMode}>
+  <Building2 className="h-4 w-4 mr-2" />
+  Platform
+  {!currentShop && <Check className="ml-auto h-4 w-4" />}
+</DropdownMenuItem>
+<DropdownMenuSeparator />
+
+// Platform Mode এ different trigger UI
+{!currentShop ? (
+  <Button variant="ghost" size="sm" className="gap-2">
+    <Building2 className="h-4 w-4" />
+    <span>Platform</span>
+    <ChevronDown className="h-4 w-4" />
+  </Button>
+) : (
+  // existing shop trigger
+)}
+```
+
+### ৪. Dashboard.tsx
+
+```typescript
+const { currentShop } = useShop();
+
+// Platform Mode এ Platform Dashboard দেখাবে
+if (!currentShop) {
+  return (
+    <AdminLayout>
+      <PlatformDashboard />
+    </AdminLayout>
+  );
+}
+
+// Shop Mode এ existing shop dashboard (with ShopGuard)
+return (
+  <AdminLayout>
+    <ShopGuard>
+      {/* existing shop-specific dashboard */}
+    </ShopGuard>
+  </AdminLayout>
+);
+```
+
+### ৫. PlatformDashboard.tsx (নতুন)
+
+সব শপের aggregated ডেটা দেখাবে:
+- মোট Revenue (সব শপ মিলিয়ে)
+- মোট Orders
+- সক্রিয় Shops সংখ্যা
+- মোট Landing Pages
+- মোট Products
+- ShopPerformanceTable (শপ-ভিত্তিক তুলনা)
+
+### ৬. Translations
+
+```typescript
+// en.ts & bn.ts
+platform: {
+  title: 'Platform Overview',
+  allShops: 'All Shops',
+  totalRevenue: 'Total Revenue',
+  totalOrders: 'Total Orders',
+  activeShops: 'Active Shops',
+  totalPages: 'Total Pages',
+  shopPerformance: 'Shop Performance',
+  switchToShop: 'Switch to Shop',
 }
 ```
 
@@ -230,42 +222,26 @@ export default function Products() {
 
 ## বাস্তবায়ন ধাপ
 
-### Phase 1: Core Infrastructure
-1. `ShopGuard.tsx` কম্পোনেন্ট তৈরি
-2. Products.tsx আপডেট (টেমপ্লেট হিসেবে)
-
-### Phase 2: Content Pages
-3. LandingPages.tsx আপডেট
-4. Media.tsx আপডেট
-5. ComponentLibrary.tsx আপডেট
-
-### Phase 3: Operations Pages
-6. Orders.tsx আপডেট
-7. Dashboard.tsx আপডেট
-
-### Phase 4: API & Settings Pages
-8. ApiAi.tsx আপডেট
-9. ApiCourier.tsx আপডেট
-10. AllowedDomains.tsx আপডেট
-11. TrackingProfiles.tsx আপডেট
-
-### Phase 5: Messenger Pages
-12. ApiMessenger.tsx আপডেট
-13. InboxMessenger.tsx আপডেট
-
-### Phase 6: Hooks & Utilities
-14. useBulkUpload.ts আপডেট
-15. useTrackingProfiles.ts আপডেট
-16. useCourierCredentials.ts আপডেট
-17. MediaPickerDialog.tsx আপডেট
+1. **ShopContext আপডেট** - isPlatformMode ও enterPlatformMode যোগ
+2. **Translations আপডেট** - Platform Mode এর জন্য নতুন strings
+3. **ShopSwitcher আপডেট** - Platform option ও UI
+4. **AdminSidebar আপডেট** - Platform Mode এ restricted menu
+5. **PlatformDashboard তৈরি** - সব শপের aggregated stats
+6. **ShopPerformanceTable তৈরি** - শপ তুলনা টেবিল
+7. **Dashboard আপডেট** - conditional rendering
 
 ---
 
 ## ফলাফল
 
-এই পরিবর্তনের পর:
-- ✅ প্রতিটি শপ শুধু নিজের ডেটা দেখতে পাবে
-- ✅ নতুন ডেটা সঠিক shop_id সহ সংরক্ষিত হবে
-- ✅ Shop switch করলে সঠিক ডেটা লোড হবে
-- ✅ Shop না থাকলে সুন্দর fallback UI দেখাবে
-- ✅ True multi-tenant isolation নিশ্চিত হবে
+| বৈশিষ্ট্য | Platform Mode | Shop Mode |
+|----------|---------------|-----------|
+| Dashboard | Platform (সব শপ) | Shop-specific |
+| Sidebar | Overview + Business + Settings | সব মেনু |
+| Data View | Aggregated | Shop-filtered |
+| ShopSwitcher | "Platform" selected | নির্দিষ্ট শপ selected |
+
+**Super Admin UX Flow:**
+1. লগইন → Platform Mode এ Platform Dashboard দেখা যাবে
+2. যেকোনো শপে ক্লিক → Shop Mode এ যাবে, সব টুলস দেখা যাবে
+3. "Platform" ক্লিক → আবার Platform Mode এ ফিরে আসবে
