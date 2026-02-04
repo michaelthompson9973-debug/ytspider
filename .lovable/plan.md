@@ -1,318 +1,192 @@
 
-# এন্টারপ্রাইজ-গ্রেড মাল্টি-টেন্যান্ট শপ ম্যানেজমেন্ট সিস্টেম
 
-## বর্তমান অবস্থা (যা ইতিমধ্যে আছে)
+# কোডবেজ স্ক্যান রিপোর্ট ও সমস্যা সমাধান
 
-### ডাটাবেজ
-- `shops` টেবিল: id, name, slug, logo_url, owner_id, plan, settings, is_active
-- `shop_members` টেবিল: shop_id, user_id, role (owner/admin/editor/viewer)
-- `shop_role` enum: owner, admin, editor, viewer
-- `shop_plan` enum: free, pro, enterprise
-- `user_preferences` টেবিল: user_id, key, value (থিম সেভ করার জন্য)
+## আবিষ্কৃত সমস্যাসমূহ
 
-### ফ্রন্টএন্ড
-- ShopContext - শপ সুইচিং, শপ তৈরি
-- TeamMembers পেজ - মেম্বার লিস্ট, রোল পরিবর্তন
-- Settings পেজ - ইউজার-লেভেল থিম (শপ-স্পেসিফিক নয়)
+### ১. Critical Error: `useShop must be used within a ShopProvider`
 
----
+**সমস্যা:** 
+`AcceptInvite.tsx` পেজে `useShopInvitations` hook ব্যবহার করা হচ্ছে, যা internally `useShop()` কল করে। কিন্তু `AcceptInvite` পেজ `ShopProvider` এর বাইরে বা সঠিক context-এ নেই।
 
-## যা করা দরকার
+**বিস্তারিত:**
+- `useShopInvitations.ts` (line 27): `const { currentShop } = useShop();`
+- `AcceptInvite.tsx` (line 14): `const { getInvitationByToken, acceptInvitation, isAccepting } = useShopInvitations();`
 
-### পর্ব ১: প্রতি-শপ থিম সিস্টেম
-
-**সমস্যা:** বর্তমানে থিম ইউজার-লেভেলে সেভ হয়। প্রতিটা শপের আলাদা থিম হওয়া উচিত।
+**লক্ষণ:**
+```
+Error: useShop must be used within a ShopProvider
+at useShop (ShopContext.tsx:265:15)
+at AdminSidebar (AdminSidebar.tsx:779:29)
+```
 
 **সমাধান:**
-
-#### ডাটাবেজ পরিবর্তন:
-```sql
--- shop_theme টেবিল তৈরি
-CREATE TABLE public.shop_theme (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  shop_id uuid NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
-  preset text NOT NULL DEFAULT 'default',
-  colors jsonb NOT NULL DEFAULT '{}',
-  mode text NOT NULL DEFAULT 'light',
-  created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now(),
-  UNIQUE(shop_id)
-);
-
--- RLS policies
-ALTER TABLE shop_theme ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Shop members can view theme"
-  ON shop_theme FOR SELECT
-  USING (has_shop_access(shop_id, 'viewer'));
-
-CREATE POLICY "Shop admins can manage theme"
-  ON shop_theme FOR ALL
-  USING (has_shop_access(shop_id, 'admin'));
-```
-
-#### ফ্রন্টএন্ড পরিবর্তন:
-- `useShopTheme` হুক তৈরি - currentShop এর থিম fetch/save করবে
-- AdminThemeContext আপডেট - শপ থিম সাপোর্ট যোগ
-- Settings পেজে শপ থিম vs ইউজার থিম আলাদা করা
+`useShopInvitations` hook থেকে `getInvitationByToken` এবং `acceptInvitation` ফাংশনগুলো আলাদা করতে হবে যাতে এগুলো `ShopProvider` ছাড়াই কাজ করে।
 
 ---
 
-### পর্ব ২: উন্নত রোল ও পারমিশন সিস্টেম
+### ২. Provider Order সমস্যা (App.tsx)
 
-**নতুন রোল যোগ:**
-
-```sql
--- shop_role enum এ নতুন রোল যোগ
-ALTER TYPE shop_role ADD VALUE 'manager' BEFORE 'editor';
-ALTER TYPE shop_role ADD VALUE 'support' AFTER 'editor';
+**বর্তমান অর্ডার:**
+```tsx
+<AdminThemeProvider>
+  <QueryClientProvider>
+    <AuthProvider>
+      <ShopProvider>
+        ...
+      </ShopProvider>
+    </AuthProvider>
+  </QueryClientProvider>
+</AdminThemeProvider>
 ```
 
-**রোল হায়ারার্কি:**
-```text
-+----------+  +----------+  +----------+  +----------+  +----------+  +----------+
-|  owner   |  |  admin   |  | manager  |  |  editor  |  | support  |  |  viewer  |
-+----------+  +----------+  +----------+  +----------+  +----------+  +----------+
-| সব কিছু  |  | টিম ম্যানেজ|  | অর্ডার    |  | কনটেন্ট   |  | কাস্টমার  |  | শুধু দেখা |
-| ডিলিট    |  | সেটিংস    |  | প্রোডাক্ট  |  | এডিট     |  | সাপোর্ট   |  |          |
-+----------+  +----------+  +----------+  +----------+  +----------+  +----------+
-```
-
-**পারমিশন সিস্টেম:**
-
-```sql
--- shop_permissions টেবিল
-CREATE TABLE public.shop_permissions (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  shop_id uuid NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
-  role shop_role NOT NULL,
-  permission text NOT NULL,
-  created_at timestamptz DEFAULT now(),
-  UNIQUE(shop_id, role, permission)
-);
-
--- ডিফল্ট পারমিশন
-INSERT INTO shop_permissions (shop_id, role, permission) VALUES
--- owner পারমিশন
-('shop_id', 'owner', 'shop.delete'),
-('shop_id', 'owner', 'shop.settings'),
-('shop_id', 'owner', 'team.manage'),
-('shop_id', 'owner', 'billing.manage'),
--- admin পারমিশন
-('shop_id', 'admin', 'shop.settings'),
-('shop_id', 'admin', 'team.manage'),
-('shop_id', 'admin', 'products.manage'),
--- manager পারমিশন
-('shop_id', 'manager', 'orders.manage'),
-('shop_id', 'manager', 'products.manage'),
-('shop_id', 'manager', 'landing_pages.manage'),
--- ... ইত্যাদি
-```
+**সমস্যা:**
+`AdminThemeProvider` সবার বাইরে আছে, কিন্তু এটি `ShopProvider` এর ভিতরে থাকা উচিত যদি শপ-স্পেসিফিক থিম চাই।
 
 ---
 
-### পর্ব ৩: ইমেইল ইনভাইটেশন সিস্টেম
+### ৩. AcceptInvite পেজে ShopContext নির্ভরতা
 
-**ডাটাবেজ:**
-```sql
--- shop_invitations টেবিল
-CREATE TABLE public.shop_invitations (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  shop_id uuid NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
-  email text NOT NULL,
-  role shop_role NOT NULL,
-  token text NOT NULL UNIQUE,
-  invited_by uuid NOT NULL,
-  expires_at timestamptz NOT NULL DEFAULT (now() + interval '7 days'),
-  accepted_at timestamptz,
-  created_at timestamptz DEFAULT now()
-);
+**সমস্যা:**
+`/accept-invite` পেজ পাবলিক পেজ হওয়া উচিত (লগইন ছাড়াই দেখা যাবে), কিন্তু `useShopInvitations` hook `useShop()` ব্যবহার করছে।
+
+**সমাধান:**
+`getInvitationByToken` এবং `acceptInvitation` এর জন্য আলাদা utility functions তৈরি করতে হবে যা ShopContext ছাড়াই কাজ করবে।
+
+---
+
+### ৪. shop_members টেবিলে ইউজার ইমেইল নেই
+
+**সমস্যা:**
+`TeamMembers.tsx` এ মেম্বারদের শুধু `user_id` দেখানো হচ্ছে (line 369-371):
+```tsx
+<p className="font-medium text-sm">
+  User {member.user_id.substring(0, 8)}...
+</p>
 ```
 
-**Edge Function:**
+**সমাধান:**
+`auth.users` থেকে ইমেইল fetch করা দরকার, অথবা `profiles` টেবিল তৈরি করে সেখান থেকে নিতে হবে।
+
+---
+
+### ৫. useShopTheme hook এ শপ থিম সিস্টেম অসম্পূর্ণ
+
+**সমস্যা:**
+`useShopTheme.ts` তৈরি হয়েছে কিন্তু এটি Settings পেজে ব্যবহার করা হচ্ছে না। Settings পেজ এখনও user-level থিম ব্যবহার করছে।
+
+---
+
+### ৬. useShopPermissions hook শুধু frontend এ কাজ করছে
+
+**সমস্যা:**
+Permission checks শুধু frontend-এ হচ্ছে। Backend (RLS) এ `has_shop_access` function আছে কিন্তু granular permissions নেই।
+
+---
+
+## সমাধান পরিকল্পনা
+
+### পদক্ষেপ ১: AcceptInvite এর জন্য ShopContext-মুক্ত ফাংশন তৈরি
+
 ```typescript
-// supabase/functions/send-invite/index.ts
-// - ইনভাইট ইমেইল পাঠাবে
-// - ইউনিক টোকেন জেনারেট করবে
-// - 7 দিন এক্সপায়ারি
+// src/lib/invitationUtils.ts (নতুন ফাইল)
+export async function getInvitationByToken(token: string) {
+  const { data, error } = await supabase
+    .from('shop_invitations')
+    .select('*')
+    .eq('token', token)
+    .is('accepted_at', null)
+    .gt('expires_at', new Date().toISOString())
+    .maybeSingle();
 
-// supabase/functions/accept-invite/index.ts
-// - টোকেন ভেরিফাই করবে
-// - shop_members এ যোগ করবে
-// - invitation আপডেট করবে
-```
+  if (error || !data) return null;
+  return data;
+}
 
-**ফ্রন্টএন্ড:**
-- ইনভাইট মোডাল আপডেট
-- পেন্ডিং ইনভাইট লিস্ট
-- ইনভাইট রিসেন্ড/ক্যান্সেল অপশন
-- `/accept-invite?token=xxx` পেজ
-
----
-
-### পর্ব ৪: শপ সেটিংস ও কনফিগারেশন
-
-**shops.settings JSONB স্ট্রাকচার:**
-```json
-{
-  "branding": {
-    "primary_color": "#3B82F6",
-    "logo_url": "...",
-    "favicon_url": "..."
-  },
-  "notifications": {
-    "order_email": true,
-    "order_sms": false,
-    "low_stock_alert": true
-  },
-  "features": {
-    "multi_currency": false,
-    "inventory_tracking": true,
-    "customer_accounts": false
-  },
-  "limits": {
-    "max_products": 100,
-    "max_landing_pages": 10,
-    "max_team_members": 5
-  }
+export async function acceptInvitation(token: string, userId: string) {
+  // ... implementation without ShopContext
 }
 ```
 
----
+### পদক্ষেপ ২: AcceptInvite.tsx আপডেট
 
-### পর্ব ৫: অ্যাক্টিভিটি লগ ও অডিট ট্রেইল
+```typescript
+// আগে
+import { useShopInvitations } from '@/hooks/useShopInvitations';
+const { getInvitationByToken, acceptInvitation } = useShopInvitations();
 
-**ডাটাবেজ:**
+// পরে
+import { getInvitationByToken, acceptInvitation } from '@/lib/invitationUtils';
+```
+
+### পদক্ষেপ ৩: useShopInvitations hook ঠিক করা
+
+শুধুমাত্র shop-specific operations এর জন্য `currentShop` ব্যবহার করবে:
+- `invitations` query - shop context দরকার
+- `createInvitation` - shop context দরকার
+- `cancelInvitation` - shop context দরকার
+- `getInvitationByToken` - shop context দরকার নেই
+- `acceptInvitation` - shop context দরকার নেই
+
+### পদক্ষেপ ৪: Profiles টেবিল তৈরি
+
 ```sql
-CREATE TABLE public.shop_activity_log (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  shop_id uuid NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
-  user_id uuid NOT NULL,
-  action text NOT NULL,
-  entity_type text NOT NULL,
-  entity_id uuid,
-  old_data jsonb,
-  new_data jsonb,
-  ip_address text,
-  user_agent text,
-  created_at timestamptz DEFAULT now()
+CREATE TABLE public.profiles (
+  id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  email text NOT NULL,
+  full_name text,
+  avatar_url text,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
 );
 
--- ইনডেক্স
-CREATE INDEX idx_shop_activity_shop ON shop_activity_log(shop_id);
-CREATE INDEX idx_shop_activity_user ON shop_activity_log(user_id);
-CREATE INDEX idx_shop_activity_created ON shop_activity_log(created_at);
+-- Trigger to auto-create profile on signup
+CREATE FUNCTION public.handle_new_user()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER SET search_path = public
+AS $$
+BEGIN
+  INSERT INTO public.profiles (id, email, full_name)
+  VALUES (new.id, new.email, new.raw_user_meta_data->>'full_name');
+  RETURN new;
+END;
+$$;
+
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 ```
 
----
+### পদক্ষেপ ৫: Settings পেজে শপ থিম vs ইউজার থিম
 
-## সম্পূর্ণ ফিচার লিস্ট
-
-### ১. শপ ম্যানেজমেন্ট
-- [x] শপ তৈরি/এডিট/ডিলিট
-- [ ] শপ লোগো ও ব্র্যান্ডিং
-- [ ] শপ সেটিংস ড্যাশবোর্ড
-- [ ] শপ অ্যাক্টিভেট/ডিঅ্যাক্টিভেট
-- [ ] শপ ডুপ্লিকেট/ক্লোন
-
-### ২. টিম ম্যানেজমেন্ট
-- [x] ইনভাইটেশন সিস্টেম (token-based)
-- [x] রোল-বেজড অ্যাক্সেস কন্ট্রোল (RBAC) - 6 roles
-- [x] পারমিশন সিস্টেম (useShopPermissions hook)
-- [x] টিম মেম্বার অ্যাক্টিভিটি ট্র্যাকিং
-- [ ] ইমেইল ইনভাইট (Resend integration)
-- [ ] বাল্ক ইনভাইট
-- [ ] টিম মেম্বার সাসপেন্ড/রিঅ্যাক্টিভেট
-
-### ৩. থিম ও ব্র্যান্ডিং
-- [x] প্রতি-শপ থিম সিস্টেম (shop_theme table)
-- [ ] কাস্টম কালার পিকার
-- [ ] ল্যান্ডিং পেজ থিম আলাদা
-- [ ] ইমেইল টেমপ্লেট কাস্টমাইজেশন
-- [ ] হোয়াইট-লেবেল অপশন (এন্টারপ্রাইজ)
-
-### ৪. বিলিং ও সাবস্ক্রিপশন
-- [ ] প্ল্যান ম্যানেজমেন্ট (Free/Pro/Enterprise)
-- [ ] প্ল্যান লিমিট এনফোর্সমেন্ট
-- [ ] পেমেন্ট হিস্ট্রি
-- [ ] ইনভয়েস জেনারেশন
-- [ ] প্রোমো কোড সিস্টেম
-
-### ৫. সিকিউরিটি
-- [ ] 2FA (Two-Factor Authentication)
-- [ ] API কী ম্যানেজমেন্ট
-- [ ] IP হোয়াইটলিস্ট
-- [ ] সেশন ম্যানেজমেন্ট
-- [ ] লগইন হিস্ট্রি
-- [ ] সিকিউরিটি অ্যালার্ট
-
-### ৬. অ্যানালিটিক্স ও রিপোর্টিং
-- [ ] শপ পারফরম্যান্স ড্যাশবোর্ড
-- [ ] টিম প্রোডাক্টিভিটি রিপোর্ট
-- [ ] অর্ডার অ্যানালিটিক্স
-- [ ] রেভেনিউ চার্ট
-- [ ] কাস্টম রিপোর্ট বিল্ডার
-
-### ৭. অডিট ও কমপ্লায়েন্স
-- [x] অ্যাক্টিভিটি লগ (shop_activity_log table)
-- [ ] ডেটা এক্সপোর্ট
-- [ ] GDPR কমপ্লায়েন্স টুলস
-- [ ] ব্যাকআপ/রিস্টোর
-
-### ৮. ইন্টিগ্রেশন
-- [ ] Webhook ম্যানেজমেন্ট (প্রতি-শপ)
-- [ ] API অ্যাক্সেস (প্রতি-শপ)
-- [ ] থার্ড-পার্টি অ্যাপ কানেকশন
-- [ ] SSO (Single Sign-On) - এন্টারপ্রাইজ
+দুইটা অপশন রাখা হবে:
+1. **ইউজার থিম** - ব্যক্তিগত preference (বর্তমান সিস্টেম)
+2. **শপ থিম** - শপ-স্পেসিফিক (নতুন সিস্টেম, admin only)
 
 ---
 
-## ইমপ্লিমেন্টেশন প্রায়োরিটি
+## ফাইল পরিবর্তন তালিকা
 
-### ফেজ ১ (High Priority)
-1. প্রতি-শপ থিম সিস্টেম
-2. ইমেইল ইনভাইটেশন সিস্টেম
-3. Manager ও Support রোল যোগ
-4. অ্যাক্টিভিটি লগ
+### নতুন ফাইল:
+- `src/lib/invitationUtils.ts` - ShopContext-মুক্ত ইনভাইট ফাংশন
 
-### ফেজ ২ (Medium Priority)
-5. কাস্টম পারমিশন সিস্টেম
-6. শপ সেটিংস ড্যাশবোর্ড
-7. প্ল্যান লিমিট এনফোর্সমেন্ট
-8. টিম প্রোডাক্টিভিটি রিপোর্ট
-
-### ফেজ ৩ (Lower Priority)
-9. 2FA সেটআপ
-10. API কী ম্যানেজমেন্ট
-11. হোয়াইট-লেবেল অপশন
-12. SSO ইন্টিগ্রেশন
-
----
-
-## টেকনিক্যাল ডিটেইলস
-
-### নতুন ফাইল তৈরি হবে:
-```text
-src/hooks/useShopTheme.ts
-src/hooks/useShopPermissions.ts
-src/hooks/useShopInvitations.ts
-src/hooks/useActivityLog.ts
-src/pages/admin/ShopTheme.tsx
-src/pages/AcceptInvite.tsx
-src/components/admin/team/InvitationsList.tsx
-src/components/admin/team/RolePermissionEditor.tsx
-supabase/functions/send-invite/index.ts
-supabase/functions/accept-invite/index.ts
-supabase/functions/log-activity/index.ts
-```
+### আপডেট করা ফাইল:
+1. `src/pages/AcceptInvite.tsx` - নতুন utility ব্যবহার
+2. `src/hooks/useShopInvitations.ts` - refactor
+3. `src/pages/admin/TeamMembers.tsx` - profiles টেবিল থেকে ইমেইল দেখানো
 
 ### ডাটাবেজ মাইগ্রেশন:
-```text
-- shop_theme টেবিল
-- shop_permissions টেবিল
-- shop_invitations টেবিল
-- shop_activity_log টেবিল
-- shop_role enum আপডেট (manager, support যোগ)
-- RLS policies
-```
+1. `profiles` টেবিল তৈরি
+2. Trigger ফাংশন তৈরি
+
+---
+
+## অতিরিক্ত সমস্যাসমূহ (পরে ঠিক করার জন্য)
+
+1. **শপ থিম vs ইউজার থিম আলাদা করা** - Settings পেজে পরিষ্কার distinction দরকার
+2. **Granular RLS Policies** - Permission-based RLS এখনও নেই
+3. **Email Sending** - ইনভাইট ইমেইল পাঠানোর Edge Function নেই
+4. **Activity Log UI** - ShopAuditLog পেজে ফিল্টারিং এবং পেজিনেশন দরকার
+5. **Real-time Updates** - shop_members টেবিলে realtime enable করা দরকার
 
