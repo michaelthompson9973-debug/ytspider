@@ -1484,6 +1484,100 @@ export type Database = {
           },
         ]
       }
+      shop_activity_log: {
+        Row: {
+          action: string
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          id: string
+          ip_address: string | null
+          new_data: Json | null
+          old_data: Json | null
+          shop_id: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          ip_address?: string | null
+          new_data?: Json | null
+          old_data?: Json | null
+          shop_id: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          ip_address?: string | null
+          new_data?: Json | null
+          old_data?: Json | null
+          shop_id?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shop_activity_log_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shop_invitations: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string
+          role: Database["public"]["Enums"]["shop_role"]
+          shop_id: string
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by: string
+          role?: Database["public"]["Enums"]["shop_role"]
+          shop_id: string
+          token: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string
+          role?: Database["public"]["Enums"]["shop_role"]
+          shop_id?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shop_invitations_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shop_members: {
         Row: {
           accepted_at: string | null
@@ -1555,6 +1649,44 @@ export type Database = {
             foreignKeyName: "shop_settings_shop_id_fkey"
             columns: ["shop_id"]
             isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shop_theme: {
+        Row: {
+          colors: Json
+          created_at: string
+          id: string
+          mode: string
+          preset: string
+          shop_id: string
+          updated_at: string
+        }
+        Insert: {
+          colors?: Json
+          created_at?: string
+          id?: string
+          mode?: string
+          preset?: string
+          shop_id: string
+          updated_at?: string
+        }
+        Update: {
+          colors?: Json
+          created_at?: string
+          id?: string
+          mode?: string
+          preset?: string
+          shop_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shop_theme_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: true
             referencedRelation: "shops"
             referencedColumns: ["id"]
           },
@@ -1818,7 +1950,7 @@ export type Database = {
         | "processing"
         | "delivered"
       shop_plan: "free" | "pro" | "enterprise"
-      shop_role: "owner" | "admin" | "editor" | "viewer"
+      shop_role: "owner" | "admin" | "manager" | "editor" | "support" | "viewer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1958,7 +2090,7 @@ export const Constants = {
         "delivered",
       ],
       shop_plan: ["free", "pro", "enterprise"],
-      shop_role: ["owner", "admin", "editor", "viewer"],
+      shop_role: ["owner", "admin", "manager", "editor", "support", "viewer"],
     },
   },
 } as const
