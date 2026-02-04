@@ -118,14 +118,30 @@ export default function TeamMembers() {
     queryFn: async () => {
       if (!currentShop) return [];
       
-      const { data, error } = await supabase
+      const { data: membersData, error: membersError } = await supabase
         .from('shop_members')
         .select('*')
         .eq('shop_id', currentShop.id)
         .order('role');
 
-      if (error) throw error;
-      return data as ShopMember[];
+      if (membersError) throw membersError;
+      
+      // Fetch profiles for all members
+      const userIds = membersData.map(m => m.user_id);
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('id, email, full_name, avatar_url')
+        .in('id', userIds);
+
+      // Map profiles to members
+      const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
+      
+      return membersData.map(member => ({
+        ...member,
+        profile: profilesMap.get(member.user_id) || null,
+      })) as (ShopMember & { 
+        profile: { id: string; email: string; full_name: string | null; avatar_url: string | null } | null 
+      })[];
     },
     enabled: !!currentShop,
   });
@@ -227,9 +243,6 @@ export default function TeamMembers() {
     }
   };
 
-  const getInitials = (userId: string) => {
-    return userId.substring(0, 2).toUpperCase();
-  };
 
   if (!currentShop) {
     return (
@@ -362,13 +375,19 @@ export default function TeamMembers() {
                         <div className="flex items-center gap-3">
                           <Avatar className="h-8 w-8">
                             <AvatarFallback className="text-xs">
-                              {getInitials(member.user_id)}
+                              {member.profile?.full_name 
+                                ? member.profile.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+                                : member.profile?.email?.substring(0, 2).toUpperCase() 
+                                || member.user_id.substring(0, 2).toUpperCase()}
                             </AvatarFallback>
                           </Avatar>
                           <div>
                             <p className="font-medium text-sm">
-                              User {member.user_id.substring(0, 8)}...
+                              {member.profile?.full_name || member.profile?.email || `User ${member.user_id.substring(0, 8)}...`}
                             </p>
+                            {member.profile?.email && member.profile?.full_name && (
+                              <p className="text-xs text-muted-foreground">{member.profile.email}</p>
+                            )}
                             {!member.accepted_at && (
                               <p className="text-xs text-muted-foreground">পেন্ডিং ইনভাইট</p>
                             )}

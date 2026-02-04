@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useShopInvitations } from '@/hooks/useShopInvitations';
+import { getInvitationByToken, acceptInvitation, InvitationWithShop } from '@/lib/invitationUtils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, CheckCircle, XCircle, UserPlus, LogIn } from 'lucide-react';
@@ -11,11 +11,11 @@ export default function AcceptInvite() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
-  const { getInvitationByToken, acceptInvitation, isAccepting } = useShopInvitations();
   
   const [status, setStatus] = useState<'loading' | 'found' | 'not_found' | 'accepted' | 'error'>('loading');
-  const [invitation, setInvitation] = useState<Awaited<ReturnType<typeof getInvitationByToken>>>(null);
+  const [invitation, setInvitation] = useState<InvitationWithShop | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
+  const [isAccepting, setIsAccepting] = useState(false);
 
   const token = searchParams.get('token');
 
@@ -39,20 +39,28 @@ export default function AcceptInvite() {
   }, [token]);
 
   const handleAccept = async () => {
-    if (!token) return;
+    if (!token || !user) return;
 
+    setIsAccepting(true);
     try {
-      const inv = await acceptInvitation(token);
-      setStatus('accepted');
-      toast.success('ইনভাইট গ্রহণ করা হয়েছে!');
-      
-      // Redirect to admin after 2 seconds
-      setTimeout(() => {
-        navigate('/admin');
-      }, 2000);
+      const result = await acceptInvitation(token, user.id);
+      if (result.success) {
+        setStatus('accepted');
+        toast.success('ইনভাইট গ্রহণ করা হয়েছে!');
+        
+        // Redirect to admin after 2 seconds
+        setTimeout(() => {
+          navigate('/admin');
+        }, 2000);
+      } else {
+        setStatus('error');
+        setErrorMessage(result.error || 'কিছু সমস্যা হয়েছে');
+      }
     } catch (error) {
       setStatus('error');
       setErrorMessage(error instanceof Error ? error.message : 'কিছু সমস্যা হয়েছে');
+    } finally {
+      setIsAccepting(false);
     }
   };
 
@@ -155,10 +163,10 @@ export default function AcceptInvite() {
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <CheckCircle className="h-12 w-12 mx-auto text-green-500 mb-4" />
+            <CheckCircle className="h-12 w-12 mx-auto text-emerald-500 mb-4" />
             <CardTitle>স্বাগতম!</CardTitle>
             <CardDescription>
-              আপনি সফলভাবে টিমে যোগ হয়েছেন। ড্যাশবোর্ডে নিয়ে যাচ্ছি...
+              আপনি সফলভাবে {invitation?.shops?.name || 'শপ'} টিমে যোগ হয়েছেন। ড্যাশবোর্ডে নিয়ে যাচ্ছি...
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -179,11 +187,17 @@ export default function AcceptInvite() {
           <UserPlus className="h-12 w-12 mx-auto text-primary mb-4" />
           <CardTitle>টিমে যোগ দিন</CardTitle>
           <CardDescription>
-            আপনাকে একটি শপের টিমে যোগ হতে আমন্ত্রণ জানানো হয়েছে
+            আপনাকে <strong>{invitation?.shops?.name || 'একটি শপ'}</strong>-এর টিমে যোগ হতে আমন্ত্রণ জানানো হয়েছে
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="bg-muted/50 p-4 rounded-lg space-y-2">
+            {invitation?.shops?.name && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">শপ:</span>
+                <span className="font-medium">{invitation.shops.name}</span>
+              </div>
+            )}
             <div className="flex justify-between">
               <span className="text-muted-foreground">ইমেইল:</span>
               <span className="font-medium">{invitation?.email}</span>
