@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 
 export type ThemePreset = 'default' | 'ocean' | 'forest' | 'sunset' | 'slate' | 'custom';
 export type ThemeMode = 'light' | 'dark' | 'system';
@@ -24,13 +24,15 @@ export interface AdminTheme {
 
 interface AdminThemeContextType {
   theme: AdminTheme;
+  draftTheme: AdminTheme;
+  hasUnsavedChanges: boolean;
   setPreset: (preset: ThemePreset) => void;
   setMode: (mode: ThemeMode) => void;
   setCustomColor: (key: keyof ThemeColors, value: string) => void;
   resetToDefaults: () => void;
+  applyTheme: (theme: AdminTheme) => void;
+  discardChanges: () => void;
 }
-
-const STORAGE_KEY = 'ytspider-admin-theme';
 
 // Theme presets with HSL values
 export const themePresets: Record<Exclude<ThemePreset, 'custom'>, ThemeColors> = {
@@ -96,7 +98,7 @@ export const themePresets: Record<Exclude<ThemePreset, 'custom'>, ThemeColors> =
   },
 };
 
-const defaultTheme: AdminTheme = {
+export const defaultTheme: AdminTheme = {
   preset: 'default',
   colors: themePresets.default,
   mode: 'light',
@@ -130,70 +132,79 @@ function applyThemeToDOM(theme: AdminTheme) {
 }
 
 export function AdminThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<AdminTheme>(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        return { ...defaultTheme, ...parsed };
-      }
-    } catch (e) {
-      console.error('Failed to parse stored theme:', e);
-    }
-    return defaultTheme;
-  });
+  // Saved theme (from database)
+  const [theme, setTheme] = useState<AdminTheme>(defaultTheme);
+  // Draft theme (unsaved changes)
+  const [draftTheme, setDraftTheme] = useState<AdminTheme>(defaultTheme);
 
-  // Apply theme on mount and changes
-  useEffect(() => {
-    applyThemeToDOM(theme);
-  }, [theme]);
+  const hasUnsavedChanges = JSON.stringify(theme) !== JSON.stringify(draftTheme);
 
-  // Save to localStorage on change
+  // Apply draft theme to DOM for live preview
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(theme));
-  }, [theme]);
+    applyThemeToDOM(draftTheme);
+  }, [draftTheme]);
 
   // Listen for system theme changes
   useEffect(() => {
-    if (theme.mode !== 'system') return;
+    if (draftTheme.mode !== 'system') return;
 
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handler = () => applyThemeToDOM(theme);
+    const handler = () => applyThemeToDOM(draftTheme);
     mediaQuery.addEventListener('change', handler);
     return () => mediaQuery.removeEventListener('change', handler);
-  }, [theme]);
+  }, [draftTheme]);
 
-  const setPreset = (preset: ThemePreset) => {
+  const setPreset = useCallback((preset: ThemePreset) => {
     if (preset === 'custom') {
-      setTheme((prev) => ({ ...prev, preset: 'custom' }));
+      setDraftTheme((prev) => ({ ...prev, preset: 'custom' }));
     } else {
-      setTheme((prev) => ({
+      setDraftTheme((prev) => ({
         ...prev,
         preset,
         colors: themePresets[preset],
       }));
     }
-  };
+  }, []);
 
-  const setMode = (mode: ThemeMode) => {
-    setTheme((prev) => ({ ...prev, mode }));
-  };
+  const setMode = useCallback((mode: ThemeMode) => {
+    setDraftTheme((prev) => ({ ...prev, mode }));
+  }, []);
 
-  const setCustomColor = (key: keyof ThemeColors, value: string) => {
-    setTheme((prev) => ({
+  const setCustomColor = useCallback((key: keyof ThemeColors, value: string) => {
+    setDraftTheme((prev) => ({
       ...prev,
       preset: 'custom',
       colors: { ...prev.colors, [key]: value },
     }));
-  };
+  }, []);
 
-  const resetToDefaults = () => {
-    setTheme(defaultTheme);
-  };
+  const resetToDefaults = useCallback(() => {
+    setDraftTheme(defaultTheme);
+  }, []);
+
+  const applyTheme = useCallback((newTheme: AdminTheme) => {
+    setTheme(newTheme);
+    setDraftTheme(newTheme);
+    applyThemeToDOM(newTheme);
+  }, []);
+
+  const discardChanges = useCallback(() => {
+    setDraftTheme(theme);
+  }, [theme]);
 
   return (
     <AdminThemeContext.Provider
-      value={{ theme, setPreset, setMode, setCustomColor, resetToDefaults }}
+      value={{
+        theme,
+        draftTheme,
+        hasUnsavedChanges,
+        setPreset,
+        setMode,
+        setCustomColor,
+        resetToDefaults,
+        applyTheme,
+        discardChanges,
+      }}
     >
       {children}
     </AdminThemeContext.Provider>

@@ -1,9 +1,11 @@
-import { RotateCcw, Palette } from 'lucide-react';
+import { useEffect } from 'react';
+import { RotateCcw, Palette, Save, Undo2 } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useAdminTheme, ThemePreset } from '@/contexts/AdminThemeContext';
+import { useAdminThemePreference } from '@/hooks/useAdminThemePreference';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ThemePresetCard, ColorPicker, AppearanceToggle, LanguageToggle } from '@/components/admin/settings';
 import { toast } from 'sonner';
@@ -11,8 +13,25 @@ import { toast } from 'sonner';
 type PresetKey = Exclude<ThemePreset, 'custom'>;
 
 export default function Settings() {
-  const { theme, setPreset, setMode, setCustomColor, resetToDefaults } = useAdminTheme();
+  const { 
+    draftTheme, 
+    hasUnsavedChanges, 
+    setPreset, 
+    setMode, 
+    setCustomColor, 
+    resetToDefaults, 
+    applyTheme,
+    discardChanges 
+  } = useAdminTheme();
+  const { savedTheme, isLoading, saveThemeAsync, isSaving } = useAdminThemePreference();
   const { t } = useLanguage();
+
+  // Load saved theme from database on mount
+  useEffect(() => {
+    if (!isLoading && savedTheme) {
+      applyTheme(savedTheme);
+    }
+  }, [isLoading, savedTheme, applyTheme]);
 
   const presetInfo: { preset: PresetKey; nameKey: string; descKey: string }[] = [
     { preset: 'default', nameKey: 'themes.default', descKey: 'themes.defaultDesc' },
@@ -24,21 +43,67 @@ export default function Settings() {
 
   const handleReset = () => {
     resetToDefaults();
-    toast.success(t('settings.themeResetSuccess'));
+    toast.info(t('settings.themeReset'));
+  };
+
+  const handleDiscard = () => {
+    discardChanges();
+    toast.info(t('settings.changesDiscarded'));
+  };
+
+  const handleSave = async () => {
+    try {
+      await saveThemeAsync(draftTheme);
+      applyTheme(draftTheme);
+      toast.success(t('settings.themeSaved'));
+    } catch (error) {
+      toast.error(t('settings.themeSaveError'));
+    }
   };
 
   return (
     <AdminLayout>
       <div className="space-y-6 p-4 md:p-6 max-w-4xl">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Palette className="h-6 w-6" />
-            {t('settings.appearance')}
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            {t('settings.appearanceDescription')}
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <Palette className="h-6 w-6" />
+              {t('settings.appearance')}
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              {t('settings.appearanceDescription')}
+            </p>
+          </div>
+          
+          {/* Save/Discard Buttons */}
+          <div className="flex items-center gap-2">
+            {hasUnsavedChanges && (
+              <Button 
+                variant="outline" 
+                onClick={handleDiscard}
+                className="gap-2"
+              >
+                <Undo2 className="h-4 w-4" />
+                {t('settings.discard')}
+              </Button>
+            )}
+            <Button 
+              onClick={handleSave} 
+              disabled={!hasUnsavedChanges || isSaving}
+              className="gap-2"
+            >
+              <Save className="h-4 w-4" />
+              {isSaving ? t('settings.saving') : t('settings.saveTheme')}
+            </Button>
+          </div>
         </div>
+
+        {/* Unsaved Changes Banner */}
+        {hasUnsavedChanges && (
+          <div className="bg-warning/10 border border-warning/30 rounded-lg p-3 text-sm text-warning-foreground">
+            {t('settings.unsavedChanges')}
+          </div>
+        )}
 
         {/* Language Toggle */}
         <Card className="admin-transition">
@@ -69,7 +134,7 @@ export default function Settings() {
                   preset={info.preset}
                   name={t(info.nameKey)}
                   description={t(info.descKey)}
-                  isSelected={theme.preset === info.preset}
+                  isSelected={draftTheme.preset === info.preset}
                   onSelect={() => setPreset(info.preset)}
                 />
               ))}
@@ -83,7 +148,7 @@ export default function Settings() {
             <CardTitle className="text-lg">{t('settings.customColors')}</CardTitle>
             <CardDescription>
               {t('settings.customColorsDescription')}
-              {theme.preset === 'custom' && (
+              {draftTheme.preset === 'custom' && (
                 <span className="ml-2 text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
                   {t('settings.customModeActive')}
                 </span>
@@ -93,17 +158,17 @@ export default function Settings() {
           <CardContent className="space-y-4">
             <ColorPicker
               label={t('settings.primaryColor')}
-              value={theme.colors.primary}
+              value={draftTheme.colors.primary}
               onChange={(v) => setCustomColor('primary', v)}
             />
             <ColorPicker
               label={t('settings.sidebarBackground')}
-              value={theme.colors.sidebarBg}
+              value={draftTheme.colors.sidebarBg}
               onChange={(v) => setCustomColor('sidebarBg', v)}
             />
             <ColorPicker
               label={t('settings.accentColor')}
-              value={theme.colors.accent}
+              value={draftTheme.colors.accent}
               onChange={(v) => setCustomColor('accent', v)}
             />
           </CardContent>
@@ -118,7 +183,7 @@ export default function Settings() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <AppearanceToggle value={theme.mode} onChange={setMode} />
+            <AppearanceToggle value={draftTheme.mode} onChange={setMode} />
           </CardContent>
         </Card>
 
