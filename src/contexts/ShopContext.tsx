@@ -34,9 +34,11 @@ interface ShopContextType {
   userRole: ShopRole | null;
   isLoading: boolean;
   error: string | null;
+  isPlatformMode: boolean;
   switchShop: (shopId: string) => Promise<void>;
   createShop: (name: string, slug?: string) => Promise<Shop>;
   refreshShops: () => Promise<void>;
+  enterPlatformMode: () => void;
 }
 
 const STORAGE_KEY = 'ytspider-current-shop-id';
@@ -114,11 +116,10 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
       if (savedShop) {
         setCurrentShop(savedShop);
         await fetchUserRole(savedShop.id);
-      } else if (typedShops.length > 0) {
-        // Default to first shop
-        setCurrentShop(typedShops[0]);
-        localStorage.setItem(STORAGE_KEY, typedShops[0].id);
-        await fetchUserRole(typedShops[0].id);
+      } else {
+        // Stay in Platform Mode - don't auto-select first shop
+        setCurrentShop(null);
+        setUserRole(null);
       }
     } catch (err) {
       console.error('Error in fetchShops:', err);
@@ -253,6 +254,16 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
     await fetchShops();
   };
 
+  // Enter platform mode (clear current shop)
+  const enterPlatformMode = () => {
+    setCurrentShop(null);
+    setUserRole(null);
+    localStorage.removeItem(STORAGE_KEY);
+  };
+
+  // Computed value for platform mode
+  const isPlatformMode = currentShop === null;
+
   // Load shops when user changes
   useEffect(() => {
     fetchShops();
@@ -302,9 +313,11 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
         userRole,
         isLoading,
         error,
+        isPlatformMode,
         switchShop,
         createShop,
         refreshShops,
+        enterPlatformMode,
       }}
     >
       {children}
