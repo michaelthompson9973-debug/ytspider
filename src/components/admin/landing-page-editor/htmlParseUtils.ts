@@ -22,9 +22,14 @@ export function parseHtmlParts(fullHtml: string): HtmlParts {
     bodyHtml = bodyHtml.replace(match, '');
   });
   
+  // Extract only content inside <body>...</body> tags if present
+  const bodyTagRegex = /<body[^>]*>([\s\S]*?)<\/body>/i;
+  const bodyMatch = bodyHtml.match(bodyTagRegex);
+  const bodyContent = bodyMatch ? bodyMatch[1].trim() : bodyHtml.trim();
+  
   return {
     head: [...styleMatches, ...scriptMatches].join('\n\n'),
-    body: bodyHtml.trim()
+    body: bodyContent
   };
 }
 
