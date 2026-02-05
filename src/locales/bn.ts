@@ -67,7 +67,8 @@ export const bn = {
     businessManagement: 'বিজনেস ম্যানেজমেন্ট',
     allShops: 'সব শপ',
     shopTeam: 'টিম',
-    shopBilling: 'বিলিং',
+    shopSubscription: 'সাবস্ক্রিপশন',
+    pricingPlans: 'প্রাইসিং প্ল্যান',
     shopSecurity: 'সিকিউরিটি',
     shopAnalytics: 'এনালিটিক্স',
     shopAuditLog: 'অডিট লগ',
@@ -239,5 +240,17 @@ export const bn = {
     // Empty states
     noPaymentMethod: 'কোনো পেমেন্ট মেথড নেই',
     noInvoices: 'কোনো ইনভয়েস নেই',
+  },
+  subscription: {
+    title: 'সাবস্ক্রিপশন',
+    subtitle: 'আপনার শপের সাবস্ক্রিপশন ম্যানেজ করুন',
+    noShop: 'সাবস্ক্রিপশন দেখতে একটি শপ সিলেক্ট করুন',
+    currentPlan: 'বর্তমান প্ল্যান',
+    startsAt: 'শুরু হয়েছে',
+    expiresAt: 'মেয়াদ শেষ',
+    renewNow: 'রিনিউ করুন',
+    upgradePlan: 'আপগ্রেড করুন',
+    expired: 'মেয়াদোত্তীর্ণ',
+    expiringSoon: 'শীঘ্রই মেয়াদ শেষ',
   },
 };

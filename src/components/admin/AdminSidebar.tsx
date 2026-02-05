@@ -89,93 +89,121 @@ interface NavGroup {
   items: NavItem[];
 }
 
-const navGroups: NavGroup[] = [
-  {
-    labelKey: 'sidebar.overview',
-    items: [
-      { href: '/admin', labelKey: 'sidebar.dashboard', icon: LayoutDashboard },
-    ],
-  },
-  {
-    labelKey: 'sidebar.business',
-    items: [
-      { 
-        href: '/admin/business', 
-        labelKey: 'sidebar.businessManagement', 
-        icon: Building2,
-        children: [
-          { href: '/admin/business/shops', labelKey: 'sidebar.allShops', icon: Store },
-          { href: '/admin/business/team', labelKey: 'sidebar.shopTeam', icon: Users },
-          { href: '/admin/business/billing', labelKey: 'sidebar.shopBilling', icon: CreditCard },
-          { href: '/admin/business/security', labelKey: 'sidebar.shopSecurity', icon: Shield },
-          { href: '/admin/business/analytics', labelKey: 'sidebar.shopAnalytics', icon: BarChart3 },
-          { href: '/admin/business/audit-log', labelKey: 'sidebar.shopAuditLog', icon: ClipboardList },
-        ]
-      },
-      { href: '/admin/platform/pricing', labelKey: 'sidebar.pricingPlans', icon: DollarSign },
-    ],
-  },
-  {
-    labelKey: 'sidebar.content',
-    items: [
-      { href: '/admin/products', labelKey: 'sidebar.products', icon: Package },
-      { 
-        href: '/admin/pages', 
-        labelKey: 'sidebar.landingPages', 
-        icon: FileText,
-        children: [
-          { href: '/admin/pages/library', labelKey: 'sidebar.library', icon: BookOpen },
-          { href: '/admin/pages/manage', labelKey: 'sidebar.pages', icon: FileText },
-        ]
-      },
-      { href: '/admin/media', labelKey: 'sidebar.media', icon: Image },
-    ],
-  },
-  {
-    labelKey: 'sidebar.operations',
-    items: [
-      { href: '/admin/orders', labelKey: 'sidebar.orders', icon: ShoppingCart },
-      { 
-        href: '/admin/tracking', 
-        labelKey: 'sidebar.tracking', 
-        icon: Activity,
-        children: [
-          { href: '/admin/tracking', labelKey: 'sidebar.events', icon: BarChart3 },
-          { href: '/admin/tracking/profiles', labelKey: 'sidebar.profiles', icon: Target },
-        ]
-      },
-      { 
-        href: '/admin/inbox', 
-        labelKey: 'sidebar.inbox', 
-        icon: Inbox,
-        children: [
-          { href: '/admin/inbox/messenger', labelKey: 'sidebar.messenger', icon: MessageCircle },
-          { href: '/admin/inbox/whatsapp', labelKey: 'sidebar.whatsapp', icon: MessageSquare },
-        ]
-      },
-    ],
-  },
-  {
-    labelKey: 'sidebar.settings',
-    items: [
-      { href: '/admin/domains', labelKey: 'sidebar.allowedDomains', icon: Globe },
-      { href: '/admin/webhooks', labelKey: 'sidebar.webhooks', icon: Bell },
-      { href: '/admin/settings', labelKey: 'sidebar.appearance', icon: Palette },
-      { 
-        href: '/admin/api', 
-        labelKey: 'sidebar.api', 
-        icon: Key,
-        children: [
-          { href: '/admin/api/ai', labelKey: 'sidebar.ai', icon: Bot, badge: 'available' },
-          { href: '/admin/api/fraud-check', labelKey: 'sidebar.fraudCheck', icon: ShieldAlert, badge: 'available' },
-          { href: '/admin/api/courier', labelKey: 'sidebar.courier', icon: Truck, badge: 'N/A' },
-          { href: '/admin/api/messaging/messenger', labelKey: 'sidebar.messenger', icon: MessageCircle },
-          { href: '/admin/api/messaging/whatsapp', labelKey: 'sidebar.whatsapp', icon: MessageSquare },
-        ]
-      },
-    ],
-  },
-];
+// Base nav groups - will be dynamically modified based on mode
+const getNavGroups = (isPlatformMode: boolean): NavGroup[] => {
+  // Business Management children - differs by mode
+  const businessChildren: NavSubItem[] = [
+    { href: '/admin/business/shops', labelKey: 'sidebar.allShops', icon: Store },
+    { href: '/admin/business/team', labelKey: 'sidebar.shopTeam', icon: Users },
+  ];
+  
+  // Shop Mode: add Subscription between Team and Security
+  if (!isPlatformMode) {
+    businessChildren.push({ 
+      href: '/admin/business/subscription', 
+      labelKey: 'sidebar.shopSubscription', 
+      icon: CreditCard 
+    });
+  }
+  
+  businessChildren.push(
+    { href: '/admin/business/security', labelKey: 'sidebar.shopSecurity', icon: Shield },
+    { href: '/admin/business/analytics', labelKey: 'sidebar.shopAnalytics', icon: BarChart3 },
+    { href: '/admin/business/audit-log', labelKey: 'sidebar.shopAuditLog', icon: ClipboardList },
+  );
+
+  // Business group items
+  const businessItems: NavItem[] = [
+    { 
+      href: '/admin/business', 
+      labelKey: 'sidebar.businessManagement', 
+      icon: Building2,
+      children: businessChildren
+    },
+  ];
+  
+  // Platform Mode: add Pricing Plans as separate item
+  if (isPlatformMode) {
+    businessItems.push({ 
+      href: '/admin/platform/pricing', 
+      labelKey: 'sidebar.pricingPlans', 
+      icon: DollarSign 
+    });
+  }
+
+  return [
+    {
+      labelKey: 'sidebar.overview',
+      items: [
+        { href: '/admin', labelKey: 'sidebar.dashboard', icon: LayoutDashboard },
+      ],
+    },
+    {
+      labelKey: 'sidebar.business',
+      items: businessItems,
+    },
+    {
+      labelKey: 'sidebar.content',
+      items: [
+        { href: '/admin/products', labelKey: 'sidebar.products', icon: Package },
+        { 
+          href: '/admin/pages', 
+          labelKey: 'sidebar.landingPages', 
+          icon: FileText,
+          children: [
+            { href: '/admin/pages/library', labelKey: 'sidebar.library', icon: BookOpen },
+            { href: '/admin/pages/manage', labelKey: 'sidebar.pages', icon: FileText },
+          ]
+        },
+        { href: '/admin/media', labelKey: 'sidebar.media', icon: Image },
+      ],
+    },
+    {
+      labelKey: 'sidebar.operations',
+      items: [
+        { href: '/admin/orders', labelKey: 'sidebar.orders', icon: ShoppingCart },
+        { 
+          href: '/admin/tracking', 
+          labelKey: 'sidebar.tracking', 
+          icon: Activity,
+          children: [
+            { href: '/admin/tracking', labelKey: 'sidebar.events', icon: BarChart3 },
+            { href: '/admin/tracking/profiles', labelKey: 'sidebar.profiles', icon: Target },
+          ]
+        },
+        { 
+          href: '/admin/inbox', 
+          labelKey: 'sidebar.inbox', 
+          icon: Inbox,
+          children: [
+            { href: '/admin/inbox/messenger', labelKey: 'sidebar.messenger', icon: MessageCircle },
+            { href: '/admin/inbox/whatsapp', labelKey: 'sidebar.whatsapp', icon: MessageSquare },
+          ]
+        },
+      ],
+    },
+    {
+      labelKey: 'sidebar.settings',
+      items: [
+        { href: '/admin/domains', labelKey: 'sidebar.allowedDomains', icon: Globe },
+        { href: '/admin/webhooks', labelKey: 'sidebar.webhooks', icon: Bell },
+        { href: '/admin/settings', labelKey: 'sidebar.appearance', icon: Palette },
+        { 
+          href: '/admin/api', 
+          labelKey: 'sidebar.api', 
+          icon: Key,
+          children: [
+            { href: '/admin/api/ai', labelKey: 'sidebar.ai', icon: Bot, badge: 'available' },
+            { href: '/admin/api/fraud-check', labelKey: 'sidebar.fraudCheck', icon: ShieldAlert, badge: 'available' },
+            { href: '/admin/api/courier', labelKey: 'sidebar.courier', icon: Truck, badge: 'N/A' },
+            { href: '/admin/api/messaging/messenger', labelKey: 'sidebar.messenger', icon: MessageCircle },
+            { href: '/admin/api/messaging/whatsapp', labelKey: 'sidebar.whatsapp', icon: MessageSquare },
+          ]
+        },
+      ],
+    },
+  ];
+};
 
 function ApiSubMenu({ item }: { item: NavItem }) {
   const location = useLocation();
@@ -432,6 +460,9 @@ export default function AdminSidebar() {
   const isCollapsed = state === 'collapsed';
   const isPlatformMode = !currentShop;
 
+  // Get nav groups based on Platform/Shop Mode
+  const navGroups = useMemo(() => getNavGroups(isPlatformMode), [isPlatformMode]);
+  
   // Filter nav groups based on Platform Mode
   const filteredNavGroups = useMemo(() => {
     if (isPlatformMode) {
@@ -443,7 +474,7 @@ export default function AdminSidebar() {
       );
     }
     return navGroups;
-  }, [isPlatformMode]);
+  }, [isPlatformMode, navGroups]);
 
   const handleSignOut = async () => {
     await signOut();

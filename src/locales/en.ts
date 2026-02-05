@@ -67,7 +67,8 @@ export const en = {
     businessManagement: 'Business Management',
     allShops: 'All Shops',
     shopTeam: 'Team',
-    shopBilling: 'Billing',
+    shopSubscription: 'Subscription',
+    pricingPlans: 'Pricing Plans',
     shopSecurity: 'Security',
     shopAnalytics: 'Analytics',
     shopAuditLog: 'Audit Log',
@@ -239,5 +240,17 @@ export const en = {
     // Empty states
     noPaymentMethod: 'No payment method',
     noInvoices: 'No invoices yet',
+  },
+  subscription: {
+    title: 'Subscription',
+    subtitle: 'Manage your shop subscription',
+    noShop: 'Please select a shop to view subscription',
+    currentPlan: 'Current Plan',
+    startsAt: 'Started',
+    expiresAt: 'Expires',
+    renewNow: 'Renew Now',
+    upgradePlan: 'Upgrade Plan',
+    expired: 'Expired',
+    expiringSoon: 'Expiring Soon',
   },
 };
