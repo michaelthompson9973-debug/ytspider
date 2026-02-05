@@ -1,353 +1,501 @@
 
-# YTSpider SaaS Architecture Restructure Plan
+# বিশ্বমানের ডাটাবেজ আর্কিটেকচার - Physical vs Digital প্রোডাক্ট
 
 ## বর্তমান অবস্থা বিশ্লেষণ
 
-### বিদ্যমান সিস্টেম:
-- **Shop Owner Area (`/shop/*`)**: ShopLayout সহ basic pages আছে (placeholder)
-- **Super Admin Area (`/admin/*`)**: AdminLayout সহ সম্পূর্ণ features আছে
-- **Database**: shops table-এ subscription_id, expires_at আছে; component_library-তে shop_id nullable
+### ইতিমধ্যে আছে:
+- `shops.shop_type` ENUM ('physical', 'digital') ✅
+- Multi-tenant RLS via `has_shop_access()` ✅
+- Basic products, orders, subscriptions tables ✅
 
-### যা নেই:
-- Shop Type (Digital vs Physical) distinction
-- Platform-wide Product/Landing Page/Component/Customer libraries
-- Marketing tools (WhatsApp, SMS campaigns)
-- Digital product order management
-- Payment gateway integration
-
----
-
-## Phase 1: Shop Type & Enhanced Onboarding ✅ COMPLETED
-
-### Database Changes:
-```text
-shops table - নতুন columns:
-├── shop_type ENUM ('physical', 'digital') DEFAULT 'physical'
-├── business_category TEXT (optional)
-└── onboarding_completed BOOLEAN DEFAULT false
-```
-
-### ShopOnboarding Enhancement:
-- Step 1: Shop Name ✅
-- Step 2: Shop Type Selection (Physical/Digital product) ✅
-- Step 3: Business Category (optional) ✅
-- Step 4: Basic branding (logo upload) - pending
+### যা নেই এবং প্রয়োজন:
+- Digital product delivery tracking
+- Payment gateway credentials
+- Order type differentiation
+- Digital asset management
+- WhatsApp/SMS campaign tables
 
 ---
 
-## Phase 2: Shop Owner Area Restructure (`/shop/*`) ✅ COMPLETED
+## আর্কিটেকচার ডিজাইন প্রিন্সিপল
 
-### Navigation Structure:
-```text
-Shop Owner Dashboard
-├── ওভারভিউ
-│   └── ড্যাশবোর্ড (stats, recent orders, quick actions)
-│
-├── ব্যবসা
-│   ├── প্রোডাক্ট
-│   ├── অর্ডার (Physical: COD flow, Digital: Payment + Delivery)
-│   ├── ল্যান্ডিং পেজ
-│   │   ├── লাইব্রেরী (Platform components access)
-│   │   └── আমার পেজ
-│   └── মিডিয়া
-│
-├── যোগাযোগ
-│   ├── মেসেঞ্জার ইনবক্স
-│   └── হোয়াটসঅ্যাপ (Phase 4)
-│
-├── ইন্টিগ্রেশন
-│   ├── ট্র্যাকিং (FB Pixel, GTM)
-│   ├── কুরিয়ার (Physical only)
-│   ├── পেমেন্ট গেটওয়ে (Digital only)
-│   └── AI সেটিংস
-│
-└── সেটিংস
-    ├── টিম মেম্বার
-    ├── সাবস্ক্রিপশন & বিলিং
-    ├── অ্যানালিটিক্স
-    └── শপ সেটিংস
-```
+### 1. Polymorphic Approach (NOT Separate Tables)
+আমরা **একই `products` এবং `orders` টেবিল ব্যবহার করব** কিন্তু type-specific columns এবং extension tables দিয়ে। এটা:
+- Query complexity কমায়
+- Data consistency বজায় রাখে
+- Analytics এবং reporting সহজ করে
+- Future hybrid products (physical + digital bundle) support করে
 
-### Key Features per Shop Type:
-```text
-Physical Products:
-├── COD-based order flow
-├── Courier integration (Steadfast, Pathao)
-├── Fraud check system
-└── Delivery tracking
-
-Digital Products:
-├── Payment gateway required (Stripe, bKash, Nagad)
-├── Email delivery system
-├── License key management (optional)
-└── Download link generation
-```
+### 2. Extension Pattern
+- Core table (`products`, `orders`) সবার জন্য
+- Extension tables (`digital_product_meta`, `digital_deliveries`) শুধু digital এর জন্য
+- Extension tables (`physical_order_shipping`) শুধু physical এর জন্য
 
 ---
 
-## Phase 3: Super Admin Platform Tools ✅ COMPLETED
+## নতুন টেবিল স্ট্রাকচার
 
-### Navigation Structure:
+### A. Products Domain
+
+#### 1. products টেবিল আপডেট
 ```text
-Platform Admin Dashboard
-├── ওভারভিউ
-│   └── প্ল্যাটফর্ম ড্যাশবোর্ড (aggregated stats)
-│
-├── বিজনেস ম্যানেজমেন্ট
-│   ├── সব শপ (All Shops management)
-│   ├── নতুন শপ তৈরি (Provision for users)
-│   ├── সাবস্ক্রিপশন (Platform-wide)
-│   └── অডিট লগ
-│
-├── প্ল্যাটফর্ম লাইব্রেরী
-│   ├── প্রোডাক্ট লাইব্রেরী (All shops' products + trending)
-│   ├── ল্যান্ডিং পেজ লাইব্রেরী (All published pages)
-│   ├── কম্পোনেন্ট লাইব্রেরী (Master library + shop contributions)
-│   └── কাস্টমার বেজ (Aggregated customer data)
-│
-├── মার্কেটিং টুলস
-│   ├── WhatsApp Campaigns
-│   ├── SMS Campaigns
-│   └── Email Marketing
-│
-├── প্রাইসিং & বিলিং
-│   ├── প্ল্যান ম্যানেজমেন্ট
-│   └── রেভিনিউ রিপোর্ট
-│
-└── সেটিংস
-    ├── ডোমেইন ম্যানেজমেন্ট
-    ├── ওয়েবহুক
-    └── API কনফিগারেশন
-```
-
-### Platform Libraries Features:
-
-#### Product Library:
-```text
-├── সব শপের প্রোডাক্ট list
-├── Trending products (based on sales)
-├── Category-wise organization
-├── Sales performance metrics
-├── Shop attribution
-└── Export/Analytics tools
-```
-
-#### Landing Page Library:
-```text
-├── সব শপের published landing pages
-├── Performance metrics (conversions, views)
-├── Template cloning capability
-└── Best performing pages highlighting
-```
-
-#### Customer Base:
-```text
-├── Aggregated customer data (all shops)
-├── Trust scoring (Trusted/Medium/Risky/New)
-├── Courier history integration
-├── Segmentation tools
-└── Marketing campaign targeting
-```
-
----
-
-## Phase 4: Digital Product Order Management
-
-### Database Changes:
-```text
-orders table - নতুন columns:
-├── order_type ENUM ('physical', 'digital') DEFAULT 'physical'
-├── payment_status ENUM ('pending', 'paid', 'failed', 'refunded')
-├── payment_method TEXT
-├── payment_transaction_id TEXT
-└── digital_delivery_status ENUM ('pending', 'sent', 'downloaded')
-
-digital_deliveries table (new):
-├── id UUID
-├── order_id UUID (FK)
-├── product_id UUID
-├── download_link TEXT
-├── license_key TEXT (optional)
-├── expires_at TIMESTAMP
-├── download_count INTEGER
-├── max_downloads INTEGER
-└── delivered_at TIMESTAMP
-```
-
-### Digital Order Flow:
-```text
-1. Customer places order on landing page
-2. Redirect to payment gateway
-3. Payment confirmed → Order created
-4. Automatic email with download link/license
-5. Download tracking
-```
-
----
-
-## Phase 5: Payment Gateway Integration
-
-### Supported Gateways:
-```text
-International:
-├── Stripe (Credit/Debit cards)
-└── PayPal
-
-Bangladesh Local:
-├── bKash
-├── Nagad
-├── Rocket
-└── SSLCommerz (aggregator)
-```
-
-### Database:
-```text
-payment_gateways table:
-├── id UUID
-├── shop_id UUID
-├── provider TEXT (stripe, bkash, nagad)
-├── credentials JSONB (encrypted)
-├── is_active BOOLEAN
-├── is_test_mode BOOLEAN
-└── created_at TIMESTAMP
-```
-
----
-
-## Phase 6: Marketing Tools
-
-### WhatsApp Marketing:
-```text
-whatsapp_connections table:
-├── id UUID
-├── shop_id UUID
-├── phone_number TEXT
-├── business_account_id TEXT
-├── access_token TEXT
-└── is_active BOOLEAN
-
-whatsapp_campaigns table:
-├── id UUID
-├── shop_id UUID (null for platform-wide)
+products (বিদ্যমান)
+├── id UUID PK
+├── shop_id UUID FK
 ├── name TEXT
-├── template_id TEXT
-├── target_segment JSONB
+├── description TEXT
+├── price NUMERIC
+├── active BOOLEAN
+├── images TEXT[]
+├── videos TEXT[]
+├── product_type ENUM ('physical', 'digital', 'bundle') NEW
+├── size_options JSONB
+├── created_at, updated_at
+```
+
+#### 2. digital_product_meta (নতুন)
+```text
+digital_product_meta
+├── id UUID PK
+├── product_id UUID FK UNIQUE (products.id)
+├── delivery_type ENUM ('download', 'email', 'license_key', 'access_link')
+├── file_url TEXT (encrypted storage path)
+├── file_size_bytes BIGINT
+├── file_name TEXT
+├── mime_type TEXT
+├── max_downloads INTEGER (null = unlimited)
+├── download_expires_days INTEGER (null = never)
+├── license_generator ENUM ('none', 'uuid', 'custom', 'external_api')
+├── license_prefix TEXT
+├── access_instructions TEXT (rich text for email)
+├── created_at, updated_at
+```
+
+### B. Orders Domain
+
+#### 3. orders টেবিল আপডেট
+```text
+orders (বিদ্যমান + নতুন columns)
+├── ... existing columns ...
+├── order_type ENUM ('physical', 'digital', 'mixed') NEW
+├── payment_status ENUM ('pending', 'paid', 'failed', 'refunded', 'partially_refunded') NEW
+├── payment_method TEXT NEW
+├── payment_transaction_id TEXT NEW
+├── payment_gateway TEXT NEW (stripe, bkash, nagad, sslcommerz)
+├── paid_at TIMESTAMP NEW
+├── refund_amount NUMERIC NEW
+├── refund_reason TEXT NEW
+├── refunded_at TIMESTAMP NEW
+```
+
+#### 4. digital_deliveries (নতুন)
+```text
+digital_deliveries
+├── id UUID PK
+├── order_id UUID FK
+├── order_item_id UUID FK (order_items.id)
+├── product_id UUID FK
+├── delivery_type ENUM ('download', 'email', 'license_key', 'access_link')
+├── download_url TEXT (signed, temporary URL)
+├── download_token TEXT UNIQUE (secure random)
+├── license_key TEXT
+├── access_credentials JSONB (encrypted)
+├── expires_at TIMESTAMP
+├── max_downloads INTEGER
+├── download_count INTEGER DEFAULT 0
+├── first_downloaded_at TIMESTAMP
+├── last_downloaded_at TIMESTAMP
+├── email_sent_at TIMESTAMP
+├── email_status ENUM ('pending', 'sent', 'delivered', 'failed', 'bounced')
+├── created_at TIMESTAMP
+```
+
+#### 5. physical_order_shipping (নতুন - courier tracking extension)
+```text
+physical_order_shipping
+├── id UUID PK
+├── order_id UUID FK UNIQUE
+├── courier_provider TEXT
+├── consignment_id TEXT
+├── tracking_code TEXT
+├── courier_status TEXT
+├── courier_synced_at TIMESTAMP
+├── estimated_delivery TIMESTAMP
+├── actual_delivery TIMESTAMP
+├── delivery_attempts INTEGER DEFAULT 0
+├── last_attempt_at TIMESTAMP
+├── failure_reason TEXT
+├── cod_amount NUMERIC
+├── cod_collected BOOLEAN DEFAULT false
+├── cod_collected_at TIMESTAMP
+├── weight_kg NUMERIC
+├── dimensions JSONB (length, width, height)
+├── created_at, updated_at
+```
+
+### C. Payment Domain
+
+#### 6. payment_gateways (নতুন)
+```text
+payment_gateways
+├── id UUID PK
+├── shop_id UUID FK
+├── provider ENUM ('stripe', 'bkash', 'nagad', 'rocket', 'sslcommerz', 'paypal')
+├── display_name TEXT
+├── credentials JSONB (encrypted)
+├── webhook_secret TEXT
+├── is_active BOOLEAN DEFAULT false
+├── is_test_mode BOOLEAN DEFAULT true
+├── supported_currencies TEXT[]
+├── supported_methods TEXT[] (card, bank, mobile)
+├── min_amount NUMERIC
+├── max_amount NUMERIC
+├── transaction_fee_percent NUMERIC
+├── transaction_fee_fixed NUMERIC
+├── payout_schedule TEXT (daily, weekly, monthly)
+├── created_at, updated_at
+```
+
+#### 7. payment_transactions (নতুন)
+```text
+payment_transactions
+├── id UUID PK
+├── shop_id UUID FK
+├── order_id UUID FK
+├── gateway_id UUID FK (payment_gateways.id)
+├── transaction_type ENUM ('charge', 'refund', 'partial_refund', 'chargeback')
+├── amount NUMERIC
+├── currency TEXT
+├── status ENUM ('pending', 'processing', 'completed', 'failed', 'cancelled')
+├── provider_transaction_id TEXT
+├── provider_response JSONB
+├── failure_reason TEXT
+├── metadata JSONB
+├── ip_address TEXT
+├── user_agent TEXT
+├── created_at TIMESTAMP
+├── completed_at TIMESTAMP
+```
+
+### D. Marketing Domain
+
+#### 8. whatsapp_connections (নতুন)
+```text
+whatsapp_connections
+├── id UUID PK
+├── shop_id UUID FK (null = platform-wide)
+├── phone_number TEXT
+├── phone_number_id TEXT (Meta API)
+├── business_account_id TEXT
+├── access_token TEXT (encrypted)
+├── webhook_verify_token TEXT
+├── display_name TEXT
+├── quality_rating TEXT
+├── messaging_limit TEXT
+├── is_active BOOLEAN
+├── is_verified BOOLEAN
+├── created_at, updated_at
+```
+
+#### 9. marketing_campaigns (নতুন - unified for WhatsApp, SMS, Email)
+```text
+marketing_campaigns
+├── id UUID PK
+├── shop_id UUID FK (null = platform-wide)
+├── channel ENUM ('whatsapp', 'sms', 'email')
+├── name TEXT
+├── description TEXT
+├── status ENUM ('draft', 'scheduled', 'sending', 'sent', 'paused', 'cancelled')
+├── template_id TEXT (for WhatsApp templates)
+├── template_content TEXT (for SMS/Email)
+├── subject TEXT (for Email)
+├── target_segment JSONB (filter criteria)
+├── target_count INTEGER
+├── sent_count INTEGER DEFAULT 0
+├── delivered_count INTEGER DEFAULT 0
+├── read_count INTEGER DEFAULT 0
+├── clicked_count INTEGER DEFAULT 0
+├── failed_count INTEGER DEFAULT 0
 ├── scheduled_at TIMESTAMP
-├── status ENUM
-└── stats JSONB
+├── started_at TIMESTAMP
+├── completed_at TIMESTAMP
+├── created_by UUID FK (profiles)
+├── created_at, updated_at
 ```
 
-### SMS Marketing:
+#### 10. campaign_recipients (নতুন)
 ```text
-sms_providers table:
-├── id UUID
-├── shop_id UUID
-├── provider TEXT (twilio, ssl_sms)
-├── credentials JSONB
-└── is_active BOOLEAN
-
-sms_campaigns table:
-├── Similar structure to whatsapp_campaigns
+campaign_recipients
+├── id UUID PK
+├── campaign_id UUID FK
+├── customer_id UUID FK (customer_profiles)
+├── recipient_phone TEXT
+├── recipient_email TEXT
+├── status ENUM ('pending', 'sent', 'delivered', 'read', 'clicked', 'failed', 'unsubscribed')
+├── provider_message_id TEXT
+├── sent_at TIMESTAMP
+├── delivered_at TIMESTAMP
+├── read_at TIMESTAMP
+├── clicked_at TIMESTAMP
+├── failure_reason TEXT
+├── metadata JSONB
 ```
 
 ---
 
-## Implementation Priority
+## ENUMs যোগ করতে হবে
 
-### Immediate (Week 1-2):
-1. Shop Type enum & database migration
-2. Enhanced ShopOnboarding with type selection
-3. Conditional sidebar based on shop_type
-4. Platform libraries basic views
+```sql
+-- Product type
+CREATE TYPE product_type AS ENUM ('physical', 'digital', 'bundle');
 
-### Short-term (Week 3-4):
-5. Product Library with trending/analytics
-6. Landing Page Library
-7. Customer Base dashboard
-8. Shop-level subscription page (real data)
+-- Digital delivery type
+CREATE TYPE digital_delivery_type AS ENUM ('download', 'email', 'license_key', 'access_link');
 
-### Medium-term (Week 5-8):
-9. Payment gateway integration (Stripe first)
-10. Digital product order flow
-11. Email delivery system
-12. WhatsApp integration
+-- License generator
+CREATE TYPE license_generator AS ENUM ('none', 'uuid', 'custom', 'external_api');
 
-### Long-term (Month 3+):
-13. SMS marketing
-14. Advanced analytics
-15. Multi-currency support
-16. White-label customization
+-- Payment status
+CREATE TYPE payment_status AS ENUM ('pending', 'paid', 'failed', 'refunded', 'partially_refunded');
 
----
+-- Payment gateway provider
+CREATE TYPE payment_provider AS ENUM ('stripe', 'bkash', 'nagad', 'rocket', 'sslcommerz', 'paypal', 'manual');
 
-## Technical Considerations
+-- Transaction type
+CREATE TYPE transaction_type AS ENUM ('charge', 'refund', 'partial_refund', 'chargeback');
 
-### Component Library Architecture:
-```text
-component_library table restructure:
-├── shop_id NULL = Platform master library
-├── shop_id = Shop's own components
-├── is_approved BOOLEAN (for shop contributions)
-├── source_shop_id (if cloned from shop)
-└── usage_count (tracking popularity)
-```
+-- Transaction status
+CREATE TYPE transaction_status AS ENUM ('pending', 'processing', 'completed', 'failed', 'cancelled');
 
-### RLS Policies:
-```text
-Platform Libraries:
-├── Admins: Full read/write
-├── Shop Owners: Read platform components
-├── Shop Owners: Write own shop components
-└── Contribution → Admin approval → Platform library
-```
+-- Campaign channel
+CREATE TYPE campaign_channel AS ENUM ('whatsapp', 'sms', 'email');
 
-### Performance Considerations:
-```text
-├── Pagination for large libraries
-├── Search/filter indexing
-├── Cached aggregations for dashboards
-└── Lazy loading for shop-specific data
+-- Campaign status
+CREATE TYPE campaign_status AS ENUM ('draft', 'scheduled', 'sending', 'sent', 'paused', 'cancelled');
+
+-- Email delivery status
+CREATE TYPE email_status AS ENUM ('pending', 'sent', 'delivered', 'failed', 'bounced');
+
+-- Recipient status
+CREATE TYPE recipient_status AS ENUM ('pending', 'sent', 'delivered', 'read', 'clicked', 'failed', 'unsubscribed');
 ```
 
 ---
 
-## File Changes Summary
+## RLS Policies
 
-### New Files:
-```text
-src/pages/shop/
-├── ShopProducts.tsx (wrapper for ProductsContent)
-├── ShopOrders.tsx (with order_type conditional)
-├── ShopPayments.tsx (digital shops only)
-└── ShopWhatsApp.tsx
+### Pattern: Shop-level isolation with role-based access
 
-src/pages/admin/
-├── PlatformProductLibrary.tsx
-├── PlatformLandingPageLibrary.tsx
-├── PlatformCustomerBase.tsx
-├── MarketingWhatsApp.tsx
-└── MarketingSMS.tsx
+```sql
+-- Digital product meta - same as products
+CREATE POLICY "Shop members can manage digital meta"
+ON digital_product_meta FOR ALL
+USING (
+  EXISTS (
+    SELECT 1 FROM products p 
+    WHERE p.id = digital_product_meta.product_id 
+    AND has_shop_access(p.shop_id, 'editor')
+  )
+)
+WITH CHECK (...);
 
-src/components/admin/
-├── platform-library/
-│   ├── ProductLibraryTable.tsx
-│   ├── ProductTrendingCard.tsx
-│   ├── LandingPageLibraryGrid.tsx
-│   └── CustomerBaseTable.tsx
-├── marketing/
-│   ├── CampaignBuilder.tsx
-│   ├── SegmentPicker.tsx
-│   └── CampaignStats.tsx
-└── payments/
-    ├── PaymentGatewaySetup.tsx
-    └── PaymentHistory.tsx
+-- Digital deliveries - support can view, manager can manage
+CREATE POLICY "Shop members can view digital deliveries"
+ON digital_deliveries FOR SELECT
+USING (
+  EXISTS (
+    SELECT 1 FROM orders o 
+    WHERE o.id = digital_deliveries.order_id 
+    AND has_shop_access(o.shop_id, 'support')
+  )
+);
+
+-- Payment gateways - admin only
+CREATE POLICY "Shop admins can manage payment gateways"
+ON payment_gateways FOR ALL
+USING (has_shop_access(shop_id, 'admin'))
+WITH CHECK (has_shop_access(shop_id, 'admin'));
+
+-- Marketing campaigns - manager+
+CREATE POLICY "Shop managers can manage campaigns"
+ON marketing_campaigns FOR ALL
+USING (
+  shop_id IS NULL AND is_admin() -- Platform campaigns
+  OR has_shop_access(shop_id, 'manager')
+)
+WITH CHECK (...);
 ```
 
-### Modified Files:
-```text
-├── src/components/shop/ShopSidebar.tsx (conditional items)
-├── src/components/admin/AdminSidebar.tsx (new groups)
-├── src/pages/shop/ShopOnboarding.tsx (multi-step)
-├── src/App.tsx (new routes)
-└── supabase/migrations/xxx.sql (schema changes)
+---
+
+## Indexes
+
+```sql
+-- Digital products
+CREATE INDEX idx_digital_meta_product ON digital_product_meta(product_id);
+CREATE INDEX idx_products_type ON products(product_type);
+
+-- Digital deliveries
+CREATE INDEX idx_digital_deliveries_order ON digital_deliveries(order_id);
+CREATE INDEX idx_digital_deliveries_token ON digital_deliveries(download_token);
+CREATE INDEX idx_digital_deliveries_expires ON digital_deliveries(expires_at) WHERE expires_at IS NOT NULL;
+
+-- Physical shipping
+CREATE INDEX idx_physical_shipping_order ON physical_order_shipping(order_id);
+CREATE INDEX idx_physical_shipping_tracking ON physical_order_shipping(tracking_code);
+CREATE INDEX idx_physical_shipping_courier ON physical_order_shipping(courier_provider, consignment_id);
+
+-- Payment
+CREATE INDEX idx_payment_gateways_shop ON payment_gateways(shop_id, is_active);
+CREATE INDEX idx_payment_transactions_order ON payment_transactions(order_id);
+CREATE INDEX idx_payment_transactions_shop ON payment_transactions(shop_id, created_at DESC);
+
+-- Campaigns
+CREATE INDEX idx_campaigns_shop ON marketing_campaigns(shop_id, status);
+CREATE INDEX idx_campaigns_scheduled ON marketing_campaigns(scheduled_at) WHERE status = 'scheduled';
+CREATE INDEX idx_campaign_recipients_campaign ON campaign_recipients(campaign_id, status);
 ```
+
+---
+
+## Triggers
+
+```sql
+-- Auto-create digital_product_meta when product is digital
+CREATE OR REPLACE FUNCTION auto_create_digital_meta()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.product_type = 'digital' OR NEW.product_type = 'bundle' THEN
+    INSERT INTO digital_product_meta (product_id)
+    VALUES (NEW.id)
+    ON CONFLICT (product_id) DO NOTHING;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Auto-create physical_order_shipping when order is physical
+CREATE OR REPLACE FUNCTION auto_create_physical_shipping()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.order_type = 'physical' OR NEW.order_type = 'mixed' THEN
+    INSERT INTO physical_order_shipping (order_id)
+    VALUES (NEW.id)
+    ON CONFLICT (order_id) DO NOTHING;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Auto-create digital_deliveries for digital order items
+CREATE OR REPLACE FUNCTION auto_create_digital_delivery()
+RETURNS TRIGGER AS $$
+DECLARE
+  v_order orders;
+  v_product products;
+  v_meta digital_product_meta;
+BEGIN
+  SELECT * INTO v_order FROM orders WHERE id = NEW.order_id;
+  SELECT * INTO v_product FROM products WHERE id = NEW.product_id;
+  
+  IF v_product.product_type IN ('digital', 'bundle') THEN
+    SELECT * INTO v_meta FROM digital_product_meta WHERE product_id = NEW.product_id;
+    
+    INSERT INTO digital_deliveries (
+      order_id, 
+      order_item_id, 
+      product_id, 
+      delivery_type,
+      download_token,
+      max_downloads,
+      expires_at
+    ) VALUES (
+      NEW.order_id,
+      NEW.id,
+      NEW.product_id,
+      COALESCE(v_meta.delivery_type, 'download'),
+      encode(extensions.gen_random_bytes(32), 'hex'),
+      v_meta.max_downloads,
+      CASE 
+        WHEN v_meta.download_expires_days IS NOT NULL 
+        THEN NOW() + (v_meta.download_expires_days || ' days')::interval
+        ELSE NULL
+      END
+    );
+  END IF;
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+---
+
+## Data Migration Strategy
+
+### Step 1: Move existing courier data to extension table
+```sql
+-- Migrate courier fields from orders to physical_order_shipping
+INSERT INTO physical_order_shipping (
+  order_id, 
+  courier_provider, 
+  consignment_id, 
+  tracking_code, 
+  courier_status, 
+  courier_synced_at
+)
+SELECT 
+  id, 
+  courier_provider, 
+  consignment_id, 
+  tracking_code, 
+  courier_status, 
+  courier_synced_at
+FROM orders 
+WHERE courier_provider IS NOT NULL;
+```
+
+### Step 2: Set order_type based on shop_type
+```sql
+UPDATE orders o
+SET order_type = CASE 
+  WHEN s.shop_type = 'physical' THEN 'physical'::order_type
+  WHEN s.shop_type = 'digital' THEN 'digital'::order_type
+  ELSE 'physical'::order_type
+END
+FROM shops s
+WHERE o.shop_id = s.id;
+```
+
+---
+
+## ফাইল পরিবর্তন সারসংক্ষেপ
+
+### Database Migration:
+- 1 comprehensive migration file with all ENUMs, tables, indexes, triggers, RLS
+
+### Frontend Updates:
+- `src/hooks/useDigitalProducts.ts` - Digital product CRUD
+- `src/hooks/usePaymentGateways.ts` - Payment gateway management
+- `src/hooks/useDigitalDelivery.ts` - Delivery tracking
+- `src/components/admin/products/DigitalProductForm.tsx` - Digital product editor
+- `src/components/admin/payments/PaymentGatewaySetup.tsx` - Gateway config
+- `src/pages/shop/ShopPayments.tsx` - Digital shop payments page
+
+### Edge Functions:
+- `generate-download-url/index.ts` - Signed URL generation
+- `process-digital-delivery/index.ts` - Auto email/license delivery
+- `payment-webhook/index.ts` - Unified payment webhook handler
+
+---
+
+## সুবিধাসমূহ
+
+1. **Clean Separation**: Physical ও Digital সম্পূর্ণ আলাদা extension tables
+2. **Flexible**: Bundle products (physical + digital) future support
+3. **Secure**: RLS shop-level isolation
+4. **Performant**: Proper indexes on all FK and search columns
+5. **Automatic**: Triggers handle extension table creation
+6. **Auditable**: Complete transaction history
+7. **Scalable**: Ready for millions of orders
+
