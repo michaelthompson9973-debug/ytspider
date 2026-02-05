@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useShop } from '@/contexts/ShopContext';
 import { ShopGuard } from '@/components/admin/ShopGuard';
 import { useLanguage } from '@/contexts/LanguageContext';
+// Re-export to trigger fresh build
 import { useDashboardRealtime } from '@/hooks/useDashboardRealtime';
 import AdminLayout from '@/components/admin/AdminLayout';
 import {

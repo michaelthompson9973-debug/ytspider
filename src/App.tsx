@@ -58,6 +58,7 @@ import PurchaseSuccess from "./pages/PurchaseSuccess";
 
 const queryClient = new QueryClient();
 
+// App component with proper provider order
 const App = () => (
   <AdminThemeProvider>
     <QueryClientProvider client={queryClient}>
