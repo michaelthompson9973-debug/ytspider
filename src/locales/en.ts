@@ -72,6 +72,19 @@ export const en = {
     shopSecurity: 'Security',
     shopAnalytics: 'Analytics',
     shopAuditLog: 'Audit Log',
+    // Platform Libraries
+    platformLibraries: 'Platform Libraries',
+    productLibrary: 'Product Library',
+    landingPageLibrary: 'Landing Page Library',
+    componentLibrary: 'Component Library',
+    customerBase: 'Customer Base',
+    // Marketing
+    marketing: 'Marketing',
+    whatsappCampaigns: 'WhatsApp Campaigns',
+    smsCampaigns: 'SMS Campaigns',
+    emailMarketing: 'Email Marketing',
+    // Revenue
+    revenueReport: 'Revenue Report',
   },
   products: {
     title: 'Products',

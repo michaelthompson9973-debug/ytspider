@@ -42,6 +42,18 @@ import ShopAnalytics from "./pages/admin/ShopAnalytics";
 import ShopAuditLog from "./pages/admin/ShopAuditLog";
 import PricingPlans from "./pages/admin/PricingPlans";
 
+// Platform Libraries (Super Admin)
+import PlatformProductLibrary from "./pages/admin/PlatformProductLibrary";
+import PlatformLandingPageLibrary from "./pages/admin/PlatformLandingPageLibrary";
+import PlatformComponentLibrary from "./pages/admin/PlatformComponentLibrary";
+import PlatformCustomerBase from "./pages/admin/PlatformCustomerBase";
+import PlatformRevenue from "./pages/admin/PlatformRevenue";
+
+// Marketing (Super Admin)
+import MarketingWhatsApp from "./pages/admin/MarketingWhatsApp";
+import MarketingSMS from "./pages/admin/MarketingSMS";
+import MarketingEmail from "./pages/admin/MarketingEmail";
+
 // Shop Owner pages
 import ShopDashboard from "./pages/shop/ShopDashboard";
 import ShopOnboarding from "./pages/shop/ShopOnboarding";
@@ -133,6 +145,20 @@ const App = () => (
                 <Route path="/admin/business/analytics" element={<ProtectedRoute requireAdmin><ShopAnalytics /></ProtectedRoute>} />
                 <Route path="/admin/business/audit-log" element={<ProtectedRoute requireAdmin><ShopAuditLog /></ProtectedRoute>} />
                 <Route path="/admin/platform/pricing" element={<ProtectedRoute requireAdmin><PricingPlans /></ProtectedRoute>} />
+                <Route path="/admin/platform/revenue" element={<ProtectedRoute requireAdmin><PlatformRevenue /></ProtectedRoute>} />
+                
+                {/* Platform Libraries (Super Admin) */}
+                <Route path="/admin/platform/libraries" element={<Navigate to="/admin/platform/libraries/products" replace />} />
+                <Route path="/admin/platform/libraries/products" element={<ProtectedRoute requireAdmin><PlatformProductLibrary /></ProtectedRoute>} />
+                <Route path="/admin/platform/libraries/landing-pages" element={<ProtectedRoute requireAdmin><PlatformLandingPageLibrary /></ProtectedRoute>} />
+                <Route path="/admin/platform/libraries/components" element={<ProtectedRoute requireAdmin><PlatformComponentLibrary /></ProtectedRoute>} />
+                <Route path="/admin/platform/libraries/customers" element={<ProtectedRoute requireAdmin><PlatformCustomerBase /></ProtectedRoute>} />
+                
+                {/* Marketing (Super Admin) */}
+                <Route path="/admin/platform/marketing" element={<Navigate to="/admin/platform/marketing/whatsapp" replace />} />
+                <Route path="/admin/platform/marketing/whatsapp" element={<ProtectedRoute requireAdmin><MarketingWhatsApp /></ProtectedRoute>} />
+                <Route path="/admin/platform/marketing/sms" element={<ProtectedRoute requireAdmin><MarketingSMS /></ProtectedRoute>} />
+                <Route path="/admin/platform/marketing/email" element={<ProtectedRoute requireAdmin><MarketingEmail /></ProtectedRoute>} />
                 
                 {/* ================================== */}
                 {/* PUBLIC PAGES */}
