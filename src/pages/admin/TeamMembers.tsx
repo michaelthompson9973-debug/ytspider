@@ -207,17 +207,45 @@ export default function TeamMembers() {
     },
   });
 
+  const buildInviteUrl = (token: string) => {
+    const origin = window.location.origin.replace(/\/$/, '');
+    return `${origin}/accept-invite?token=${token}`;
+  };
+
+  const copyInviteLink = async (token: string) => {
+    const url = buildInviteUrl(token);
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success('ইনভাইট লিংক কপি হয়েছে');
+    } catch {
+      toast('ইনভাইট লিংক', { description: url });
+    }
+  };
+
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
-      await createInvitation({ email: inviteEmail, role: inviteRole });
-      toast.success('ইনভাইট তৈরি হয়েছে');
+      const result = await createInvitation({ email: inviteEmail, role: inviteRole });
+
+      if (result.emailSent) {
+        toast.success('ইনভাইট পাঠানো হয়েছে');
+      } else {
+        toast('ইমেইল পাঠানো যায়নি', {
+          description: 'ইনভাইট লিংক কপি করে ম্যানুয়ালি পাঠাতে পারেন',
+          action: {
+            label: 'কপি লিংক',
+            onClick: () => void copyInviteLink(result.invitation.token),
+          },
+        });
+      }
+
       logActivity({
         action: 'invite',
         entityType: 'invitation',
         newData: { email: inviteEmail, role: inviteRole },
       });
+
       setInviteDialogOpen(false);
       setInviteEmail('');
     } catch (error) {
@@ -236,8 +264,19 @@ export default function TeamMembers() {
 
   const handleResendInvite = async (id: string) => {
     try {
-      await resendInvitation(id);
-      toast.success('ইনভাইট আবার পাঠানো হয়েছে');
+      const result = await resendInvitation(id);
+
+      if (result.emailSent) {
+        toast.success('ইনভাইট আবার পাঠানো হয়েছে');
+      } else {
+        toast('ইমেইল পাঠানো যায়নি', {
+          description: 'ইনভাইট লিংক কপি করে ম্যানুয়ালি পাঠাতে পারেন',
+          action: {
+            label: 'কপি লিংক',
+            onClick: () => void copyInviteLink(result.token),
+          },
+        });
+      }
     } catch {
       toast.error('ইনভাইট পাঠাতে সমস্যা হয়েছে');
     }
