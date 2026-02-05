@@ -7,7 +7,15 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ShopProvider } from "@/contexts/ShopContext";
 import { AdminThemeProvider } from "@/contexts/AdminThemeContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { ShopProtectedRoute } from "@/components/shop/ShopProtectedRoute";
+import { ShopLayout } from "@/components/shop";
+import { ShopGuard } from "@/components/admin/ShopGuard";
+
+// Auth pages
 import Auth from "./pages/Auth";
+import ShopLogin from "./pages/shop/ShopLogin";
+
+// Super Admin pages (Platform Admin)
 import Dashboard from "./pages/admin/Dashboard";
 import Products from "./pages/admin/Products";
 import LandingPages from "./pages/admin/LandingPages";
@@ -32,6 +40,15 @@ import ShopSubscription from "./pages/admin/ShopSubscription";
 import ShopSecurity from "./pages/admin/ShopSecurity";
 import ShopAnalytics from "./pages/admin/ShopAnalytics";
 import ShopAuditLog from "./pages/admin/ShopAuditLog";
+import PricingPlans from "./pages/admin/PricingPlans";
+
+// Shop Owner pages
+import ShopDashboard from "./pages/shop/ShopDashboard";
+
+// Shop area content wrappers (reuse admin page content with ShopLayout)
+import { ShopProductsPage, ShopOrdersPage, ShopLandingPagesPage, ShopComponentLibraryPage, ShopMediaPage, ShopInboxMessengerPage, ShopTrackingPage, ShopCourierPage, ShopAiPage, ShopTeamPage, ShopSubscriptionPage, ShopAnalyticsPage, ShopSettingsPage } from "./pages/shop/ShopPages";
+
+// Public pages
 import LandingPage from "./pages/LandingPage";
 import ThankYou from "./pages/ThankYou";
 import AcceptInvite from "./pages/AcceptInvite";
@@ -39,11 +56,9 @@ import NotFound from "./pages/NotFound";
 import Pricing from "./pages/Pricing";
 import Checkout from "./pages/Checkout";
 import PurchaseSuccess from "./pages/PurchaseSuccess";
-import PricingPlans from "./pages/admin/PricingPlans";
 
 const queryClient = new QueryClient();
 
-// Main App component with all providers
 const App = () => (
   <AdminThemeProvider>
     <QueryClientProvider client={queryClient}>
@@ -54,8 +69,38 @@ const App = () => (
             <Sonner />
             <BrowserRouter>
               <Routes>
-                <Route path="/" element={<Navigate to="/admin" replace />} />
+                {/* Root redirect */}
+                <Route path="/" element={<Navigate to="/shop" replace />} />
+                
+                {/* Auth Routes */}
                 <Route path="/auth" element={<Auth />} />
+                <Route path="/login" element={<ShopLogin />} />
+                
+                {/* ================================== */}
+                {/* SHOP OWNER AREA (/shop/*) */}
+                {/* For business owners to manage their shops */}
+                {/* ================================== */}
+                <Route path="/shop" element={<ShopProtectedRoute><ShopDashboard /></ShopProtectedRoute>} />
+                <Route path="/shop/products" element={<ShopProtectedRoute><ShopProductsPage /></ShopProtectedRoute>} />
+                <Route path="/shop/orders" element={<ShopProtectedRoute><ShopOrdersPage /></ShopProtectedRoute>} />
+                <Route path="/shop/pages" element={<Navigate to="/shop/pages/manage" replace />} />
+                <Route path="/shop/pages/manage" element={<ShopProtectedRoute><ShopLandingPagesPage /></ShopProtectedRoute>} />
+                <Route path="/shop/pages/library" element={<ShopProtectedRoute><ShopComponentLibraryPage /></ShopProtectedRoute>} />
+                <Route path="/shop/media" element={<ShopProtectedRoute><ShopMediaPage /></ShopProtectedRoute>} />
+                <Route path="/shop/inbox" element={<Navigate to="/shop/inbox/messenger" replace />} />
+                <Route path="/shop/inbox/messenger" element={<ShopProtectedRoute><ShopInboxMessengerPage /></ShopProtectedRoute>} />
+                <Route path="/shop/tracking" element={<ShopProtectedRoute><ShopTrackingPage /></ShopProtectedRoute>} />
+                <Route path="/shop/courier" element={<ShopProtectedRoute><ShopCourierPage /></ShopProtectedRoute>} />
+                <Route path="/shop/ai" element={<ShopProtectedRoute><ShopAiPage /></ShopProtectedRoute>} />
+                <Route path="/shop/team" element={<ShopProtectedRoute><ShopTeamPage /></ShopProtectedRoute>} />
+                <Route path="/shop/subscription" element={<ShopProtectedRoute><ShopSubscriptionPage /></ShopProtectedRoute>} />
+                <Route path="/shop/analytics" element={<ShopProtectedRoute><ShopAnalyticsPage /></ShopProtectedRoute>} />
+                <Route path="/shop/settings" element={<ShopProtectedRoute><ShopSettingsPage /></ShopProtectedRoute>} />
+                
+                {/* ================================== */}
+                {/* SUPER ADMIN AREA (/admin/*) */}
+                {/* Platform administration - requires admin role */}
+                {/* ================================== */}
                 <Route path="/admin" element={<ProtectedRoute requireAdmin><Dashboard /></ProtectedRoute>} />
                 <Route path="/admin/products" element={<ProtectedRoute requireAdmin><Products /></ProtectedRoute>} />
                 <Route path="/admin/pages" element={<Navigate to="/admin/pages/manage" replace />} />
@@ -77,7 +122,8 @@ const App = () => (
                 <Route path="/admin/api/messaging/messenger" element={<ProtectedRoute requireAdmin><ApiMessenger /></ProtectedRoute>} />
                 <Route path="/admin/api/messaging/whatsapp" element={<ProtectedRoute requireAdmin><ApiWhatsapp /></ProtectedRoute>} />
                 <Route path="/admin/settings" element={<ProtectedRoute requireAdmin><Settings /></ProtectedRoute>} />
-                {/* Business Management Routes */}
+                
+                {/* Business Management (Platform Admin) */}
                 <Route path="/admin/business" element={<Navigate to="/admin/business/shops" replace />} />
                 <Route path="/admin/business/shops" element={<ProtectedRoute requireAdmin><AllShops /></ProtectedRoute>} />
                 <Route path="/admin/business/team" element={<ProtectedRoute requireAdmin><TeamMembers /></ProtectedRoute>} />
@@ -86,12 +132,18 @@ const App = () => (
                 <Route path="/admin/business/analytics" element={<ProtectedRoute requireAdmin><ShopAnalytics /></ProtectedRoute>} />
                 <Route path="/admin/business/audit-log" element={<ProtectedRoute requireAdmin><ShopAuditLog /></ProtectedRoute>} />
                 <Route path="/admin/platform/pricing" element={<ProtectedRoute requireAdmin><PricingPlans /></ProtectedRoute>} />
+                
+                {/* ================================== */}
+                {/* PUBLIC PAGES */}
+                {/* ================================== */}
                 <Route path="/pricing" element={<Pricing />} />
                 <Route path="/checkout" element={<Checkout />} />
                 <Route path="/purchase-success" element={<PurchaseSuccess />} />
                 <Route path="/thank-you" element={<ThankYou />} />
                 <Route path="/accept-invite" element={<AcceptInvite />} />
                 <Route path="/p/:slug" element={<LandingPage />} />
+                
+                {/* 404 */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
