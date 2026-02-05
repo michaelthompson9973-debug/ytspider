@@ -17,6 +17,16 @@ export interface ShopInvitation {
   created_at: string;
 }
 
+export interface CreateInvitationResult {
+  invitation: ShopInvitation;
+  emailSent: boolean;
+}
+
+export interface ResendInvitationResult {
+  token: string;
+  emailSent: boolean;
+}
+
 /**
  * Hook for shop invitation management - requires ShopContext
  * Use this in admin pages where ShopProvider is available
@@ -49,16 +59,18 @@ export function useShopInvitations() {
   });
 
   // Create invitation
-  const createInvitationMutation = useMutation({
-    mutationFn: async ({ email, role }: { email: string; role: ExtendedShopRole }) => {
+  const createInvitationMutation = useMutation<CreateInvitationResult, Error, { email: string; role: ExtendedShopRole }>({
+    mutationFn: async ({ email, role }) => {
       if (!currentShop || !user) throw new Error('No shop or user');
+
+      const normalizedEmail = email.toLowerCase().trim();
 
       // Check if invitation already exists
       const { data: existing } = await supabase
         .from('shop_invitations')
         .select('id')
         .eq('shop_id', currentShop.id)
-        .eq('email', email.toLowerCase().trim())
+        .eq('email', normalizedEmail)
         .is('accepted_at', null)
         .gt('expires_at', new Date().toISOString())
         .maybeSingle();
@@ -75,7 +87,7 @@ export function useShopInvitations() {
         .from('shop_invitations')
         .insert({
           shop_id: currentShop.id,
-          email: email.toLowerCase().trim(),
+          email: normalizedEmail,
           role,
           token,
           invited_by: user.id,
@@ -87,10 +99,11 @@ export function useShopInvitations() {
       if (error) throw error;
 
       // Send invitation email
+      let emailSent = true;
       try {
         const { error: emailError } = await supabase.functions.invoke('send-invitation-email', {
           body: {
-            email: email.toLowerCase().trim(),
+            email: normalizedEmail,
             shopName: currentShop.name,
             role,
             token,
@@ -99,15 +112,18 @@ export function useShopInvitations() {
         });
 
         if (emailError) {
+          emailSent = false;
           console.error('Failed to send invitation email:', emailError);
-          // Don't throw - invitation was created, email just failed
         }
       } catch (emailErr) {
+        emailSent = false;
         console.error('Failed to send invitation email:', emailErr);
-        // Don't throw - invitation was created, email just failed
       }
 
-      return data as ShopInvitation;
+      return {
+        invitation: data as ShopInvitation,
+        emailSent,
+      };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['shop-invitations', currentShop?.id] });
@@ -130,7 +146,7 @@ export function useShopInvitations() {
   });
 
   // Resend invitation (create new token, extend expiry, and resend email)
-  const resendInvitationMutation = useMutation({
+  const resendInvitationMutation = useMutation<ResendInvitationResult, Error, string>({
     mutationFn: async (invitationId: string) => {
       if (!currentShop || !user) throw new Error('No shop or user');
 
@@ -157,6 +173,7 @@ export function useShopInvitations() {
       if (error) throw error;
 
       // Send invitation email again
+      let emailSent = true;
       try {
         const { error: emailError } = await supabase.functions.invoke('send-invitation-email', {
           body: {
@@ -169,11 +186,18 @@ export function useShopInvitations() {
         });
 
         if (emailError) {
+          emailSent = false;
           console.error('Failed to send invitation email:', emailError);
         }
       } catch (emailErr) {
+        emailSent = false;
         console.error('Failed to send invitation email:', emailErr);
       }
+
+      return {
+        token: newToken,
+        emailSent,
+      };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['shop-invitations', currentShop?.id] });

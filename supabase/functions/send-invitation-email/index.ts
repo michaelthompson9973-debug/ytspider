@@ -76,7 +76,9 @@ Deno.serve(async (req) => {
     });
 
     // Build accept invite URL
-    const baseUrl = Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovable.app') || 'https://yt-crawl-buddy.lovable.app';
+    // Prefer the caller's origin so the link always matches the environment (preview vs published)
+    const origin = req.headers.get('origin') || 'https://yt-crawl-buddy.lovable.app';
+    const baseUrl = origin.replace(/\/$/, '');
     const acceptUrl = `${baseUrl}/accept-invite?token=${token}`;
 
     const roleLabels: Record<string, string> = {
