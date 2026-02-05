@@ -122,16 +122,45 @@ const getNavGroups = (isPlatformMode: boolean): NavGroup[] => {
     },
   ];
   
-  // Platform Mode: add Pricing Plans as separate item
+  // Platform Mode: add Pricing Plans and Revenue Report
   if (isPlatformMode) {
-    businessItems.push({ 
-      href: '/admin/platform/pricing', 
-      labelKey: 'sidebar.pricingPlans', 
-      icon: DollarSign 
-    });
+    businessItems.push(
+      { href: '/admin/platform/pricing', labelKey: 'sidebar.pricingPlans', icon: DollarSign },
+      { href: '/admin/platform/revenue', labelKey: 'sidebar.revenueReport', icon: BarChart3 }
+    );
   }
 
-  return [
+  // Platform Libraries group - only visible in Platform Mode
+  const platformLibrariesItems: NavItem[] = isPlatformMode ? [
+    { 
+      href: '/admin/platform/libraries', 
+      labelKey: 'sidebar.platformLibraries', 
+      icon: BookOpen,
+      children: [
+        { href: '/admin/platform/libraries/products', labelKey: 'sidebar.productLibrary', icon: Package },
+        { href: '/admin/platform/libraries/landing-pages', labelKey: 'sidebar.landingPageLibrary', icon: FileText },
+        { href: '/admin/platform/libraries/components', labelKey: 'sidebar.componentLibrary', icon: Palette },
+        { href: '/admin/platform/libraries/customers', labelKey: 'sidebar.customerBase', icon: Users },
+      ]
+    },
+  ] : [];
+
+  // Marketing group - only visible in Platform Mode
+  const marketingItems: NavItem[] = isPlatformMode ? [
+    { 
+      href: '/admin/platform/marketing', 
+      labelKey: 'sidebar.marketing', 
+      icon: Target,
+      children: [
+        { href: '/admin/platform/marketing/whatsapp', labelKey: 'sidebar.whatsappCampaigns', icon: MessageSquare },
+        { href: '/admin/platform/marketing/sms', labelKey: 'sidebar.smsCampaigns', icon: MessageCircle },
+        { href: '/admin/platform/marketing/email', labelKey: 'sidebar.emailMarketing', icon: Bell },
+      ]
+    },
+  ] : [];
+
+  // Build nav groups array
+  const navGroups: NavGroup[] = [
     {
       labelKey: 'sidebar.overview',
       items: [
@@ -142,7 +171,27 @@ const getNavGroups = (isPlatformMode: boolean): NavGroup[] => {
       labelKey: 'sidebar.business',
       items: businessItems,
     },
-    {
+  ];
+
+  // Add Platform Libraries in Platform Mode
+  if (isPlatformMode && platformLibrariesItems.length > 0) {
+    navGroups.push({
+      labelKey: 'sidebar.platformLibraries',
+      items: platformLibrariesItems,
+    });
+  }
+
+  // Add Marketing in Platform Mode
+  if (isPlatformMode && marketingItems.length > 0) {
+    navGroups.push({
+      labelKey: 'sidebar.marketing',
+      items: marketingItems,
+    });
+  }
+
+  // Content group - only in Shop Mode
+  if (!isPlatformMode) {
+    navGroups.push({
       labelKey: 'sidebar.content',
       items: [
         { href: '/admin/products', labelKey: 'sidebar.products', icon: Package },
@@ -157,8 +206,12 @@ const getNavGroups = (isPlatformMode: boolean): NavGroup[] => {
         },
         { href: '/admin/media', labelKey: 'sidebar.media', icon: Image },
       ],
-    },
-    {
+    });
+  }
+
+  // Operations group - only in Shop Mode
+  if (!isPlatformMode) {
+    navGroups.push({
       labelKey: 'sidebar.operations',
       items: [
         { href: '/admin/orders', labelKey: 'sidebar.orders', icon: ShoppingCart },
@@ -181,28 +234,32 @@ const getNavGroups = (isPlatformMode: boolean): NavGroup[] => {
           ]
         },
       ],
-    },
-    {
-      labelKey: 'sidebar.settings',
-      items: [
-        { href: '/admin/domains', labelKey: 'sidebar.allowedDomains', icon: Globe },
-        { href: '/admin/webhooks', labelKey: 'sidebar.webhooks', icon: Bell },
-        { href: '/admin/settings', labelKey: 'sidebar.appearance', icon: Palette },
-        { 
-          href: '/admin/api', 
-          labelKey: 'sidebar.api', 
-          icon: Key,
-          children: [
-            { href: '/admin/api/ai', labelKey: 'sidebar.ai', icon: Bot, badge: 'available' },
-            { href: '/admin/api/fraud-check', labelKey: 'sidebar.fraudCheck', icon: ShieldAlert, badge: 'available' },
-            { href: '/admin/api/courier', labelKey: 'sidebar.courier', icon: Truck, badge: 'N/A' },
-            { href: '/admin/api/messaging/messenger', labelKey: 'sidebar.messenger', icon: MessageCircle },
-            { href: '/admin/api/messaging/whatsapp', labelKey: 'sidebar.whatsapp', icon: MessageSquare },
-          ]
-        },
-      ],
-    },
-  ];
+    });
+  }
+
+  // Settings group - always visible
+  navGroups.push({
+    labelKey: 'sidebar.settings',
+    items: [
+      { href: '/admin/domains', labelKey: 'sidebar.allowedDomains', icon: Globe },
+      { href: '/admin/webhooks', labelKey: 'sidebar.webhooks', icon: Bell },
+      { href: '/admin/settings', labelKey: 'sidebar.appearance', icon: Palette },
+      { 
+        href: '/admin/api', 
+        labelKey: 'sidebar.api', 
+        icon: Key,
+        children: [
+          { href: '/admin/api/ai', labelKey: 'sidebar.ai', icon: Bot, badge: 'available' },
+          { href: '/admin/api/fraud-check', labelKey: 'sidebar.fraudCheck', icon: ShieldAlert, badge: 'available' },
+          { href: '/admin/api/courier', labelKey: 'sidebar.courier', icon: Truck, badge: 'N/A' },
+          { href: '/admin/api/messaging/messenger', labelKey: 'sidebar.messenger', icon: MessageCircle },
+          { href: '/admin/api/messaging/whatsapp', labelKey: 'sidebar.whatsapp', icon: MessageSquare },
+        ]
+      },
+    ],
+  });
+
+  return navGroups;
 };
 
 function ApiSubMenu({ item }: { item: NavItem }) {
@@ -460,21 +517,8 @@ export default function AdminSidebar() {
   const isCollapsed = state === 'collapsed';
   const isPlatformMode = !currentShop;
 
-  // Get nav groups based on Platform/Shop Mode
+  // Get nav groups based on Platform/Shop Mode - no additional filtering needed
   const navGroups = useMemo(() => getNavGroups(isPlatformMode), [isPlatformMode]);
-  
-  // Filter nav groups based on Platform Mode
-  const filteredNavGroups = useMemo(() => {
-    if (isPlatformMode) {
-      // In Platform Mode, only show Overview, Business, and Settings
-      return navGroups.filter(g => 
-        g.labelKey === 'sidebar.overview' || 
-        g.labelKey === 'sidebar.business' ||
-        g.labelKey === 'sidebar.settings'
-      );
-    }
-    return navGroups;
-  }, [isPlatformMode, navGroups]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -497,7 +541,7 @@ export default function AdminSidebar() {
 
       {/* Content - scrollable */}
       <SidebarContent>
-        {filteredNavGroups.map((group, index) => (
+        {navGroups.map((group, index) => (
           <div key={group.labelKey}>
             {index > 0 && !isCollapsed && <SidebarSeparator className="my-1" />}
             <NavGroupCollapsible group={group} />

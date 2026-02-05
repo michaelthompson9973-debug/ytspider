@@ -72,6 +72,19 @@ export const bn = {
     shopSecurity: 'সিকিউরিটি',
     shopAnalytics: 'এনালিটিক্স',
     shopAuditLog: 'অডিট লগ',
+    // Platform Libraries
+    platformLibraries: 'প্ল্যাটফর্ম লাইব্রেরী',
+    productLibrary: 'প্রোডাক্ট লাইব্রেরী',
+    landingPageLibrary: 'ল্যান্ডিং পেজ লাইব্রেরী',
+    componentLibrary: 'কম্পোনেন্ট লাইব্রেরী',
+    customerBase: 'কাস্টমার বেজ',
+    // Marketing
+    marketing: 'মার্কেটিং',
+    whatsappCampaigns: 'হোয়াটসঅ্যাপ ক্যাম্পেইন',
+    smsCampaigns: 'এসএমএস ক্যাম্পেইন',
+    emailMarketing: 'ইমেইল মার্কেটিং',
+    // Revenue
+    revenueReport: 'রেভিনিউ রিপোর্ট',
   },
   products: {
     title: 'প্রোডাক্ট',
