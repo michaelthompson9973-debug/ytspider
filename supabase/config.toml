@@ -73,3 +73,6 @@ verify_jwt = false
 
 [functions.ai-reply-suggest]
 verify_jwt = false
+
+[functions.provision-shop]
+verify_jwt = false
