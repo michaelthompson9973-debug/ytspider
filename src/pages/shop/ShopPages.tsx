@@ -1,25 +1,20 @@
 /**
  * Shop Area Page Wrappers
- * These components wrap the admin page content with ShopLayout
- * instead of AdminLayout for the shop owner experience
+ * These components wrap the shared content components with ShopLayout
+ * for the shop owner experience (separate from Admin area)
  */
 
 import { ShopLayout } from '@/components/shop';
-import { ShopGuard } from '@/components/admin/ShopGuard';
-
-// We need to create lightweight wrappers that use ShopLayout
-// For now, these are placeholder components that will be enhanced
-
+import { ProductsContent } from '@/components/admin/products';
 import { useShop } from '@/contexts/ShopContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ShopGuard } from '@/components/admin/ShopGuard';
 
-// Products Page for Shop Owners
+// Products Page for Shop Owners - Uses shared content
 export function ShopProductsPage() {
   return (
     <ShopLayout>
-      <ShopGuard>
-        <PlaceholderPage title="প্রোডাক্ট" description="এই পেজ শীঘ্রই আসছে" />
-      </ShopGuard>
+      <ProductsContent />
     </ShopLayout>
   );
 }
@@ -29,7 +24,7 @@ export function ShopOrdersPage() {
   return (
     <ShopLayout>
       <ShopGuard>
-        <PlaceholderPage title="অর্ডার" description="এই পেজ শীঘ্রই আসছে" />
+        <PlaceholderPage title="অর্ডার" description="অর্ডার ম্যানেজমেন্ট শীঘ্রই আসছে" />
       </ShopGuard>
     </ShopLayout>
   );
@@ -40,7 +35,7 @@ export function ShopLandingPagesPage() {
   return (
     <ShopLayout>
       <ShopGuard>
-        <PlaceholderPage title="ল্যান্ডিং পেজ" description="এই পেজ শীঘ্রই আসছে" />
+        <PlaceholderPage title="ল্যান্ডিং পেজ" description="ল্যান্ডিং পেজ বিল্ডার শীঘ্রই আসছে" />
       </ShopGuard>
     </ShopLayout>
   );
@@ -51,7 +46,7 @@ export function ShopComponentLibraryPage() {
   return (
     <ShopLayout>
       <ShopGuard>
-        <PlaceholderPage title="কম্পোনেন্ট লাইব্রেরী" description="এই পেজ শীঘ্রই আসছে" />
+        <PlaceholderPage title="কম্পোনেন্ট লাইব্রেরী" description="কম্পোনেন্ট লাইব্রেরী শীঘ্রই আসছে" />
       </ShopGuard>
     </ShopLayout>
   );
@@ -62,7 +57,7 @@ export function ShopMediaPage() {
   return (
     <ShopLayout>
       <ShopGuard>
-        <PlaceholderPage title="মিডিয়া" description="এই পেজ শীঘ্রই আসছে" />
+        <PlaceholderPage title="মিডিয়া" description="মিডিয়া লাইব্রেরী শীঘ্রই আসছে" />
       </ShopGuard>
     </ShopLayout>
   );
@@ -73,7 +68,7 @@ export function ShopInboxMessengerPage() {
   return (
     <ShopLayout>
       <ShopGuard>
-        <PlaceholderPage title="মেসেঞ্জার ইনবক্স" description="এই পেজ শীঘ্রই আসছে" />
+        <PlaceholderPage title="মেসেঞ্জার ইনবক্স" description="মেসেঞ্জার ইন্টিগ্রেশন শীঘ্রই আসছে" />
       </ShopGuard>
     </ShopLayout>
   );
@@ -84,7 +79,7 @@ export function ShopTrackingPage() {
   return (
     <ShopLayout>
       <ShopGuard>
-        <PlaceholderPage title="ট্র্যাকিং" description="এই পেজ শীঘ্রই আসছে" />
+        <PlaceholderPage title="ট্র্যাকিং" description="ট্র্যাকিং সেটআপ শীঘ্রই আসছে" />
       </ShopGuard>
     </ShopLayout>
   );
@@ -95,7 +90,7 @@ export function ShopCourierPage() {
   return (
     <ShopLayout>
       <ShopGuard>
-        <PlaceholderPage title="কুরিয়ার সেটিংস" description="এই পেজ শীঘ্রই আসছে" />
+        <PlaceholderPage title="কুরিয়ার" description="কুরিয়ার ইন্টিগ্রেশন শীঘ্রই আসছে" />
       </ShopGuard>
     </ShopLayout>
   );
@@ -106,7 +101,7 @@ export function ShopAiPage() {
   return (
     <ShopLayout>
       <ShopGuard>
-        <PlaceholderPage title="AI সেটিংস" description="এই পেজ শীঘ্রই আসছে" />
+        <PlaceholderPage title="AI সেটিংস" description="AI অটো-রিপ্লাই সেটআপ শীঘ্রই আসছে" />
       </ShopGuard>
     </ShopLayout>
   );
@@ -117,7 +112,7 @@ export function ShopTeamPage() {
   return (
     <ShopLayout>
       <ShopGuard>
-        <PlaceholderPage title="টিম মেম্বার" description="এই পেজ শীঘ্রই আসছে" />
+        <PlaceholderPage title="টিম মেম্বার" description="টিম ম্যানেজমেন্ট শীঘ্রই আসছে" />
       </ShopGuard>
     </ShopLayout>
   );
@@ -128,7 +123,7 @@ export function ShopSubscriptionPage() {
   return (
     <ShopLayout>
       <ShopGuard>
-        <PlaceholderPage title="সাবস্ক্রিপশন" description="এই পেজ শীঘ্রই আসছে" />
+        <PlaceholderPage title="সাবস্ক্রিপশন" description="বিলিং ও প্ল্যান ম্যানেজমেন্ট শীঘ্রই আসছে" />
       </ShopGuard>
     </ShopLayout>
   );
@@ -139,7 +134,7 @@ export function ShopAnalyticsPage() {
   return (
     <ShopLayout>
       <ShopGuard>
-        <PlaceholderPage title="অ্যানালিটিক্স" description="এই পেজ শীঘ্রই আসছে" />
+        <PlaceholderPage title="অ্যানালিটিক্স" description="শপ অ্যানালিটিক্স শীঘ্রই আসছে" />
       </ShopGuard>
     </ShopLayout>
   );
@@ -150,13 +145,13 @@ export function ShopSettingsPage() {
   return (
     <ShopLayout>
       <ShopGuard>
-        <PlaceholderPage title="সেটিংস" description="এই পেজ শীঘ্রই আসছে" />
+        <PlaceholderPage title="সেটিংস" description="শপ সেটিংস শীঘ্রই আসছে" />
       </ShopGuard>
     </ShopLayout>
   );
 }
 
-// Placeholder component
+// Placeholder component for pages not yet implemented
 function PlaceholderPage({ title, description }: { title: string; description: string }) {
   const { currentShop } = useShop();
   
@@ -168,7 +163,7 @@ function PlaceholderPage({ title, description }: { title: string; description: s
           <CardTitle>{currentShop?.name}</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground text-center py-8">{description}</p>
+          <p className="text-muted-foreground text-center py-12">{description}</p>
         </CardContent>
       </Card>
     </div>
