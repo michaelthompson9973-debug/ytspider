@@ -44,8 +44,7 @@ import PricingPlans from "./pages/admin/PricingPlans";
 
 // Shop Owner pages
 import ShopDashboard from "./pages/shop/ShopDashboard";
-
-// Shop area content wrappers (reuse admin page content with ShopLayout)
+import ShopOnboarding from "./pages/shop/ShopOnboarding";
 import { ShopProductsPage, ShopOrdersPage, ShopLandingPagesPage, ShopComponentLibraryPage, ShopMediaPage, ShopInboxMessengerPage, ShopTrackingPage, ShopCourierPage, ShopAiPage, ShopTeamPage, ShopSubscriptionPage, ShopAnalyticsPage, ShopSettingsPage } from "./pages/shop/ShopPages";
 
 // Public pages
@@ -81,6 +80,7 @@ const App = () => (
                 {/* For business owners to manage their shops */}
                 {/* ================================== */}
                 <Route path="/shop" element={<ShopProtectedRoute><ShopDashboard /></ShopProtectedRoute>} />
+                <Route path="/shop/onboarding" element={<ShopOnboarding />} />
                 <Route path="/shop/products" element={<ShopProtectedRoute><ShopProductsPage /></ShopProtectedRoute>} />
                 <Route path="/shop/orders" element={<ShopProtectedRoute><ShopOrdersPage /></ShopProtectedRoute>} />
                 <Route path="/shop/pages" element={<Navigate to="/shop/pages/manage" replace />} />

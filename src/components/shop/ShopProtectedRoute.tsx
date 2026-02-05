@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useShop } from '@/contexts/ShopContext';
@@ -9,7 +10,14 @@ interface ShopProtectedRouteProps {
 
 export function ShopProtectedRoute({ children }: ShopProtectedRouteProps) {
   const { user, loading: authLoading } = useAuth();
-  const { currentShop, availableShops, isLoading: shopLoading } = useShop();
+  const { currentShop, availableShops, isLoading: shopLoading, switchShop } = useShop();
+
+  // Auto-select first shop if none selected but shops available
+  useEffect(() => {
+    if (!shopLoading && !currentShop && availableShops.length > 0) {
+      switchShop(availableShops[0].id);
+    }
+  }, [shopLoading, currentShop, availableShops, switchShop]);
 
   // Still loading
   if (authLoading || shopLoading) {
@@ -28,14 +36,13 @@ export function ShopProtectedRoute({ children }: ShopProtectedRouteProps) {
     return <Navigate to="/login" replace />;
   }
 
-  // No shops available - redirect to create shop
+  // No shops available - redirect to onboarding
   if (availableShops.length === 0) {
     return <Navigate to="/shop/onboarding" replace />;
   }
 
-  // No shop selected - auto-select first shop
+  // No shop selected but shops are available - show loading while auto-selecting
   if (!currentShop && availableShops.length > 0) {
-    // This will trigger the shop selection, component will re-render
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
