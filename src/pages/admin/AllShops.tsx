@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import AdminLayout from '@/components/admin/AdminLayout';
-import { CreateShopDialog } from '@/components/admin/CreateShopDialog';
+import { CreateShopForUserDialog } from '@/components/admin/CreateShopForUserDialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -229,7 +229,7 @@ export default function AllShops() {
       </AlertDialog>
 
       {/* Create Shop Dialog */}
-      <CreateShopDialog
+      <CreateShopForUserDialog
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
         onSuccess={() => queryClient.invalidateQueries({ queryKey: ['all-shops'] })}
