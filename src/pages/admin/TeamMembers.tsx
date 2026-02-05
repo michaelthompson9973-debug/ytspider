@@ -62,6 +62,8 @@ import { useShopPermissions, ExtendedShopRole, roleLabels, roleDescriptions } fr
 import { useActivityLog } from '@/hooks/useActivityLog';
 import { formatDistanceToNow } from 'date-fns';
 
+type ResendingState = { [key: string]: boolean };
+
 interface ShopMember {
   id: string;
   shop_id: string;
@@ -100,6 +102,7 @@ export default function TeamMembers() {
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<ExtendedShopRole>('editor');
+  const [resendingInvites, setResendingInvites] = useState<ResendingState>({});
 
   const canManageTeam = hasPermission('team.manage');
 
@@ -263,6 +266,7 @@ export default function TeamMembers() {
   };
 
   const handleResendInvite = async (id: string) => {
+    setResendingInvites(prev => ({ ...prev, [id]: true }));
     try {
       const result = await resendInvitation(id);
 
@@ -279,6 +283,8 @@ export default function TeamMembers() {
       }
     } catch {
       toast.error('ইনভাইট পাঠাতে সমস্যা হয়েছে');
+    } finally {
+      setResendingInvites(prev => ({ ...prev, [id]: false }));
     }
   };
 
@@ -361,8 +367,17 @@ export default function TeamMembers() {
                         variant="ghost"
                         size="sm"
                         onClick={() => handleResendInvite(invite.id)}
+                        disabled={resendingInvites[invite.id]}
+                        className="gap-1.5"
                       >
-                        <RefreshCw className="h-4 w-4" />
+                        {resendingInvites[invite.id] ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <span className="text-xs">পাঠাচ্ছে...</span>
+                          </>
+                        ) : (
+                          <RefreshCw className="h-4 w-4" />
+                        )}
                       </Button>
                       <Button
                         variant="ghost"
