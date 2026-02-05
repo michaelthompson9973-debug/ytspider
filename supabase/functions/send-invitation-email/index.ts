@@ -10,6 +10,15 @@ interface SendInvitationRequest {
   inviterName?: string;
 }
 
+function encodeHeaderB64(value: string): string {
+  // RFC 2047 encoded-word (Base64) to keep Gmail happy with non-ASCII subjects
+  const bytes = new TextEncoder().encode(value);
+  let binary = "";
+  for (const b of bytes) binary += String.fromCharCode(b);
+  const b64 = btoa(binary);
+  return `=?UTF-8?B?${b64}?=`;
+}
+
 Deno.serve(async (req) => {
   // Handle CORS
   if (req.method === 'OPTIONS') {
@@ -93,40 +102,47 @@ Deno.serve(async (req) => {
     const roleLabel = roleLabels[role] || role;
     const inviterText = inviterName ? `${inviterName} আপনাকে` : 'আপনাকে';
 
-    const htmlContent = `
-      <div style="font-family: 'Hind Siliguri', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h1 style="color: #3B82F6;">🎉 টিম ইনভাইটেশন!</h1>
-        <p>${inviterText} <strong>${shopName}</strong> শপে ${roleLabel} হিসেবে যোগদানের জন্য আমন্ত্রণ জানিয়েছেন।</p>
-        
-        <div style="background: #F3F4F6; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <h3 style="margin-top: 0;">ইনভাইটেশনের বিবরণ</h3>
-          <p><strong>শপের নাম:</strong> ${shopName}</p>
-          <p><strong>আপনার রোল:</strong> ${roleLabel}</p>
-        </div>
+    const htmlContent = `<!doctype html>
+<html lang="bn">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Team invitation</title>
+  </head>
+  <body style="margin:0;padding:0;background-color:#ffffff;">
+    <div style="font-family: 'Hind Siliguri', 'Anek Bangla', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <h1 style="color: #3B82F6; margin: 0 0 12px 0;">🎉 টিম ইনভাইটেশন!</h1>
+      <p style="margin: 0 0 16px 0; line-height: 1.6;">${inviterText} <strong>${shopName}</strong> শপে ${roleLabel} হিসেবে যোগদানের জন্য আমন্ত্রণ জানিয়েছেন।</p>
 
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${acceptUrl}" style="background: #3B82F6; color: white; padding: 14px 36px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
-            ইনভাইট গ্রহণ করুন
-          </a>
-        </div>
-
-        <p style="color: #6B7280; font-size: 14px;">
-          এই লিংক ৭ দিন পর্যন্ত বৈধ থাকবে।
-        </p>
-        
-        <hr style="border: none; border-top: 1px solid #E5E7EB; margin: 30px 0;">
-        <p style="color: #6B7280; font-size: 12px;">
-          আপনি এই ইমেইল পেয়েছেন কারণ কেউ আপনাকে টিমে যোগ দেওয়ার জন্য আমন্ত্রণ জানিয়েছে। 
-          যদি এটি আপনার জন্য না হয়, অনুগ্রহ করে উপেক্ষা করুন।
-        </p>
+      <div style="background: #F3F4F6; padding: 16px; border-radius: 10px; margin: 16px 0;">
+        <h3 style="margin: 0 0 10px 0;">ইনভাইটেশনের বিবরণ</h3>
+        <p style="margin: 0 0 6px 0;"><strong>শপের নাম:</strong> ${shopName}</p>
+        <p style="margin: 0;"><strong>আপনার রোল:</strong> ${roleLabel}</p>
       </div>
-    `;
+
+      <div style="text-align: center; margin: 22px 0;">
+        <a href="${acceptUrl}" style="background: #3B82F6; color: white; padding: 14px 36px; text-decoration: none; border-radius: 10px; font-weight: 700; display: inline-block;">
+          ইনভাইট গ্রহণ করুন
+        </a>
+      </div>
+
+      <p style="color: #6B7280; font-size: 14px; margin: 0 0 10px 0;">এই লিংক ৭ দিন পর্যন্ত বৈধ থাকবে।</p>
+
+      <hr style="border: none; border-top: 1px solid #E5E7EB; margin: 24px 0;" />
+      <p style="color: #6B7280; font-size: 12px; margin: 0; line-height: 1.6;">
+        আপনি এই ইমেইল পেয়েছেন কারণ কেউ আপনাকে টিমে যোগ দেওয়ার জন্য আমন্ত্রণ জানিয়েছে। যদি এটি আপনার জন্য না হয়, অনুগ্রহ করে উপেক্ষা করুন।
+      </p>
+    </div>
+  </body>
+</html>`;
+
+    const subjectText = `🎉 ${shopName} টিমে যোগ দিন!`;
 
     await client.send({
-      from: gmailUser,
+      from: `YTSpider <${gmailUser}>`,
       to: email,
-      subject: `🎉 ${shopName} টিমে যোগ দিন!`,
-      content: `${shopName} শপে ${roleLabel} হিসেবে যোগদানের জন্য আমন্ত্রণ। লিংক: ${acceptUrl}`,
+      subject: encodeHeaderB64(subjectText),
+      content: 'auto',
       html: htmlContent,
     });
 
