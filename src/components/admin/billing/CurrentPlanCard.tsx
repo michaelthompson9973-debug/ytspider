@@ -1,10 +1,12 @@
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useShop } from '@/contexts/ShopContext';
+import { useInvoiceHistory } from '@/hooks/useInvoiceHistory';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Crown, Calendar, Wallet } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { PLAN_PRICES, type PlanType } from '@/lib/planLimits';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface CurrentPlanCardProps {
   onChangePlan?: () => void;
@@ -12,21 +14,29 @@ interface CurrentPlanCardProps {
 }
 
 export function CurrentPlanCard({ onChangePlan, onViewHistory }: CurrentPlanCardProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { currentShop } = useShop();
+  const { nextBillingDate, isLoading } = useInvoiceHistory();
 
   const plan = (currentShop?.plan as PlanType) || 'free';
   const price = PLAN_PRICES[plan];
 
-  // Mock next billing date (in real implementation, this would come from subscription data)
-  const nextBillingDate = new Date();
-  nextBillingDate.setMonth(nextBillingDate.getMonth() + 1);
-  nextBillingDate.setDate(15);
+  // Use real next billing date from subscription
+  const displayBillingDate = nextBillingDate || null;
 
   const planNames: Record<PlanType, string> = {
     free: t('billing.free'),
     pro: t('billing.pro'),
     enterprise: t('billing.enterprise'),
+  };
+
+  const formatDate = (date: Date | null) => {
+    if (!date) return 'N/A';
+    return date.toLocaleDateString(language === 'bn' ? 'bn-BD' : 'en-US', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
   };
 
   return (
@@ -48,7 +58,7 @@ export function CurrentPlanCard({ onChangePlan, onViewHistory }: CurrentPlanCard
                   {planNames[plan]} {t('billing.planLabel')}
                 </h3>
               </div>
-          </div>
+            </div>
             <Badge variant="outline" className="text-emerald-600 border-emerald-600 dark:text-emerald-400 dark:border-emerald-400">
               🟢 {t('billing.active')}
             </Badge>
@@ -58,13 +68,13 @@ export function CurrentPlanCard({ onChangePlan, onViewHistory }: CurrentPlanCard
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Calendar className="h-4 w-4" />
               <span>{t('billing.nextBilling')}:</span>
-              <span className="font-medium text-foreground">
-                {nextBillingDate.toLocaleDateString('bn-BD', {
-                  day: 'numeric',
-                  month: 'long',
-                  year: 'numeric'
-                })}
-              </span>
+              {isLoading ? (
+                <Skeleton className="h-4 w-24" />
+              ) : (
+                <span className="font-medium text-foreground">
+                  {formatDate(displayBillingDate)}
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Wallet className="h-4 w-4" />
