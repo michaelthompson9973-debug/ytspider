@@ -85,6 +85,28 @@ export function useShopInvitations() {
         .single();
 
       if (error) throw error;
+
+      // Send invitation email
+      try {
+        const { error: emailError } = await supabase.functions.invoke('send-invitation-email', {
+          body: {
+            email: email.toLowerCase().trim(),
+            shopName: currentShop.name,
+            role,
+            token,
+            inviterName: user.email,
+          },
+        });
+
+        if (emailError) {
+          console.error('Failed to send invitation email:', emailError);
+          // Don't throw - invitation was created, email just failed
+        }
+      } catch (emailErr) {
+        console.error('Failed to send invitation email:', emailErr);
+        // Don't throw - invitation was created, email just failed
+      }
+
       return data as ShopInvitation;
     },
     onSuccess: () => {
