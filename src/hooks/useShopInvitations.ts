@@ -129,9 +129,20 @@ export function useShopInvitations() {
     },
   });
 
-  // Resend invitation (create new token, extend expiry)
+  // Resend invitation (create new token, extend expiry, and resend email)
   const resendInvitationMutation = useMutation({
     mutationFn: async (invitationId: string) => {
+      if (!currentShop || !user) throw new Error('No shop or user');
+
+      // First get the invitation details
+      const { data: invitation, error: fetchError } = await supabase
+        .from('shop_invitations')
+        .select('*')
+        .eq('id', invitationId)
+        .single();
+
+      if (fetchError || !invitation) throw new Error('Invitation not found');
+
       const newToken = generateInviteToken();
       const newExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
@@ -144,6 +155,25 @@ export function useShopInvitations() {
         .eq('id', invitationId);
 
       if (error) throw error;
+
+      // Send invitation email again
+      try {
+        const { error: emailError } = await supabase.functions.invoke('send-invitation-email', {
+          body: {
+            email: invitation.email,
+            shopName: currentShop.name,
+            role: invitation.role,
+            token: newToken,
+            inviterName: user.email,
+          },
+        });
+
+        if (emailError) {
+          console.error('Failed to send invitation email:', emailError);
+        }
+      } catch (emailErr) {
+        console.error('Failed to send invitation email:', emailErr);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['shop-invitations', currentShop?.id] });
