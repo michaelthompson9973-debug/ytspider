@@ -28,74 +28,94 @@ import {
   Sparkles,
   Library,
   ChevronDown,
+  Wallet,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useShop } from '@/contexts/ShopContext';
+import { useShop, ShopType } from '@/contexts/ShopContext';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 
 interface NavItem {
   title: string;
   url: string;
   icon: React.ElementType;
   children?: NavItem[];
+  /** 'physical' | 'digital' | undefined (both) */
+  shopType?: ShopType;
 }
 
-const navGroups: { label: string; items: NavItem[] }[] = [
-  {
-    label: 'ওভারভিউ',
-    items: [
-      { title: 'ড্যাশবোর্ড', url: '/shop', icon: LayoutDashboard },
-    ],
-  },
-  {
-    label: 'ব্যবসা',
-    items: [
-      { title: 'প্রোডাক্ট', url: '/shop/products', icon: Package },
-      { title: 'অর্ডার', url: '/shop/orders', icon: ShoppingCart },
-      {
-        title: 'ল্যান্ডিং পেজ',
-        url: '/shop/pages',
-        icon: FileText,
-        children: [
-          { title: 'লাইব্রেরী', url: '/shop/pages/library', icon: Library },
-          { title: 'পেজ সমূহ', url: '/shop/pages/manage', icon: FileText },
-        ],
-      },
-      { title: 'মিডিয়া', url: '/shop/media', icon: Image },
-    ],
-  },
-  {
-    label: 'যোগাযোগ',
-    items: [
-      {
-        title: 'ইনবক্স',
-        url: '/shop/inbox',
-        icon: MessageCircle,
-        children: [
-          { title: 'মেসেঞ্জার', url: '/shop/inbox/messenger', icon: MessageCircle },
-        ],
-      },
-    ],
-  },
-  {
-    label: 'ইন্টিগ্রেশন',
-    items: [
-      { title: 'ট্র্যাকিং', url: '/shop/tracking', icon: Target },
-      { title: 'কুরিয়ার', url: '/shop/courier', icon: Truck },
-      { title: 'AI সেটিংস', url: '/shop/ai', icon: Sparkles },
-    ],
-  },
-  {
-    label: 'সেটিংস',
-    items: [
-      { title: 'টিম', url: '/shop/team', icon: Users },
-      { title: 'সাবস্ক্রিপশন', url: '/shop/subscription', icon: CreditCard },
-      { title: 'অ্যানালিটিক্স', url: '/shop/analytics', icon: BarChart3 },
-      { title: 'সেটিংস', url: '/shop/settings', icon: Settings },
-    ],
-  },
-];
+interface NavGroup {
+  label: string;
+  items: NavItem[];
+}
+
+function getNavGroups(shopType: ShopType): NavGroup[] {
+  const allGroups: NavGroup[] = [
+    {
+      label: 'ওভারভিউ',
+      items: [
+        { title: 'ড্যাশবোর্ড', url: '/shop', icon: LayoutDashboard },
+      ],
+    },
+    {
+      label: 'ব্যবসা',
+      items: [
+        { title: 'প্রোডাক্ট', url: '/shop/products', icon: Package },
+        { title: 'অর্ডার', url: '/shop/orders', icon: ShoppingCart },
+        {
+          title: 'ল্যান্ডিং পেজ',
+          url: '/shop/pages',
+          icon: FileText,
+          children: [
+            { title: 'লাইব্রেরী', url: '/shop/pages/library', icon: Library },
+            { title: 'পেজ সমূহ', url: '/shop/pages/manage', icon: FileText },
+          ],
+        },
+        { title: 'মিডিয়া', url: '/shop/media', icon: Image },
+      ],
+    },
+    {
+      label: 'যোগাযোগ',
+      items: [
+        {
+          title: 'ইনবক্স',
+          url: '/shop/inbox',
+          icon: MessageCircle,
+          children: [
+            { title: 'মেসেঞ্জার', url: '/shop/inbox/messenger', icon: MessageCircle },
+          ],
+        },
+      ],
+    },
+    {
+      label: 'ইন্টিগ্রেশন',
+      items: [
+        { title: 'ট্র্যাকিং', url: '/shop/tracking', icon: Target },
+        { title: 'কুরিয়ার', url: '/shop/courier', icon: Truck, shopType: 'physical' },
+        { title: 'পেমেন্ট', url: '/shop/payments', icon: Wallet, shopType: 'digital' },
+        { title: 'AI সেটিংস', url: '/shop/ai', icon: Sparkles },
+      ],
+    },
+    {
+      label: 'সেটিংস',
+      items: [
+        { title: 'টিম', url: '/shop/team', icon: Users },
+        { title: 'সাবস্ক্রিপশন', url: '/shop/subscription', icon: CreditCard },
+        { title: 'অ্যানালিটিক্স', url: '/shop/analytics', icon: BarChart3 },
+        { title: 'সেটিংস', url: '/shop/settings', icon: Settings },
+      ],
+    },
+  ];
+
+  // Filter items based on shop type
+  return allGroups.map(group => ({
+    ...group,
+    items: group.items.filter(item => {
+      if (!item.shopType) return true;
+      return item.shopType === shopType;
+    }),
+  })).filter(group => group.items.length > 0);
+}
 
 function NavItemComponent({ item, isCollapsed }: { item: NavItem; isCollapsed: boolean }) {
   const location = useLocation();
@@ -165,6 +185,9 @@ export function ShopSidebar() {
   const { currentShop } = useShop();
   const isCollapsed = state === 'collapsed';
 
+  const shopType = currentShop?.shop_type || 'physical';
+  const navGroups = useMemo(() => getNavGroups(shopType), [shopType]);
+
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b p-4">
@@ -186,7 +209,7 @@ export function ShopSidebar() {
                 {currentShop?.name || 'Shop'}
               </span>
               <span className="text-xs text-muted-foreground capitalize">
-                {currentShop?.plan || 'free'} plan
+                {shopType === 'digital' ? 'ডিজিটাল' : 'ফিজিক্যাল'} • {currentShop?.plan || 'free'}
               </span>
             </div>
           )}

@@ -4,6 +4,7 @@ import { useAuth } from './AuthContext';
 
 export type ShopRole = 'owner' | 'admin' | 'manager' | 'editor' | 'support' | 'viewer';
 export type ShopPlan = 'free' | 'pro' | 'enterprise';
+export type ShopType = 'physical' | 'digital';
 
 export interface Shop {
   id: string;
@@ -12,6 +13,9 @@ export interface Shop {
   logo_url: string | null;
   owner_id: string;
   plan: ShopPlan;
+  shop_type: ShopType;
+  business_category: string | null;
+  onboarding_completed: boolean;
   settings: Record<string, unknown>;
   is_active: boolean;
   created_at: string;
@@ -28,6 +32,12 @@ export interface ShopMember {
   accepted_at: string | null;
 }
 
+interface CreateShopOptions {
+  shop_type?: ShopType;
+  business_category?: string | null;
+  onboarding_completed?: boolean;
+}
+
 interface ShopContextType {
   currentShop: Shop | null;
   availableShops: Shop[];
@@ -36,7 +46,7 @@ interface ShopContextType {
   error: string | null;
   isPlatformMode: boolean;
   switchShop: (shopId: string) => Promise<void>;
-  createShop: (name: string, slug?: string) => Promise<Shop>;
+  createShop: (name: string, customSlug?: string, options?: CreateShopOptions) => Promise<Shop>;
   refreshShops: () => Promise<void>;
   enterPlatformMode: () => void;
 }
@@ -57,8 +67,8 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
   const generateSlug = (name: string): string => {
     return name
       .toLowerCase()
-      .replace(/[^\\w\\s-]/g, '')
-      .replace(/\\s+/g, '-')
+      .replace(/[^\w\s-]/g, '')
+      .replace(/\s+/g, '-')
       .replace(/-+/g, '-')
       .trim();
   };
@@ -101,6 +111,9 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
         logo_url: shop.logo_url as string | null,
         owner_id: shop.owner_id as string,
         plan: shop.plan as ShopPlan,
+        shop_type: (shop.shop_type as ShopType) || 'physical',
+        business_category: shop.business_category as string | null,
+        onboarding_completed: shop.onboarding_completed as boolean ?? false,
         settings: (shop.settings || {}) as Record<string, unknown>,
         is_active: shop.is_active as boolean,
         created_at: shop.created_at as string,
@@ -176,14 +189,18 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Create a new shop
-  const createShop = async (name: string, customSlug?: string): Promise<Shop> => {
+  const createShop = async (
+    name: string, 
+    customSlug?: string, 
+    options?: CreateShopOptions
+  ): Promise<Shop> => {
     if (!user) {
       throw new Error('লগইন করুন');
     }
 
     const slug = customSlug || generateSlug(name);
 
-    // Insert shop
+    // Insert shop with new fields
     const { data: shop, error: shopError } = await supabase
       .from('shops')
       .insert({
@@ -191,6 +208,9 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
         slug,
         owner_id: user.id,
         plan: 'free',
+        shop_type: options?.shop_type || 'physical',
+        business_category: options?.business_category || null,
+        onboarding_completed: options?.onboarding_completed || false,
         settings: {},
         is_active: true,
       })
@@ -231,6 +251,9 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
       logo_url: shop.logo_url,
       owner_id: shop.owner_id,
       plan: shop.plan as ShopPlan,
+      shop_type: (shop.shop_type as ShopType) || 'physical',
+      business_category: shop.business_category,
+      onboarding_completed: shop.onboarding_completed ?? false,
       settings: (shop.settings || {}) as Record<string, unknown>,
       is_active: shop.is_active,
       created_at: shop.created_at,

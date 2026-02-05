@@ -250,10 +250,13 @@ export type Database = {
           created_by: string | null
           html: string
           id: string
+          is_approved: boolean | null
           name: string
           shop_id: string | null
+          source_shop_id: string | null
           thumbnail_url: string | null
           updated_at: string | null
+          usage_count: number | null
         }
         Insert: {
           category?: string
@@ -261,10 +264,13 @@ export type Database = {
           created_by?: string | null
           html?: string
           id?: string
+          is_approved?: boolean | null
           name: string
           shop_id?: string | null
+          source_shop_id?: string | null
           thumbnail_url?: string | null
           updated_at?: string | null
+          usage_count?: number | null
         }
         Update: {
           category?: string
@@ -272,15 +278,25 @@ export type Database = {
           created_by?: string | null
           html?: string
           id?: string
+          is_approved?: boolean | null
           name?: string
           shop_id?: string | null
+          source_shop_id?: string | null
           thumbnail_url?: string | null
           updated_at?: string | null
+          usage_count?: number | null
         }
         Relationships: [
           {
             foreignKeyName: "component_library_shop_id_fkey"
             columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "component_library_source_shop_id_fkey"
+            columns: ["source_shop_id"]
             isOneToOne: false
             referencedRelation: "shops"
             referencedColumns: ["id"]
@@ -1899,43 +1915,52 @@ export type Database = {
       }
       shops: {
         Row: {
+          business_category: string | null
           created_at: string
           expires_at: string | null
           id: string
           is_active: boolean
           logo_url: string | null
           name: string
+          onboarding_completed: boolean
           owner_id: string
           plan: Database["public"]["Enums"]["shop_plan"]
           settings: Json
+          shop_type: Database["public"]["Enums"]["shop_type"]
           slug: string
           subscription_id: string | null
           updated_at: string
         }
         Insert: {
+          business_category?: string | null
           created_at?: string
           expires_at?: string | null
           id?: string
           is_active?: boolean
           logo_url?: string | null
           name: string
+          onboarding_completed?: boolean
           owner_id: string
           plan?: Database["public"]["Enums"]["shop_plan"]
           settings?: Json
+          shop_type?: Database["public"]["Enums"]["shop_type"]
           slug: string
           subscription_id?: string | null
           updated_at?: string
         }
         Update: {
+          business_category?: string | null
           created_at?: string
           expires_at?: string | null
           id?: string
           is_active?: boolean
           logo_url?: string | null
           name?: string
+          onboarding_completed?: boolean
           owner_id?: string
           plan?: Database["public"]["Enums"]["shop_plan"]
           settings?: Json
+          shop_type?: Database["public"]["Enums"]["shop_type"]
           slug?: string
           subscription_id?: string | null
           updated_at?: string
@@ -2195,15 +2220,18 @@ export type Database = {
       get_user_shops: {
         Args: never
         Returns: {
+          business_category: string | null
           created_at: string
           expires_at: string | null
           id: string
           is_active: boolean
           logo_url: string | null
           name: string
+          onboarding_completed: boolean
           owner_id: string
           plan: Database["public"]["Enums"]["shop_plan"]
           settings: Json
+          shop_type: Database["public"]["Enums"]["shop_type"]
           slug: string
           subscription_id: string | null
           updated_at: string
@@ -2241,6 +2269,7 @@ export type Database = {
         | "delivered"
       shop_plan: "free" | "pro" | "enterprise"
       shop_role: "owner" | "admin" | "manager" | "editor" | "support" | "viewer"
+      shop_type: "physical" | "digital"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2381,6 +2410,7 @@ export const Constants = {
       ],
       shop_plan: ["free", "pro", "enterprise"],
       shop_role: ["owner", "admin", "manager", "editor", "support", "viewer"],
+      shop_type: ["physical", "digital"],
     },
   },
 } as const
