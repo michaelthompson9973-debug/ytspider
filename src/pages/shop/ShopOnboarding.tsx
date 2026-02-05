@@ -6,33 +6,76 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Store, Sparkles, ArrowRight } from 'lucide-react';
+import { Store, Sparkles, ArrowRight, ArrowLeft, Package, Download, Building2, Upload } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+type ShopType = 'physical' | 'digital';
+
+interface OnboardingData {
+  shopName: string;
+  shopType: ShopType;
+  businessCategory: string;
+}
+
+const BUSINESS_CATEGORIES = [
+  { value: 'fashion', label: 'ফ্যাশন ও পোশাক' },
+  { value: 'electronics', label: 'ইলেকট্রনিক্স' },
+  { value: 'beauty', label: 'বিউটি ও হেলথ' },
+  { value: 'food', label: 'খাবার ও রেস্তোরাঁ' },
+  { value: 'home', label: 'হোম ও লাইফস্টাইল' },
+  { value: 'education', label: 'শিক্ষা ও কোর্স' },
+  { value: 'software', label: 'সফটওয়্যার ও SaaS' },
+  { value: 'ebooks', label: 'ই-বুক ও ডকুমেন্ট' },
+  { value: 'services', label: 'সার্ভিস' },
+  { value: 'other', label: 'অন্যান্য' },
+];
 
 export default function ShopOnboarding() {
-  const [shopName, setShopName] = useState('');
+  const [step, setStep] = useState(1);
+  const [data, setData] = useState<OnboardingData>({
+    shopName: '',
+    shopType: 'physical',
+    businessCategory: '',
+  });
   const [isCreating, setIsCreating] = useState(false);
   const { createShop } = useShop();
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const handleCreateShop = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!shopName.trim()) {
+  const totalSteps = 3;
+
+  const handleNext = () => {
+    if (step === 1 && !data.shopName.trim()) {
+      toast({ title: 'শপের নাম দিন', variant: 'destructive' });
+      return;
+    }
+    setStep((s) => Math.min(s + 1, totalSteps));
+  };
+
+  const handleBack = () => {
+    setStep((s) => Math.max(s - 1, 1));
+  };
+
+  const handleCreateShop = async () => {
+    if (!data.shopName.trim()) {
       toast({ title: 'শপের নাম দিন', variant: 'destructive' });
       return;
     }
 
     setIsCreating(true);
     try {
-      await createShop(shopName.trim());
+      await createShop(data.shopName.trim(), undefined, {
+        shop_type: data.shopType,
+        business_category: data.businessCategory || null,
+        onboarding_completed: true,
+      });
       toast({ title: 'শপ তৈরি হয়েছে!', description: 'আপনার নতুন শপে স্বাগতম' });
       navigate('/shop');
     } catch (error: any) {
-      toast({ 
-        title: 'শপ তৈরিতে সমস্যা', 
+      toast({
+        title: 'শপ তৈরিতে সমস্যা',
         description: error.message,
-        variant: 'destructive' 
+        variant: 'destructive',
       });
     } finally {
       setIsCreating(false);
@@ -41,7 +84,7 @@ export default function ShopOnboarding() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 p-4">
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-lg">
         <CardHeader className="text-center space-y-4">
           <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
             <Store className="h-8 w-8 text-primary" />
@@ -49,57 +92,178 @@ export default function ShopOnboarding() {
           <div>
             <CardTitle className="text-2xl">আপনার শপ তৈরি করুন</CardTitle>
             <CardDescription className="mt-2">
-              YTSpider-এ স্বাগতম! আপনার ই-কমার্স জার্নি শুরু করুন
+              ধাপ {step}/{totalSteps} — {step === 1 ? 'শপের নাম' : step === 2 ? 'প্রোডাক্ট টাইপ' : 'ক্যাটাগরি'}
             </CardDescription>
           </div>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleCreateShop} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="shopName">শপের নাম</Label>
-              <Input
-                id="shopName"
-                placeholder="যেমন: Fashion House, Gadget World..."
-                value={shopName}
-                onChange={(e) => setShopName(e.target.value)}
-                disabled={isCreating}
-                autoFocus
+          {/* Progress bar */}
+          <div className="flex gap-2">
+            {Array.from({ length: totalSteps }).map((_, i) => (
+              <div
+                key={i}
+                className={cn(
+                  'h-1.5 flex-1 rounded-full transition-colors',
+                  i < step ? 'bg-primary' : 'bg-muted'
+                )}
               />
+            ))}
+          </div>
+        </CardHeader>
+
+        <CardContent className="space-y-6">
+          {/* Step 1: Shop Name */}
+          {step === 1 && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="shopName">শপের নাম</Label>
+                <Input
+                  id="shopName"
+                  placeholder="যেমন: Fashion House, Gadget World..."
+                  value={data.shopName}
+                  onChange={(e) => setData({ ...data, shopName: e.target.value })}
+                  autoFocus
+                />
+                <p className="text-xs text-muted-foreground">
+                  এই নাম আপনার গ্রাহকদের কাছে দেখাবে
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Step 2: Shop Type */}
+          {step === 2 && (
+            <div className="space-y-4">
+              <Label>আপনি কি ধরনের প্রোডাক্ট বিক্রি করবেন?</Label>
+              <div className="grid grid-cols-1 gap-4">
+                <button
+                  type="button"
+                  onClick={() => setData({ ...data, shopType: 'physical' })}
+                  className={cn(
+                    'flex items-start gap-4 p-4 rounded-lg border-2 text-left transition-all group',
+                    data.shopType === 'physical'
+                      ? 'border-primary bg-primary/5'
+                      : 'border-border hover:border-primary/50'
+                  )}
+                >
+                  <div className="p-3 rounded-full bg-primary/10 text-primary">
+                    <Package className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <p className="font-semibold">ফিজিক্যাল প্রোডাক্ট</p>
+                    <p className="text-sm text-muted-foreground">
+                      পোশাক, গ্যাজেট, কসমেটিক্স — যা কুরিয়ারে ডেলিভারি হয়
+                    </p>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      <span className="text-xs bg-muted px-2 py-0.5 rounded">COD সাপোর্ট</span>
+                      <span className="text-xs bg-muted px-2 py-0.5 rounded">কুরিয়ার ইন্টিগ্রেশন</span>
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setData({ ...data, shopType: 'digital' })}
+                  className={cn(
+                    'flex items-start gap-4 p-4 rounded-lg border-2 text-left transition-all',
+                    data.shopType === 'digital'
+                      ? 'border-primary bg-primary/5'
+                      : 'border-border hover:border-primary/50'
+                  )}
+                >
+                  <div className="p-3 rounded-full bg-secondary text-secondary-foreground">
+                    <Download className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <p className="font-semibold">ডিজিটাল প্রোডাক্ট</p>
+                    <p className="text-sm text-muted-foreground">
+                      ই-বুক, কোর্স, সফটওয়্যার — যা ডাউনলোড/ইমেইলে ডেলিভারি হয়
+                    </p>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      <span className="text-xs bg-muted px-2 py-0.5 rounded">পেমেন্ট গেটওয়ে</span>
+                      <span className="text-xs bg-muted px-2 py-0.5 rounded">অটো ডেলিভারি</span>
+                    </div>
+                  </div>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: Business Category */}
+          {step === 3 && (
+            <div className="space-y-4">
+              <Label>আপনার ব্যবসার ক্যাটাগরি (ঐচ্ছিক)</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {BUSINESS_CATEGORIES.map((cat) => (
+                  <button
+                    key={cat.value}
+                    type="button"
+                    onClick={() => setData({ ...data, businessCategory: cat.value })}
+                    className={cn(
+                      'p-3 rounded-lg border text-sm transition-all text-left',
+                      data.businessCategory === cat.value
+                        ? 'border-primary bg-primary/5 font-medium'
+                        : 'border-border hover:border-primary/50'
+                    )}
+                  >
+                    {cat.label}
+                  </button>
+                ))}
+              </div>
               <p className="text-xs text-muted-foreground">
-                এই নাম আপনার গ্রাহকদের কাছে দেখাবে
+                এটি আমাদের আপনার জন্য সঠিক টুলস সাজেস্ট করতে সাহায্য করবে
               </p>
             </div>
+          )}
 
-            <Button type="submit" className="w-full" disabled={isCreating}>
-              {isCreating ? (
-                'তৈরি হচ্ছে...'
-              ) : (
-                <>
-                  শপ তৈরি করুন
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </>
-              )}
-            </Button>
-          </form>
+          {/* Navigation buttons */}
+          <div className="flex gap-3 pt-4">
+            {step > 1 && (
+              <Button variant="outline" onClick={handleBack} className="flex-1">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                পেছনে
+              </Button>
+            )}
 
-          <div className="mt-8 space-y-3">
-            <p className="text-sm text-muted-foreground text-center font-medium">
-              YTSpider-এ আপনি পাচ্ছেন:
-            </p>
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              {[
-                'ল্যান্ডিং পেজ বিল্ডার',
-                'অর্ডার ম্যানেজমেন্ট',
-                'মেসেঞ্জার ইন্টিগ্রেশন',
-                'কুরিয়ার কানেকশন',
-              ].map((feature) => (
-                <div key={feature} className="flex items-center gap-2 p-2 rounded bg-muted/50">
-                  <Sparkles className="h-3 w-3 text-primary flex-shrink-0" />
-                  <span className="text-muted-foreground">{feature}</span>
-                </div>
-              ))}
-            </div>
+            {step < totalSteps ? (
+              <Button onClick={handleNext} className="flex-1">
+                পরবর্তী
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            ) : (
+              <Button
+                onClick={handleCreateShop}
+                disabled={isCreating}
+                className="flex-1"
+              >
+                {isCreating ? 'তৈরি হচ্ছে...' : 'শপ তৈরি করুন'}
+                <Sparkles className="ml-2 h-4 w-4" />
+              </Button>
+            )}
           </div>
+
+          {/* Features preview */}
+          {step === 1 && (
+            <div className="mt-6 pt-6 border-t space-y-3">
+              <p className="text-sm text-muted-foreground text-center font-medium">
+                YTSpider-এ আপনি পাচ্ছেন:
+              </p>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                {[
+                  'ল্যান্ডিং পেজ বিল্ডার',
+                  'অর্ডার ম্যানেজমেন্ট',
+                  'মেসেঞ্জার ইন্টিগ্রেশন',
+                  'কুরিয়ার কানেকশন',
+                ].map((feature) => (
+                  <div
+                    key={feature}
+                    className="flex items-center gap-2 p-2 rounded bg-muted/50"
+                  >
+                    <Sparkles className="h-3 w-3 text-primary flex-shrink-0" />
+                    <span className="text-muted-foreground">{feature}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
