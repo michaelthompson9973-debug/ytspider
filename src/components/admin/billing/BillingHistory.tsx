@@ -1,37 +1,23 @@
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useInvoiceHistory, type Invoice } from '@/hooks/useInvoiceHistory';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Download, FileText } from 'lucide-react';
-
-interface Invoice {
-  id: string;
-  date: string;
-  amount: number;
-  status: 'paid' | 'pending' | 'failed';
-  invoiceId: string;
-}
-
-// Mock data - in real implementation, this would come from Stripe/database
-const mockInvoices: Invoice[] = [
-  { id: '1', date: '2026-01-15', amount: 999, status: 'paid', invoiceId: 'INV-2026-001' },
-  { id: '2', date: '2025-12-15', amount: 999, status: 'paid', invoiceId: 'INV-2025-012' },
-  { id: '3', date: '2025-11-15', amount: 999, status: 'paid', invoiceId: 'INV-2025-011' },
-];
 
 interface BillingHistoryProps {
   limit?: number;
 }
 
 export function BillingHistory({ limit }: BillingHistoryProps) {
-  const { t } = useLanguage();
-
-  const invoices = limit ? mockInvoices.slice(0, limit) : mockInvoices;
+  const { t, language } = useLanguage();
+  const { invoices, isLoading } = useInvoiceHistory(limit);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('bn-BD', {
+    return date.toLocaleDateString(language === 'bn' ? 'bn-BD' : 'en-US', {
       day: 'numeric',
       month: 'short',
       year: 'numeric'
@@ -60,6 +46,28 @@ export function BillingHistory({ limit }: BillingHistoryProps) {
         );
     }
   };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            📜 {t('billing.billingHistory')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center justify-between">
+                <Skeleton className="h-10 w-48" />
+                <Skeleton className="h-8 w-24" />
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (invoices.length === 0) {
     return (
@@ -102,10 +110,10 @@ export function BillingHistory({ limit }: BillingHistoryProps) {
               <TableRow key={invoice.id}>
                 <TableCell>{formatDate(invoice.date)}</TableCell>
                 <TableCell className="font-mono text-sm">{invoice.invoiceId}</TableCell>
-                <TableCell className="font-digit">৳{invoice.amount}</TableCell>
+                <TableCell className="font-digit">{invoice.currency === 'BDT' ? '৳' : invoice.currency}{invoice.amount}</TableCell>
                 <TableCell>{getStatusBadge(invoice.status)}</TableCell>
                 <TableCell className="text-right">
-                  <Button variant="ghost" size="sm">
+                  <Button variant="ghost" size="sm" disabled>
                     <Download className="h-4 w-4 mr-1" />
                     PDF
                   </Button>
@@ -115,7 +123,7 @@ export function BillingHistory({ limit }: BillingHistoryProps) {
           </TableBody>
         </Table>
 
-        {limit && mockInvoices.length > limit && (
+        {limit && invoices.length >= limit && (
           <div className="mt-4 text-center">
             <Button variant="outline">
               {t('billing.viewAllInvoices')}

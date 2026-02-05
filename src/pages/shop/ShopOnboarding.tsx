@@ -1,13 +1,24 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useShop } from '@/contexts/ShopContext';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { shopOnboardingStep1Schema, type ShopOnboardingStep1Input } from '@/lib/validations/shopValidation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Store, Sparkles, ArrowRight, ArrowLeft, Package, Download, Building2, Upload } from 'lucide-react';
+import { Store, Sparkles, ArrowRight, ArrowLeft, Package, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 
 type ShopType = 'physical' | 'digital';
 
@@ -44,10 +55,21 @@ export default function ShopOnboarding() {
 
   const totalSteps = 3;
 
-  const handleNext = () => {
-    if (step === 1 && !data.shopName.trim()) {
-      toast({ title: 'শপের নাম দিন', variant: 'destructive' });
-      return;
+  // Form for step 1 validation
+  const step1Form = useForm<ShopOnboardingStep1Input>({
+    resolver: zodResolver(shopOnboardingStep1Schema),
+    defaultValues: {
+      shopName: data.shopName,
+    },
+  });
+
+  const handleNext = async () => {
+    if (step === 1) {
+      // Validate step 1 with Zod
+      const result = await step1Form.trigger();
+      if (!result) return;
+      
+      setData({ ...data, shopName: step1Form.getValues('shopName') });
     }
     setStep((s) => Math.min(s + 1, totalSteps));
   };
@@ -57,14 +79,16 @@ export default function ShopOnboarding() {
   };
 
   const handleCreateShop = async () => {
-    if (!data.shopName.trim()) {
-      toast({ title: 'শপের নাম দিন', variant: 'destructive' });
+    // Final validation
+    const shopName = data.shopName || step1Form.getValues('shopName');
+    if (!shopName || shopName.trim().length < 3) {
+      toast({ title: 'শপের নাম কমপক্ষে ৩ অক্ষর হতে হবে', variant: 'destructive' });
       return;
     }
 
     setIsCreating(true);
     try {
-      await createShop(data.shopName.trim(), undefined, {
+      await createShop(shopName.trim(), undefined, {
         shop_type: data.shopType,
         business_category: data.businessCategory || null,
         onboarding_completed: true,
@@ -112,21 +136,30 @@ export default function ShopOnboarding() {
         <CardContent className="space-y-6">
           {/* Step 1: Shop Name */}
           {step === 1 && (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="shopName">শপের নাম</Label>
-                <Input
-                  id="shopName"
-                  placeholder="যেমন: Fashion House, Gadget World..."
-                  value={data.shopName}
-                  onChange={(e) => setData({ ...data, shopName: e.target.value })}
-                  autoFocus
+            <Form {...step1Form}>
+              <div className="space-y-4">
+                <FormField
+                  control={step1Form.control}
+                  name="shopName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>শপের নাম</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="যেমন: Fashion House, Gadget World..."
+                          {...field}
+                          autoFocus
+                        />
+                      </FormControl>
+                      <FormMessage />
+                      <p className="text-xs text-muted-foreground">
+                        এই নাম আপনার গ্রাহকদের কাছে দেখাবে (কমপক্ষে ৩ অক্ষর)
+                      </p>
+                    </FormItem>
+                  )}
                 />
-                <p className="text-xs text-muted-foreground">
-                  এই নাম আপনার গ্রাহকদের কাছে দেখাবে
-                </p>
               </div>
-            </div>
+            </Form>
           )}
 
           {/* Step 2: Shop Type */}

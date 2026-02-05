@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useShop } from '@/contexts/ShopContext';
+import { useShopApiKeys } from '@/hooks/useShopApiKeys';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
   DialogContent,
@@ -18,42 +20,44 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Shield, Key, Monitor, Smartphone, Plus, Copy, Eye, EyeOff, Trash2 } from 'lucide-react';
+import { Shield, Key, Monitor, Smartphone, Plus, Copy, Trash2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-
-const mockApiKeys = [
-  { id: '1', name: 'Production', createdAt: '10 Jan 2026', lastUsed: 'Today', prefix: 'yt_live_' },
-  { id: '2', name: 'Development', createdAt: '5 Jan 2026', lastUsed: 'Never', prefix: 'yt_test_' },
-];
-
-const mockSessions = [
-  { id: '1', device: 'Chrome on Windows', location: 'Dhaka, Bangladesh', lastActive: 'Now', isCurrent: true },
-  { id: '2', device: 'Mobile App on iOS', location: 'Dhaka, Bangladesh', lastActive: '2 hours ago', isCurrent: false },
-  { id: '3', device: 'Firefox on Mac', location: 'Chittagong, Bangladesh', lastActive: 'Yesterday', isCurrent: false },
-];
+import { formatDistanceToNow } from 'date-fns';
+import { bn } from 'date-fns/locale';
 
 export default function ShopSecurity() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { currentShop } = useShop();
+  const { apiKeys, isLoading, createKey, revokeKey, deleteKey, isCreating } = useShopApiKeys();
+  
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [newKeyName, setNewKeyName] = useState('');
-  const [showKey, setShowKey] = useState<string | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   const handleCreateApiKey = () => {
-    toast.success(`API key "${newKeyName}" created successfully`);
+    if (!newKeyName.trim()) {
+      toast.error('API key এর নাম দিন');
+      return;
+    }
+    createKey({ name: newKeyName.trim() });
     setNewKeyName('');
+    setDialogOpen(false);
   };
 
-  const handleRevokeKey = (id: string) => {
-    toast.success('API key revoked');
+  const handleCopyKey = (keyValue: string) => {
+    navigator.clipboard.writeText(keyValue);
+    toast.success('API key copied!');
   };
 
-  const handleLogoutSession = (id: string) => {
-    toast.success('Session terminated');
-  };
-
-  const handleLogoutAll = () => {
-    toast.success('All other sessions terminated');
+  const formatDate = (dateStr: string) => {
+    try {
+      return formatDistanceToNow(new Date(dateStr), { 
+        addSuffix: true,
+        locale: language === 'bn' ? bn : undefined 
+      });
+    } catch {
+      return dateStr;
+    }
   };
 
   if (!currentShop) {
@@ -112,7 +116,7 @@ export default function ShopSecurity() {
               <CardTitle>API Keys</CardTitle>
               <CardDescription>Manage API keys for external integrations</CardDescription>
             </div>
-            <Dialog>
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
                 <Button>
                   <Plus className="h-4 w-4 mr-2" />
@@ -138,7 +142,8 @@ export default function ShopSecurity() {
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button onClick={handleCreateApiKey} disabled={!newKeyName}>
+                  <Button onClick={handleCreateApiKey} disabled={!newKeyName || isCreating}>
+                    {isCreating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                     Create Key
                   </Button>
                 </DialogFooter>
@@ -146,94 +151,105 @@ export default function ShopSecurity() {
             </Dialog>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Key</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead>Last Used</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {mockApiKeys.map((key) => (
-                  <TableRow key={key.id}>
-                    <TableCell className="font-medium">{key.name}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2 font-mono text-sm">
-                        <span>{key.prefix}••••••••••••</span>
-                        <Button variant="ghost" size="icon" className="h-6 w-6">
-                          <Copy className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                    <TableCell>{key.createdAt}</TableCell>
-                    <TableCell>{key.lastUsed}</TableCell>
-                    <TableCell className="text-right">
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="text-destructive hover:text-destructive"
-                        onClick={() => handleRevokeKey(key.id)}
-                      >
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        Revoke
-                      </Button>
-                    </TableCell>
-                  </TableRow>
+            {isLoading ? (
+              <div className="space-y-4">
+                {[1, 2].map((i) => (
+                  <div key={i} className="flex items-center justify-between">
+                    <Skeleton className="h-10 w-48" />
+                    <Skeleton className="h-8 w-24" />
+                  </div>
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+            ) : apiKeys.length === 0 ? (
+              <div className="py-8 text-center text-muted-foreground">
+                <Key className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No API keys yet. Create one to get started.</p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Key</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead>Last Used</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {apiKeys.map((key) => (
+                    <TableRow key={key.id}>
+                      <TableCell className="font-medium">{key.key_name}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2 font-mono text-sm">
+                          <span>{key.key_value.slice(0, 12)}••••••••</span>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6"
+                            onClick={() => handleCopyKey(key.key_value)}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                      <TableCell>{formatDate(key.created_at)}</TableCell>
+                      <TableCell>
+                        {key.last_used_at ? formatDate(key.last_used_at) : 'Never'}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={key.status === 'active' ? 'default' : 'secondary'}>
+                          {key.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {key.status === 'active' ? (
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => revokeKey(key.id)}
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Revoke
+                          </Button>
+                        ) : (
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => deleteKey(key.id)}
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Delete
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
 
-        {/* Active Sessions */}
+        {/* Active Sessions - Note: Would need auth session tracking table */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
               <CardTitle>Active Sessions</CardTitle>
               <CardDescription>Manage your active login sessions</CardDescription>
             </div>
-            <Button variant="outline" onClick={handleLogoutAll}>
+            <Button variant="outline" disabled>
               Logout All Other Sessions
             </Button>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {mockSessions.map((session) => (
-                <div key={session.id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    {session.device.includes('Mobile') ? (
-                      <Smartphone className="h-5 w-5 text-muted-foreground" />
-                    ) : (
-                      <Monitor className="h-5 w-5 text-muted-foreground" />
-                    )}
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium">{session.device}</p>
-                        {session.isCurrent && (
-                          <Badge variant="outline" className="text-green-600 border-green-600">
-                            Current
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        📍 {session.location} • {session.lastActive}
-                      </p>
-                    </div>
-                  </div>
-                  {!session.isCurrent && (
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => handleLogoutSession(session.id)}
-                    >
-                      Logout
-                    </Button>
-                  )}
-                </div>
-              ))}
+            <div className="py-8 text-center text-muted-foreground">
+              <Monitor className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>Session tracking coming soon</p>
+              <p className="text-xs mt-2">Active session management will be available in a future update</p>
             </div>
           </CardContent>
         </Card>
