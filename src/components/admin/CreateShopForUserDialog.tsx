@@ -32,7 +32,8 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Loader2, Store, User, Package, Mail } from 'lucide-react';
+import { Loader2, Store, User, Package, Mail, Download } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 interface CreateShopForUserDialogProps {
   open: boolean;
@@ -62,6 +63,7 @@ export function CreateShopForUserDialog({
     defaultValues: {
       shopName: '',
       slug: '',
+      shopType: 'physical',
       ownerEmail: '',
       planId: '',
       durationDays: '30',
@@ -121,6 +123,7 @@ export function CreateShopForUserDialog({
         body: {
           shopName: data.shopName,
           slug: data.slug,
+          shopType: data.shopType,
           ownerEmail: data.ownerEmail.toLowerCase(),
           planId: data.planId,
           durationDays: parseInt(data.durationDays),
@@ -171,6 +174,7 @@ export function CreateShopForUserDialog({
     form.reset({
       shopName: '',
       slug: '',
+      shopType: 'physical',
       ownerEmail: '',
       planId: plans?.[0]?.id || '',
       durationDays: '30',
@@ -246,6 +250,56 @@ export function CreateShopForUserDialog({
                   )}
                 />
               </div>
+
+              {/* Shop Type Selection */}
+              <FormField
+                control={form.control}
+                name="shopType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      {language === 'bn' ? 'প্রোডাক্ট টাইপ' : 'Product Type'} *
+                    </FormLabel>
+                    <FormControl>
+                      <RadioGroup
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        className="grid grid-cols-2 gap-4"
+                      >
+                        <label
+                          htmlFor="physical"
+                          className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                            field.value === 'physical'
+                              ? 'border-primary bg-primary/5'
+                              : 'border-border hover:border-primary/50'
+                          }`}
+                        >
+                          <RadioGroupItem value="physical" id="physical" />
+                          <Package className="h-5 w-5 text-muted-foreground" />
+                          <span className="text-sm font-medium">
+                            {language === 'bn' ? 'ফিজিক্যাল' : 'Physical'}
+                          </span>
+                        </label>
+                        <label
+                          htmlFor="digital"
+                          className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                            field.value === 'digital'
+                              ? 'border-primary bg-primary/5'
+                              : 'border-border hover:border-primary/50'
+                          }`}
+                        >
+                          <RadioGroupItem value="digital" id="digital" />
+                          <Download className="h-5 w-5 text-muted-foreground" />
+                          <span className="text-sm font-medium">
+                            {language === 'bn' ? 'ডিজিটাল' : 'Digital'}
+                          </span>
+                        </label>
+                      </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
 
             {/* Owner Information */}

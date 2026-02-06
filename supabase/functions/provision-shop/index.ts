@@ -5,6 +5,7 @@ import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 interface ProvisionShopRequest {
   shopName: string;
   slug: string;
+  shopType?: 'physical' | 'digital';
   ownerEmail: string;
   planId: string;
   durationDays: number;
@@ -33,7 +34,7 @@ Deno.serve(async (req) => {
 
   try {
     const body: ProvisionShopRequest = await req.json();
-    const { shopName, slug, ownerEmail, planId, durationDays, sendCredentials } = body;
+    const { shopName, slug, shopType = 'physical', ownerEmail, planId, durationDays, sendCredentials } = body;
 
     // Validate required fields
     if (!shopName || !slug || !ownerEmail || !planId) {
@@ -149,6 +150,8 @@ Deno.serve(async (req) => {
         slug: slug.toLowerCase(),
         owner_id: userId,
         plan: planEnum,
+        shop_type: shopType,
+        onboarding_completed: true,
         is_active: true,
         expires_at: expiresAt.toISOString(),
         settings: {}
