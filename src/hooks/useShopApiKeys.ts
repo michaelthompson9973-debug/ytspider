@@ -14,20 +14,25 @@ export interface ApiKey {
   usage_count: number;
 }
 
-export function useShopApiKeys() {
+export function useShopApiKeys(providerFilter?: string) {
   const { currentShop } = useShop();
   const queryClient = useQueryClient();
 
   const { data: apiKeys, isLoading, error } = useQuery({
-    queryKey: ['shop-api-keys', currentShop?.id],
+    queryKey: ['shop-api-keys', currentShop?.id, providerFilter],
     queryFn: async () => {
       if (!currentShop?.id) return [];
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('api_keys')
         .select('*')
-        .eq('shop_id', currentShop.id)
-        .order('created_at', { ascending: false });
+        .eq('shop_id', currentShop.id);
+
+      if (providerFilter) {
+        query = query.eq('provider', providerFilter);
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) throw error;
       return data as ApiKey[];

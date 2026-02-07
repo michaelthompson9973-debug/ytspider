@@ -19,6 +19,7 @@ import {
   FileText,
   Image,
   MessageCircle,
+  Shield,
   Settings,
   Users,
   CreditCard,
@@ -100,6 +101,7 @@ function getNavGroups(shopType: ShopType): NavGroup[] {
       label: 'সেটিংস',
       items: [
         { title: 'টিম', url: '/shop/team', icon: Users },
+        { title: 'সিকিউরিটি', url: '/shop/security', icon: Shield },
         { title: 'সাবস্ক্রিপশন', url: '/shop/subscription', icon: CreditCard },
         { title: 'অ্যানালিটিক্স', url: '/shop/analytics', icon: BarChart3 },
         { title: 'সেটিংস', url: '/shop/settings', icon: Settings },

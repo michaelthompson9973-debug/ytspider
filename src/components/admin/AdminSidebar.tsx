@@ -94,23 +94,18 @@ const getNavGroups = (isPlatformMode: boolean): NavGroup[] => {
   // Business Management children - differs by mode
   const businessChildren: NavSubItem[] = [
     { href: '/admin/business/shops', labelKey: 'sidebar.allShops', icon: Store },
-    { href: '/admin/business/team', labelKey: 'sidebar.shopTeam', icon: Users },
   ];
   
-  // Shop Mode: add Subscription between Team and Security
+  // Shop Mode only: add shop-specific management items
   if (!isPlatformMode) {
-    businessChildren.push({ 
-      href: '/admin/business/subscription', 
-      labelKey: 'sidebar.shopSubscription', 
-      icon: CreditCard 
-    });
+    businessChildren.push(
+      { href: '/admin/business/team', labelKey: 'sidebar.shopTeam', icon: Users },
+      { href: '/admin/business/subscription', labelKey: 'sidebar.shopSubscription', icon: CreditCard },
+      { href: '/admin/business/security', labelKey: 'sidebar.shopSecurity', icon: Shield },
+      { href: '/admin/business/analytics', labelKey: 'sidebar.shopAnalytics', icon: BarChart3 },
+      { href: '/admin/business/audit-log', labelKey: 'sidebar.shopAuditLog', icon: ClipboardList },
+    );
   }
-  
-  businessChildren.push(
-    { href: '/admin/business/security', labelKey: 'sidebar.shopSecurity', icon: Shield },
-    { href: '/admin/business/analytics', labelKey: 'sidebar.shopAnalytics', icon: BarChart3 },
-    { href: '/admin/business/audit-log', labelKey: 'sidebar.shopAuditLog', icon: ClipboardList },
-  );
 
   // Business group items
   const businessItems: NavItem[] = [
