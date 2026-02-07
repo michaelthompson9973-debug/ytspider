@@ -85,6 +85,7 @@ export const en = {
     emailMarketing: 'Email Marketing',
     // Revenue
     revenueReport: 'Revenue Report',
+    paymentGateway: 'Payment Gateway',
   },
   products: {
     title: 'Products',

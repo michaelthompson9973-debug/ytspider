@@ -85,6 +85,7 @@ export const bn = {
     emailMarketing: 'ইমেইল মার্কেটিং',
     // Revenue
     revenueReport: 'রেভিনিউ রিপোর্ট',
+    paymentGateway: 'পেমেন্ট গেটওয়ে',
   },
   products: {
     title: 'প্রোডাক্ট',

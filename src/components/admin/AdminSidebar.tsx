@@ -244,6 +244,7 @@ const getNavGroups = (isPlatformMode: boolean): NavGroup[] => {
         labelKey: 'sidebar.api', 
         icon: Key,
         children: [
+          { href: '/admin/api/payment-gateway', labelKey: 'sidebar.paymentGateway', icon: CreditCard },
           { href: '/admin/api/ai', labelKey: 'sidebar.ai', icon: Bot, badge: 'available' },
           { href: '/admin/api/fraud-check', labelKey: 'sidebar.fraudCheck', icon: ShieldAlert, badge: 'available' },
           { href: '/admin/api/courier', labelKey: 'sidebar.courier', icon: Truck, badge: 'N/A' },
