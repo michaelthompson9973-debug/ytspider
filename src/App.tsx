@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ShopProvider } from "@/contexts/ShopContext";
 import { AdminThemeProvider } from "@/contexts/AdminThemeContext";
+
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { ShopProtectedRoute } from "@/components/shop/ShopProtectedRoute";
 import { ShopLayout } from "@/components/shop";
