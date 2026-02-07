@@ -106,19 +106,66 @@ export const defaultTheme: AdminTheme = {
 
 const AdminThemeContext = createContext<AdminThemeContextType | undefined>(undefined);
 
+// Base variables for light mode (matches :root in index.css)
+const lightBaseVars: Record<string, string> = {
+  '--background': '0 0% 100%',
+  '--foreground': '222.2 84% 4.9%',
+  '--card': '0 0% 100%',
+  '--card-foreground': '222.2 84% 4.9%',
+  '--popover': '0 0% 100%',
+  '--popover-foreground': '222.2 84% 4.9%',
+  '--secondary': '210 40% 96.1%',
+  '--secondary-foreground': '222.2 47.4% 11.2%',
+  '--muted': '210 40% 96.1%',
+  '--muted-foreground': '215.4 16.3% 46.9%',
+  '--destructive': '0 84.2% 60.2%',
+  '--destructive-foreground': '210 40% 98%',
+  '--border': '214.3 31.8% 91.4%',
+  '--input': '214.3 31.8% 91.4%',
+  '--ring': '222.2 84% 4.9%',
+  '--sidebar-border': '220 13% 91%',
+  '--sidebar-ring': '217.2 91.2% 59.8%',
+};
+
+// Base variables for dark mode (matches .dark in index.css)
+const darkBaseVars: Record<string, string> = {
+  '--background': '222.2 84% 4.9%',
+  '--foreground': '210 40% 98%',
+  '--card': '222.2 84% 4.9%',
+  '--card-foreground': '210 40% 98%',
+  '--popover': '222.2 84% 4.9%',
+  '--popover-foreground': '210 40% 98%',
+  '--secondary': '217.2 32.6% 17.5%',
+  '--secondary-foreground': '210 40% 98%',
+  '--muted': '217.2 32.6% 17.5%',
+  '--muted-foreground': '215 20.2% 65.1%',
+  '--destructive': '0 62.8% 30.6%',
+  '--destructive-foreground': '210 40% 98%',
+  '--border': '217.2 32.6% 17.5%',
+  '--input': '217.2 32.6% 17.5%',
+  '--ring': '212.7 26.8% 83.9%',
+  '--sidebar-border': '240 3.7% 15.9%',
+  '--sidebar-ring': '217.2 91.2% 59.8%',
+};
+
 function applyThemeToDOM(theme: AdminTheme) {
   const root = document.documentElement;
   const { colors, mode } = theme;
 
-  // Apply mode
-  if (mode === 'system') {
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    root.classList.toggle('dark', prefersDark);
-  } else {
-    root.classList.toggle('dark', mode === 'dark');
+  // 1. Determine effective dark/light
+  const isDark = mode === 'system'
+    ? window.matchMedia('(prefers-color-scheme: dark)').matches
+    : mode === 'dark';
+
+  root.classList.toggle('dark', isDark);
+
+  // 2. Forcefully set ALL base variables for the active mode
+  const baseVars = isDark ? darkBaseVars : lightBaseVars;
+  for (const [key, value] of Object.entries(baseVars)) {
+    root.style.setProperty(key, value);
   }
 
-  // Apply colors as CSS variables
+  // 3. Set theme-specific colors (primary, accent, sidebar)
   root.style.setProperty('--primary', colors.primary);
   root.style.setProperty('--primary-foreground', colors.primaryForeground);
   root.style.setProperty('--sidebar-background', colors.sidebarBg);
