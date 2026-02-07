@@ -1,8 +1,5 @@
 import AdminLayout from '@/components/admin/AdminLayout';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { useShop } from '@/contexts/ShopContext';
-import { ShopGuard } from '@/components/admin/ShopGuard';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -61,23 +58,21 @@ const gateways: Gateway[] = [
 ];
 
 export default function ApiPaymentGateway() {
-  const { t } = useLanguage();
   const [activeGateway, setActiveGateway] = useState<string | null>(null);
 
   return (
     <AdminLayout>
-      <ShopGuard>
-        <div className="space-y-6 p-4 md:p-6 max-w-4xl">
-          {/* Header */}
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <CreditCard className="h-6 w-6" />
-              পেমেন্ট গেটওয়ে
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              সাবস্ক্রিপশন পেমেন্ট কালেক্ট করতে গেটওয়ে সেটআপ করুন
-            </p>
-          </div>
+      <div className="space-y-6 p-4 md:p-6 max-w-4xl">
+        {/* Header */}
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <CreditCard className="h-6 w-6" />
+            পেমেন্ট গেটওয়ে
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            প্ল্যাটফর্ম সাবস্ক্রিপশন পেমেন্ট কালেক্ট করতে গেটওয়ে সেটআপ করুন
+          </p>
+        </div>
 
           {/* Active Gateway Status */}
           <Card className="border-l-4 border-l-primary">
@@ -167,7 +162,6 @@ export default function ApiPaymentGateway() {
             </CardContent>
           </Card>
         </div>
-      </ShopGuard>
     </AdminLayout>
   );
 }
