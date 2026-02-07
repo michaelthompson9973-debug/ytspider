@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useShop } from '@/contexts/ShopContext';
 import { useShopApiKeys } from '@/hooks/useShopApiKeys';
@@ -28,9 +29,7 @@ import { bn } from 'date-fns/locale';
 export default function ShopSecurity() {
   const { t, language } = useLanguage();
   const { currentShop } = useShop();
-  const { apiKeys, isLoading, createKey, revokeKey, deleteKey, isCreating } = useShopApiKeys();
-  
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const { apiKeys, isLoading, createKey, revokeKey, deleteKey, isCreating } = useShopApiKeys('custom');
   const [newKeyName, setNewKeyName] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -83,28 +82,26 @@ export default function ShopSecurity() {
         </div>
 
         {/* Two-Factor Authentication */}
-        <Card>
+        <Card className="relative">
+          <Badge variant="secondary" className="absolute top-4 right-4 text-xs">Coming Soon</Badge>
           <CardHeader>
-            <CardTitle>Two-Factor Authentication</CardTitle>
+            <CardTitle className="text-muted-foreground">Two-Factor Authentication</CardTitle>
             <CardDescription>Add an extra layer of security to your account</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center justify-between p-4 border rounded-lg">
+            <div className="flex items-center justify-between p-4 border rounded-lg opacity-50 pointer-events-none">
               <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-full ${twoFactorEnabled ? 'bg-green-100 text-green-600' : 'bg-muted'}`}>
+                <div className="p-2 rounded-full bg-muted">
                   <Shield className="h-5 w-5" />
                 </div>
                 <div>
                   <p className="font-medium">Two-Factor Authentication</p>
                   <p className="text-sm text-muted-foreground">
-                    {twoFactorEnabled ? 'Your account is protected with 2FA' : 'Enable 2FA for enhanced security'}
+                    Enable 2FA for enhanced security
                   </p>
                 </div>
               </div>
-              <Switch
-                checked={twoFactorEnabled}
-                onCheckedChange={setTwoFactorEnabled}
-              />
+              <Switch checked={false} disabled />
             </div>
           </CardContent>
         </Card>
@@ -234,16 +231,22 @@ export default function ShopSecurity() {
           </CardContent>
         </Card>
 
-        {/* Active Sessions - Note: Would need auth session tracking table */}
-        <Card>
+        {/* Active Sessions */}
+        <Card className="relative">
+          <Badge variant="secondary" className="absolute top-4 right-4 text-xs">Coming Soon</Badge>
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
-              <CardTitle>Active Sessions</CardTitle>
+              <CardTitle className="text-muted-foreground">Active Sessions</CardTitle>
               <CardDescription>Manage your active login sessions</CardDescription>
             </div>
-            <Button variant="outline" disabled>
-              Logout All Other Sessions
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" disabled>
+                  Logout All Other Sessions
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>ভবিষ্যতে এই ফিচার যোগ হবে</TooltipContent>
+            </Tooltip>
           </CardHeader>
           <CardContent>
             <div className="py-8 text-center text-muted-foreground">

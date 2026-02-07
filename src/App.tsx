@@ -57,7 +57,7 @@ import MarketingEmail from "./pages/admin/MarketingEmail";
 // Shop Owner pages
 import ShopDashboard from "./pages/shop/ShopDashboard";
 import ShopOnboarding from "./pages/shop/ShopOnboarding";
-import { ShopProductsPage, ShopOrdersPage, ShopLandingPagesPage, ShopComponentLibraryPage, ShopMediaPage, ShopInboxMessengerPage, ShopTrackingPage, ShopCourierPage, ShopAiPage, ShopTeamPage, ShopSubscriptionPage, ShopAnalyticsPage, ShopSettingsPage } from "./pages/shop/ShopPages";
+import { ShopProductsPage, ShopOrdersPage, ShopLandingPagesPage, ShopComponentLibraryPage, ShopMediaPage, ShopInboxMessengerPage, ShopTrackingPage, ShopCourierPage, ShopAiPage, ShopTeamPage, ShopSecurityPage, ShopSubscriptionPage, ShopAnalyticsPage, ShopSettingsPage } from "./pages/shop/ShopPages";
 
 // Public pages
 import LandingPage from "./pages/LandingPage";
@@ -106,6 +106,7 @@ const App = () => (
                 <Route path="/shop/courier" element={<ShopProtectedRoute><ShopCourierPage /></ShopProtectedRoute>} />
                 <Route path="/shop/ai" element={<ShopProtectedRoute><ShopAiPage /></ShopProtectedRoute>} />
                 <Route path="/shop/team" element={<ShopProtectedRoute><ShopTeamPage /></ShopProtectedRoute>} />
+                <Route path="/shop/security" element={<ShopProtectedRoute><ShopSecurityPage /></ShopProtectedRoute>} />
                 <Route path="/shop/subscription" element={<ShopProtectedRoute><ShopSubscriptionPage /></ShopProtectedRoute>} />
                 <Route path="/shop/analytics" element={<ShopProtectedRoute><ShopAnalyticsPage /></ShopProtectedRoute>} />
                 <Route path="/shop/settings" element={<ShopProtectedRoute><ShopSettingsPage /></ShopProtectedRoute>} />

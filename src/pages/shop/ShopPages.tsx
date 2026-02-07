@@ -140,6 +140,17 @@ export function ShopAnalyticsPage() {
   );
 }
 
+// Security for Shop Owners
+export function ShopSecurityPage() {
+  return (
+    <ShopLayout>
+      <ShopGuard>
+        <PlaceholderPage title="সিকিউরিটি" description="API Keys ও সিকিউরিটি সেটিংস শীঘ্রই আসছে" />
+      </ShopGuard>
+    </ShopLayout>
+  );
+}
+
 // Settings for Shop Owners
 export function ShopSettingsPage() {
   return (

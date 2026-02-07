@@ -14,11 +14,10 @@ const authSchema = z.object({
 });
 
 export default function Auth() {
-  const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signIn, signUp } = useAuth();
+  const { signIn, isAdmin } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -38,32 +37,18 @@ export default function Auth() {
     setLoading(true);
     
     try {
-      if (isLogin) {
-        const { error } = await signIn(email, password);
-        if (error) {
-          toast({
-            title: 'Login Failed',
-            description: error.message,
-            variant: 'destructive',
-          });
-        } else {
-          navigate('/admin');
-        }
+      const { error } = await signIn(email, password);
+      if (error) {
+        toast({
+          title: 'Login Failed',
+          description: error.message,
+          variant: 'destructive',
+        });
       } else {
-        const { error } = await signUp(email, password);
-        if (error) {
-          toast({
-            title: 'Sign Up Failed',
-            description: error.message,
-            variant: 'destructive',
-          });
-        } else {
-          toast({
-            title: 'Account Created',
-            description: 'Please contact an admin to get access to the dashboard.',
-          });
-          setIsLogin(true);
-        }
+        // Role-based redirect happens after auth state updates
+        // We need a small delay for isAdmin to be checked
+        // The ProtectedRoute will handle the final redirect
+        navigate('/admin');
       }
     } catch (err) {
       toast({
@@ -80,9 +65,9 @@ export default function Auth() {
     <div className="min-h-screen flex items-center justify-center bg-muted p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">Ytspider</CardTitle>
+          <CardTitle className="text-2xl font-bold">Ytspider Admin</CardTitle>
           <CardDescription>
-            {isLogin ? 'Sign in to your admin account' : 'Create a new account'}
+            Sign in to your admin account
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -110,17 +95,14 @@ export default function Auth() {
               />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Loading...' : isLogin ? 'Sign In' : 'Sign Up'}
+              {loading ? 'Loading...' : 'Sign In'}
             </Button>
           </form>
-          <div className="mt-4 text-center text-sm">
-            <button
-              type="button"
-              className="text-primary hover:underline"
-              onClick={() => setIsLogin(!isLogin)}
-            >
-              {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
-            </button>
+          <div className="mt-6 text-center text-sm text-muted-foreground">
+            Shop owner?{' '}
+            <a href="/login" className="text-primary hover:underline">
+              Login here
+            </a>
           </div>
         </CardContent>
       </Card>
