@@ -31,6 +31,7 @@ import ApiFraudCheck from "./pages/admin/ApiFraudCheck";
 import ApiCourier from "./pages/admin/ApiCourier";
 import ApiMessenger from "./pages/admin/ApiMessenger";
 import ApiWhatsapp from "./pages/admin/ApiWhatsapp";
+import ApiPaymentGateway from "./pages/admin/ApiPaymentGateway";
 import InboxMessenger from "./pages/admin/InboxMessenger";
 import InboxWhatsapp from "./pages/admin/InboxWhatsapp";
 import Settings from "./pages/admin/Settings";
@@ -129,7 +130,8 @@ const App = () => (
                 <Route path="/admin/inbox/whatsapp" element={<ProtectedRoute requireAdmin><InboxWhatsapp /></ProtectedRoute>} />
                 <Route path="/admin/webhooks" element={<ProtectedRoute requireAdmin><Webhooks /></ProtectedRoute>} />
                 <Route path="/admin/domains" element={<ProtectedRoute requireAdmin><AllowedDomains /></ProtectedRoute>} />
-                <Route path="/admin/api" element={<Navigate to="/admin/api/ai" replace />} />
+                <Route path="/admin/api" element={<Navigate to="/admin/api/payment-gateway" replace />} />
+                <Route path="/admin/api/payment-gateway" element={<ProtectedRoute requireAdmin><ApiPaymentGateway /></ProtectedRoute>} />
                 <Route path="/admin/api/ai" element={<ProtectedRoute requireAdmin><ApiAi /></ProtectedRoute>} />
                 <Route path="/admin/api/fraud-check" element={<ProtectedRoute requireAdmin><ApiFraudCheck /></ProtectedRoute>} />
                 <Route path="/admin/api/courier" element={<ProtectedRoute requireAdmin><ApiCourier /></ProtectedRoute>} />
