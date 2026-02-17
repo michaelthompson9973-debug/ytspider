@@ -11,13 +11,13 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  ResponsiveModal,
+  ResponsiveModalContent,
+  ResponsiveModalDescription,
+  ResponsiveModalFooter,
+  ResponsiveModalHeader,
+  ResponsiveModalTitle,
+} from '@/components/ui/responsive-modal';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -299,25 +299,25 @@ function CreateShopDialog({
   isCreating,
 }: CreateShopDialogProps) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+    <ResponsiveModal open={open} onOpenChange={onOpenChange}>
+      <ResponsiveModalContent className="sm:max-w-[425px]">
         <form onSubmit={onSubmit}>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+          <ResponsiveModalHeader>
+            <ResponsiveModalTitle className="flex items-center gap-2">
               <Store className="h-5 w-5" />
               নতুন শপ তৈরি করুন
-            </DialogTitle>
-            <DialogDescription>
-              আপনার নতুন বিজনেসের জন্য একটি শপ তৈরি করুন। পরে সব সেটিংস পরিবর্তন করা যাবে।
-            </DialogDescription>
-          </DialogHeader>
+            </ResponsiveModalTitle>
+            <ResponsiveModalDescription>
+              নতুন বিজনেসের জন্য শপ তৈরি করুন।
+            </ResponsiveModalDescription>
+          </ResponsiveModalHeader>
           
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="shop-name">শপের নাম</Label>
               <Input
                 id="shop-name"
-                placeholder="যেমন: chaldal, EcomX v2 Pro"
+                placeholder="যেমন: chaldal, EcomX"
                 value={shopName}
                 onChange={(e) => onShopNameChange(e.target.value)}
                 disabled={isCreating}
@@ -326,31 +326,14 @@ function CreateShopDialog({
             </div>
           </div>
           
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={isCreating}
-            >
-              বাতিল
-            </Button>
+          <ResponsiveModalFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isCreating}>বাতিল</Button>
             <Button type="submit" disabled={isCreating || !shopName.trim()}>
-              {isCreating ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  তৈরি হচ্ছে...
-                </>
-              ) : (
-                <>
-                  <Plus className="mr-2 h-4 w-4" />
-                  শপ তৈরি করুন
-                </>
-              )}
+              {isCreating ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />তৈরি হচ্ছে...</> : <><Plus className="mr-2 h-4 w-4" />শপ তৈরি করুন</>}
             </Button>
-          </DialogFooter>
+          </ResponsiveModalFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+      </ResponsiveModalContent>
+    </ResponsiveModal>
   );
 }

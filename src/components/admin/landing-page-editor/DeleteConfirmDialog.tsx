@@ -1,13 +1,12 @@
+import { useIsMobile } from '@/hooks/use-mobile';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter,
+} from '@/components/ui/drawer';
+import { Button } from '@/components/ui/button';
 
 interface DeleteConfirmDialogProps {
   open: boolean;
@@ -18,12 +17,29 @@ interface DeleteConfirmDialogProps {
 }
 
 export function DeleteConfirmDialog({
-  open,
-  onOpenChange,
-  onConfirm,
+  open, onOpenChange, onConfirm,
   title = 'Delete Section',
-  description = 'Are you sure you want to delete this section? This action cannot be undone.',
+  description = 'Are you sure? This action cannot be undone.',
 }: DeleteConfirmDialogProps) {
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    return (
+      <Drawer open={open} onOpenChange={onOpenChange}>
+        <DrawerContent>
+          <DrawerHeader className="text-left">
+            <DrawerTitle>{title}</DrawerTitle>
+            <DrawerDescription>{description}</DrawerDescription>
+          </DrawerHeader>
+          <DrawerFooter>
+            <Button variant="destructive" onClick={onConfirm}>Delete</Button>
+            <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
+    );
+  }
+
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
@@ -33,12 +49,7 @@ export function DeleteConfirmDialog({
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={onConfirm}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-          >
-            Delete
-          </AlertDialogAction>
+          <AlertDialogAction onClick={onConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
