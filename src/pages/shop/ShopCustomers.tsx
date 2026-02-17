@@ -73,7 +73,7 @@ export default function ShopCustomers() {
             <h1 className="text-2xl font-bold flex items-center gap-2">
               <Users className="h-6 w-6" /> কাস্টমার তালিকা
             </h1>
-            <p className="text-muted-foreground">আপনার সব কাস্টমারদের তথ্য</p>
+            <p className="text-muted-foreground hidden sm:block">আপনার সব কাস্টমারদের তথ্য</p>
           </div>
 
           {/* KPI row */}

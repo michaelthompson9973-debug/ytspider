@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
+import { ResponsiveModal, ResponsiveModalContent, ResponsiveModalHeader, ResponsiveModalTitle, ResponsiveModalFooter, ResponsiveModalTrigger } from '@/components/ui/responsive-modal';
 import { Ticket, Plus, Trash2, Edit2, Copy, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -156,74 +156,41 @@ export default function ShopCoupons() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold flex items-center gap-2">
-                <Ticket className="h-6 w-6" /> কুপন ম্যানেজমেন্ট
+                <Ticket className="h-6 w-6" /> কুপন
               </h1>
-              <p className="text-muted-foreground">ডিসকাউন্ট কুপন তৈরি ও পরিচালনা করুন</p>
+              <p className="text-muted-foreground hidden sm:block">ডিসকাউন্ট কুপন তৈরি ও পরিচালনা করুন</p>
             </div>
-            <Dialog open={isOpen} onOpenChange={(o) => { setIsOpen(o); if (!o) { setEditId(null); setForm(emptyCoupon); } }}>
-              <DialogTrigger asChild>
-                <Button className="gap-2"><Plus className="h-4 w-4" /> নতুন কুপন</Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                  <DialogTitle>{editId ? 'কুপন এডিট' : 'নতুন কুপন তৈরি'}</DialogTitle>
-                </DialogHeader>
+            <ResponsiveModal open={isOpen} onOpenChange={(o) => { setIsOpen(o); if (!o) { setEditId(null); setForm(emptyCoupon); } }}>
+              <ResponsiveModalTrigger asChild>
+                <Button className="gap-2"><Plus className="h-4 w-4" /> <span className="hidden sm:inline">নতুন</span> কুপন</Button>
+              </ResponsiveModalTrigger>
+              <ResponsiveModalContent className="sm:max-w-md">
+                <ResponsiveModalHeader>
+                  <ResponsiveModalTitle>{editId ? 'কুপন এডিট' : 'নতুন কুপন'}</ResponsiveModalTitle>
+                </ResponsiveModalHeader>
                 <div className="space-y-4 py-2">
-                  <div>
-                    <Label>কুপন কোড</Label>
-                    <Input value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value }))} placeholder="SAVE20" className="uppercase" />
-                  </div>
-                  <div>
-                    <Label>বিবরণ (ঐচ্ছিক)</Label>
-                    <Input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="গ্রীষ্মকালীন ছাড়" />
+                  <div><Label>কুপন কোড</Label><Input value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value }))} placeholder="SAVE20" className="uppercase" /></div>
+                  <div><Label>বিবরণ</Label><Input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="গ্রীষ্মকালীন ছাড়" /></div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><Label>টাইপ</Label><Select value={form.discount_type} onValueChange={v => setForm(f => ({ ...f, discount_type: v as any }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="percentage">% পার্সেন্ট</SelectItem><SelectItem value="fixed">৳ ফিক্সড</SelectItem></SelectContent></Select></div>
+                    <div><Label>পরিমাণ</Label><Input type="number" value={form.discount_value || ''} onChange={e => setForm(f => ({ ...f, discount_value: Number(e.target.value) }))} placeholder="20" /></div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Label>ডিসকাউন্ট টাইপ</Label>
-                      <Select value={form.discount_type} onValueChange={v => setForm(f => ({ ...f, discount_type: v as 'percentage' | 'fixed' }))}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="percentage">পার্সেন্টেজ (%)</SelectItem>
-                          <SelectItem value="fixed">ফিক্সড (৳)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label>পরিমাণ</Label>
-                      <Input type="number" value={form.discount_value || ''} onChange={e => setForm(f => ({ ...f, discount_value: Number(e.target.value) }))} placeholder="20" />
-                    </div>
+                    <div><Label>সর্বনিম্ন (৳)</Label><Input type="number" value={form.min_order_amount || ''} onChange={e => setForm(f => ({ ...f, min_order_amount: Number(e.target.value) || 0 }))} /></div>
+                    <div><Label>সর্বোচ্চ ছাড় (৳)</Label><Input type="number" value={form.max_discount_amount || ''} onChange={e => setForm(f => ({ ...f, max_discount_amount: Number(e.target.value) || null }))} /></div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Label>সর্বনিম্ন অর্ডার (৳)</Label>
-                      <Input type="number" value={form.min_order_amount || ''} onChange={e => setForm(f => ({ ...f, min_order_amount: Number(e.target.value) || 0 }))} placeholder="500" />
-                    </div>
-                    <div>
-                      <Label>সর্বোচ্চ ছাড় (৳)</Label>
-                      <Input type="number" value={form.max_discount_amount || ''} onChange={e => setForm(f => ({ ...f, max_discount_amount: Number(e.target.value) || null }))} placeholder="200" />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Label>ব্যবহার সীমা</Label>
-                      <Input type="number" value={form.usage_limit || ''} onChange={e => setForm(f => ({ ...f, usage_limit: Number(e.target.value) || null }))} placeholder="100" />
-                    </div>
-                    <div>
-                      <Label>মেয়াদ শেষ</Label>
-                      <Input type="date" value={form.expires_at} onChange={e => setForm(f => ({ ...f, expires_at: e.target.value }))} />
-                    </div>
+                    <div><Label>ব্যবহার সীমা</Label><Input type="number" value={form.usage_limit || ''} onChange={e => setForm(f => ({ ...f, usage_limit: Number(e.target.value) || null }))} /></div>
+                    <div><Label>মেয়াদ শেষ</Label><Input type="date" value={form.expires_at} onChange={e => setForm(f => ({ ...f, expires_at: e.target.value }))} /></div>
                   </div>
                 </div>
-                <DialogFooter>
-                  <Button
-                    onClick={() => saveMutation.mutate(form)}
-                    disabled={!form.code || !form.discount_value || saveMutation.isPending}
-                  >
-                    {saveMutation.isPending ? 'সেভ হচ্ছে...' : editId ? 'আপডেট করুন' : 'তৈরি করুন'}
+                <ResponsiveModalFooter>
+                  <Button onClick={() => saveMutation.mutate(form)} disabled={!form.code || !form.discount_value || saveMutation.isPending}>
+                    {saveMutation.isPending ? 'সেভ হচ্ছে...' : editId ? 'আপডেট' : 'তৈরি করুন'}
                   </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+                </ResponsiveModalFooter>
+              </ResponsiveModalContent>
+            </ResponsiveModal>
           </div>
 
           {/* Coupon List */}

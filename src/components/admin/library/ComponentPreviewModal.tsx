@@ -1,12 +1,11 @@
 import { useState } from 'react';
 import { Monitor, Smartphone } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  ResponsiveModal,
+  ResponsiveModalContent,
+  ResponsiveModalHeader,
+  ResponsiveModalTitle,
+} from '@/components/ui/responsive-modal';
 import { Toggle } from '@/components/ui/toggle';
 import { LibraryComponent } from './types';
 import { cn } from '@/lib/utils';
@@ -32,68 +31,33 @@ export function ComponentPreviewModal({ open, onOpenChange, component }: Compone
 <link href="https://fonts.googleapis.com/css2?family=Anek+Bangla:wght@400;500;600;700&family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
-tailwind.config = {
-  theme: {
-    extend: {
-      fontFamily: {
-        'heading': ['"Hind Siliguri"', 'sans-serif'],
-        'body': ['"Anek Bangla"', 'sans-serif'],
-      }
-    }
-  }
-}
+tailwind.config = { theme: { extend: { fontFamily: { 'heading': ['"Hind Siliguri"', 'sans-serif'], 'body': ['"Anek Bangla"', 'sans-serif'] } } } }
 </script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { font-family: "Anek Bangla", sans-serif !important; }
-h1, h2, h3, h4, h5, h6, .heading, [class*="text-2xl"], [class*="text-3xl"], [class*="text-4xl"], [class*="text-5xl"] { font-family: "Hind Siliguri", sans-serif !important; }
-p, span, div, button, a, li, td, th, label, input, textarea, select, option, article, section, nav, header, footer, aside, main, form, fieldset { font-family: "Anek Bangla", sans-serif !important; }
+h1, h2, h3, h4, h5, h6 { font-family: "Hind Siliguri", sans-serif !important; }
 </style>
 </head>
 <body>${component.html}</body>
 </html>`;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col p-0">
-        <DialogHeader className="px-6 py-4 border-b flex-row items-center justify-between">
-          <DialogTitle>{component.name}</DialogTitle>
+    <ResponsiveModal open={open} onOpenChange={onOpenChange}>
+      <ResponsiveModalContent className="max-w-5xl max-h-[90vh] flex flex-col p-0">
+        <ResponsiveModalHeader className="px-6 py-4 border-b flex-row items-center justify-between">
+          <ResponsiveModalTitle>{component.name}</ResponsiveModalTitle>
           <div className="flex items-center gap-2">
-            <Toggle
-              pressed={!isMobile}
-              onPressedChange={() => setIsMobile(false)}
-              aria-label="Desktop view"
-              className="h-8 w-8 p-0"
-            >
-              <Monitor className="h-4 w-4" />
-            </Toggle>
-            <Toggle
-              pressed={isMobile}
-              onPressedChange={() => setIsMobile(true)}
-              aria-label="Mobile view"
-              className="h-8 w-8 p-0"
-            >
-              <Smartphone className="h-4 w-4" />
-            </Toggle>
+            <Toggle pressed={!isMobile} onPressedChange={() => setIsMobile(false)} aria-label="Desktop" className="h-8 w-8 p-0"><Monitor className="h-4 w-4" /></Toggle>
+            <Toggle pressed={isMobile} onPressedChange={() => setIsMobile(true)} aria-label="Mobile" className="h-8 w-8 p-0"><Smartphone className="h-4 w-4" /></Toggle>
           </div>
-        </DialogHeader>
+        </ResponsiveModalHeader>
         <div className="flex-1 overflow-auto bg-muted p-4">
-          <div
-            className={cn(
-              "mx-auto bg-white rounded-lg shadow-lg overflow-hidden transition-all",
-              isMobile ? "max-w-[375px]" : "max-w-full"
-            )}
-          >
-            <iframe
-              srcDoc={fullHtml}
-              className="w-full border-0"
-              style={{ height: '500px' }}
-              title={`Preview: ${component.name}`}
-              sandbox="allow-scripts allow-same-origin"
-            />
+          <div className={cn("mx-auto bg-white rounded-lg shadow-lg overflow-hidden transition-all", isMobile ? "max-w-[375px]" : "max-w-full")}>
+            <iframe srcDoc={fullHtml} className="w-full border-0" style={{ height: '500px' }} title={`Preview: ${component.name}`} sandbox="allow-scripts allow-same-origin" />
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </ResponsiveModalContent>
+    </ResponsiveModal>
   );
 }

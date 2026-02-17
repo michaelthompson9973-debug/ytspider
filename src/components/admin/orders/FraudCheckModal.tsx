@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Loader2, RefreshCw } from 'lucide-react';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  ResponsiveModal,
+  ResponsiveModalContent,
+  ResponsiveModalHeader,
+  ResponsiveModalTitle,
+} from '@/components/ui/responsive-modal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { CustomerCourierHistory } from './types';
@@ -29,7 +29,6 @@ export const FraudCheckModal = React.forwardRef<HTMLDivElement, FraudCheckModalP
     const [lastCheckedPhone, setLastCheckedPhone] = useState<string | null>(null);
     const queryClient = useQueryClient();
 
-    // Fetch history directly from DB for the current phone
     const normalizedInputPhone = normalizePhone(inputPhone);
     const { data: fetchedHistory = [], refetch, isRefetching } = useQuery({
       queryKey: ['fraud-check-modal-history', normalizedInputPhone],
@@ -46,19 +45,12 @@ export const FraudCheckModal = React.forwardRef<HTMLDivElement, FraudCheckModalP
       staleTime: 0,
     });
 
-    // Use fetched history if available, otherwise fall back to external
     const courierHistory = fetchedHistory.length > 0 ? fetchedHistory : externalHistory;
 
-    useEffect(() => {
-      if (phone) {
-        setInputPhone(phone);
-      }
-    }, [phone]);
+    useEffect(() => { if (phone) setInputPhone(phone); }, [phone]);
 
-    // Refetch when check completes
     useEffect(() => {
       if (!isChecking && lastCheckedPhone) {
-        // Delay to ensure DB persistence
         const timer = setTimeout(() => {
           refetch();
           queryClient.invalidateQueries({ queryKey: ['courier-history'] });
@@ -76,163 +68,95 @@ export const FraudCheckModal = React.forwardRef<HTMLDivElement, FraudCheckModalP
       }
     };
 
-    // Calculate combined stats
     const calculateCombinedStats = () => {
-      if (courierHistory.length === 0) {
-        return { totalOrders: 0, totalDelivered: 0, totalCancelled: 0, successRate: 0 };
-      }
-
-      let totalOrders = 0;
-      let totalDelivered = 0;
-      let totalCancelled = 0;
-
-      courierHistory.forEach((history) => {
-        totalOrders += history.total_orders || 0;
-        totalDelivered += history.total_delivered || 0;
-        totalCancelled += history.total_cancelled || 0;
-      });
-
-      const successRate = totalOrders > 0 ? (totalDelivered / totalOrders) * 100 : 0;
-
-      return { totalOrders, totalDelivered, totalCancelled, successRate };
+      if (courierHistory.length === 0) return { totalOrders: 0, totalDelivered: 0, totalCancelled: 0, successRate: 0 };
+      let totalOrders = 0, totalDelivered = 0, totalCancelled = 0;
+      courierHistory.forEach((h) => { totalOrders += h.total_orders || 0; totalDelivered += h.total_delivered || 0; totalCancelled += h.total_cancelled || 0; });
+      return { totalOrders, totalDelivered, totalCancelled, successRate: totalOrders > 0 ? (totalDelivered / totalOrders) * 100 : 0 };
     };
 
     const stats = calculateCombinedStats();
-    const lastChecked = courierHistory.length > 0 
-      ? courierHistory.reduce((latest, h) => 
-          new Date(h.checked_at) > new Date(latest) ? h.checked_at : latest, 
-          courierHistory[0].checked_at
-        )
+    const lastChecked = courierHistory.length > 0
+      ? courierHistory.reduce((latest, h) => new Date(h.checked_at) > new Date(latest) ? h.checked_at : latest, courierHistory[0].checked_at)
       : null;
-    
     const showLoading = isChecking || isRefetching;
 
     return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent ref={ref} className="max-w-md bg-gradient-to-br from-slate-900 to-slate-800 text-white border-slate-700">
-          <DialogHeader>
-            <DialogTitle className="text-center">
+      <ResponsiveModal open={open} onOpenChange={onOpenChange}>
+        <ResponsiveModalContent ref={ref} className="max-w-md bg-gradient-to-br from-slate-900 to-slate-800 text-white border-slate-700" drawerClassName="bg-gradient-to-br from-slate-900 to-slate-800 text-white border-slate-700">
+          <ResponsiveModalHeader>
+            <ResponsiveModalTitle className="text-center">
               <span className="bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent text-xl font-bold">
                 ফ্রড চেক
               </span>
-              <p className="text-sm text-slate-400 font-normal mt-1">
-                বাংলাদেশি নম্বরের ডেলিভারি ইতিহাস চেক করুন
-              </p>
-            </DialogTitle>
-          </DialogHeader>
+              <p className="text-sm text-slate-400 font-normal mt-1">ডেলিভারি ইতিহাস চেক করুন</p>
+            </ResponsiveModalTitle>
+          </ResponsiveModalHeader>
 
-          {/* Phone Input */}
           <div className="space-y-4">
             <div className="relative">
-              <Input
-                value={inputPhone}
-                onChange={(e) => setInputPhone(e.target.value)}
-                placeholder="ফোন নম্বর লিখুন..."
-                className="bg-slate-900/60 border-slate-700 text-white placeholder:text-slate-500 pr-12"
-              />
-              <Button
-                size="icon"
-                className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 bg-indigo-600 hover:bg-indigo-700"
-                onClick={handleCheck}
-                disabled={isChecking || inputPhone.length < 11}
-              >
-                {isChecking ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Search className="h-4 w-4" />
-                )}
+              <Input value={inputPhone} onChange={(e) => setInputPhone(e.target.value)} placeholder="ফোন নম্বর..." className="bg-slate-900/60 border-slate-700 text-white placeholder:text-slate-500 pr-12" />
+              <Button size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 bg-indigo-600 hover:bg-indigo-700" onClick={handleCheck} disabled={isChecking || inputPhone.length < 11}>
+                {isChecking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
               </Button>
             </div>
 
-            {/* Stats Grid */}
             {courierHistory.length > 0 && (
               <>
                 <div className="grid grid-cols-3 gap-3">
-                  <div className="bg-white/5 rounded-xl p-4 text-center">
+                  <div className="bg-white/5 rounded-xl p-3 text-center">
                     <p className="text-2xl font-bold text-white">{stats.totalOrders}</p>
-                    <p className="text-xs text-slate-400">মোট অর্ডার</p>
+                    <p className="text-xs text-slate-400">মোট</p>
                   </div>
-                  <div className="bg-white/5 rounded-xl p-4 text-center">
+                  <div className="bg-white/5 rounded-xl p-3 text-center">
                     <p className="text-2xl font-bold text-emerald-400">{stats.totalDelivered}</p>
                     <p className="text-xs text-slate-400">ডেলিভারড</p>
                   </div>
-                  <div className="bg-white/5 rounded-xl p-4 text-center">
+                  <div className="bg-white/5 rounded-xl p-3 text-center">
                     <p className="text-2xl font-bold text-red-400">{stats.totalCancelled}</p>
                     <p className="text-xs text-slate-400">বাতিল</p>
                   </div>
                 </div>
-
-                {/* Success Rate Bar */}
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-400">সাফল্যের হার</span>
-                    <span className={cn(
-                      'font-bold',
-                      stats.successRate > 70 ? 'text-emerald-400' :
-                      stats.successRate >= 50 ? 'text-yellow-400' : 'text-red-400'
-                    )}>
+                    <span className={cn('font-bold', stats.successRate > 70 ? 'text-emerald-400' : stats.successRate >= 50 ? 'text-yellow-400' : 'text-red-400')}>
                       {stats.successRate.toFixed(1)}%
                     </span>
                   </div>
                   <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
-                    <div
-                      className={cn(
-                        'h-full rounded-full transition-all duration-500',
-                        stats.successRate > 70 ? 'bg-emerald-500' :
-                        stats.successRate >= 50 ? 'bg-yellow-500' : 'bg-red-500'
-                      )}
-                      style={{ width: `${stats.successRate}%` }}
-                    />
+                    <div className={cn('h-full rounded-full transition-all duration-500', stats.successRate > 70 ? 'bg-emerald-500' : stats.successRate >= 50 ? 'bg-yellow-500' : 'bg-red-500')} style={{ width: `${stats.successRate}%` }} />
                   </div>
                 </div>
-
-                {/* Courier Breakdown */}
                 <div className="space-y-3">
-                  <h3 className="text-sm text-slate-400 border-b border-slate-700 pb-2">
-                    কুরিয়ার বিস্তারিত
-                  </h3>
+                  <h3 className="text-sm text-slate-400 border-b border-slate-700 pb-2">কুরিয়ার বিস্তারিত</h3>
                   {courierHistory.map((history) => (
                     <div key={history.id} className="flex items-center justify-between py-2 border-b border-slate-700/50 last:border-0">
                       <span className="font-medium capitalize">{history.provider}</span>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400">
-                          {history.total_delivered || 0} ডেলিভারড
-                        </span>
-                        <span className="text-xs px-2 py-0.5 rounded bg-red-500/20 text-red-400">
-                          {history.total_cancelled || 0} বাতিল
-                        </span>
+                        <span className="text-xs px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400">{history.total_delivered || 0}</span>
+                        <span className="text-xs px-2 py-0.5 rounded bg-red-500/20 text-red-400">{history.total_cancelled || 0}</span>
                       </div>
                     </div>
                   ))}
                 </div>
-
-                {/* Last Checked */}
-                {lastChecked && (
-                  <p className="text-xs text-slate-500 text-center">
-                    শেষ চেক: {formatRelativeTime(lastChecked)}
-                  </p>
-                )}
+                {lastChecked && <p className="text-xs text-slate-500 text-center">শেষ চেক: {formatRelativeTime(lastChecked)}</p>}
               </>
             )}
-
-            {/* No Data State */}
             {courierHistory.length === 0 && !showLoading && (
-              <div className="text-center py-8 text-slate-400">
-                <p>এই নম্বরের কোনো ইতিহাস পাওয়া যায়নি</p>
-                <p className="text-sm mt-1">ফোন নম্বর দিয়ে চেক করুন</p>
+              <div className="text-center py-6 text-slate-400">
+                <p>কোনো ইতিহাস পাওয়া যায়নি</p>
               </div>
             )}
-
-            {/* Loading State */}
             {showLoading && (
-              <div className="text-center py-8">
+              <div className="text-center py-6">
                 <Loader2 className="h-8 w-8 animate-spin text-indigo-400 mx-auto" />
                 <p className="text-sm text-slate-400 mt-2">চেক করা হচ্ছে...</p>
               </div>
             )}
           </div>
-        </DialogContent>
-      </Dialog>
+        </ResponsiveModalContent>
+      </ResponsiveModal>
     );
   }
 );

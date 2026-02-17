@@ -83,7 +83,7 @@ export default function ShopDashboard() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold">স্বাগতম, {currentShop?.name}!</h1>
-            <p className="text-muted-foreground">আপনার শপের বিস্তারিত বিবরণ</p>
+            <p className="text-muted-foreground hidden sm:block">আপনার শপের বিস্তারিত বিবরণ</p>
           </div>
           <Tabs value={dateRange} onValueChange={(v) => setDateRange(v as '7d' | '30d')}>
             <TabsList>
@@ -124,7 +124,7 @@ export default function ShopDashboard() {
         </div>
 
         {/* Charts Row */}
-        <div className="grid gap-4 lg:grid-cols-3">
+        <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
           {/* Revenue Chart */}
           <Card className="lg:col-span-2">
             <CardHeader className="pb-2">
@@ -139,7 +139,7 @@ export default function ShopDashboard() {
               ) : chartData.length === 0 ? (
                 <p className="text-muted-foreground text-center py-16">ডাটা নেই</p>
               ) : (
-                <ResponsiveContainer width="100%" height={280}>
+                <ResponsiveContainer width="100%" height={window.innerWidth < 768 ? 200 : 280}>
                   <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                     <defs>
                       <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
@@ -179,7 +179,7 @@ export default function ShopDashboard() {
               ) : chartData.length === 0 ? (
                 <p className="text-muted-foreground text-center py-16">ডাটা নেই</p>
               ) : (
-                <ResponsiveContainer width="100%" height={280}>
+                <ResponsiveContainer width="100%" height={window.innerWidth < 768 ? 200 : 280}>
                   <BarChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                     <XAxis dataKey="date" tick={{ fontSize: 10 }} className="text-muted-foreground" />

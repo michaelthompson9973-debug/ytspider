@@ -1,11 +1,12 @@
 import React from 'react';
 import { Phone, MapPin, Mail, ExternalLink, Truck, Clock, Calendar, Printer, Edit, Package } from 'lucide-react';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  ResponsiveModal,
+  ResponsiveModalContent,
+  ResponsiveModalHeader,
+  ResponsiveModalTitle,
+  ResponsiveModalFooter,
+} from '@/components/ui/responsive-modal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -81,30 +82,30 @@ export const OrderDetailsModal = React.forwardRef<HTMLDivElement, OrderDetailsMo
     const statusConfig = STATUS_CONFIG[order.status];
 
     return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent ref={ref} className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
+      <ResponsiveModal open={open} onOpenChange={onOpenChange}>
+        <ResponsiveModalContent ref={ref} className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <ResponsiveModalHeader>
             <div className="flex items-center justify-between">
-              <DialogTitle className="flex items-center gap-2">
+              <ResponsiveModalTitle className="flex items-center gap-2">
                 <span>অর্ডার {getShortOrderId(order.id)}</span>
                 <span className={cn('text-sm px-2 py-0.5 rounded', statusConfig.bgColor, statusConfig.color)}>
                   {statusConfig.label}
                 </span>
-              </DialogTitle>
+              </ResponsiveModalTitle>
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm" onClick={onPrint}>
-                  <Printer className="h-4 w-4 mr-1" />
-                  প্রিন্ট
+                  <Printer className="h-4 w-4 sm:mr-1" />
+                  <span className="hidden sm:inline">প্রিন্ট</span>
                 </Button>
                 <Button variant="outline" size="sm" onClick={onEdit}>
-                  <Edit className="h-4 w-4 mr-1" />
-                  এডিট
+                  <Edit className="h-4 w-4 sm:mr-1" />
+                  <span className="hidden sm:inline">এডিট</span>
                 </Button>
               </div>
             </div>
-          </DialogHeader>
+          </ResponsiveModalHeader>
 
-          <div className="space-y-6">
+          <div className="space-y-4">
             {/* Customer Info Card */}
             <Card>
               <CardHeader className="pb-2">
@@ -200,7 +201,7 @@ export const OrderDetailsModal = React.forwardRef<HTMLDivElement, OrderDetailsMo
                     </div>
                     <div>
                       <p className="text-muted-foreground">Consignment ID</p>
-                      <p className="font-mono">{order.consignment_id}</p>
+                      <p className="font-mono text-xs break-all">{order.consignment_id}</p>
                     </div>
                     <div>
                       <p className="text-muted-foreground">ট্র্যাকিং কোড</p>
@@ -208,7 +209,7 @@ export const OrderDetailsModal = React.forwardRef<HTMLDivElement, OrderDetailsMo
                         href={`https://steadfast.com.bd/t/${order.tracking_code}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-primary hover:underline font-mono"
+                        className="inline-flex items-center gap-1 text-primary hover:underline font-mono text-xs"
                       >
                         {order.tracking_code}
                         <ExternalLink className="h-3 w-3" />
@@ -220,7 +221,7 @@ export const OrderDetailsModal = React.forwardRef<HTMLDivElement, OrderDetailsMo
             ) : (
               <Button onClick={onSendToCourier} disabled={isSendingToCourier} className="w-full">
                 <Truck className="mr-2 h-4 w-4" />
-                {isSendingToCourier ? 'কুরিয়ারে পাঠানো হচ্ছে...' : 'কুরিয়ারে পাঠান'}
+                {isSendingToCourier ? 'পাঠানো হচ্ছে...' : 'কুরিয়ারে পাঠান'}
               </Button>
             )}
 
@@ -249,7 +250,7 @@ export const OrderDetailsModal = React.forwardRef<HTMLDivElement, OrderDetailsMo
                     <span>{formatCurrency(order.subtotal, order.currency)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">ডেলিভারি চার্জ:</span>
+                    <span className="text-muted-foreground">ডেলিভারি:</span>
                     <span>{formatCurrency(order.delivery_charge, order.currency)}</span>
                   </div>
                   <Separator />
@@ -287,8 +288,8 @@ export const OrderDetailsModal = React.forwardRef<HTMLDivElement, OrderDetailsMo
               </Card>
             )}
           </div>
-        </DialogContent>
-      </Dialog>
+        </ResponsiveModalContent>
+      </ResponsiveModal>
     );
   }
 );

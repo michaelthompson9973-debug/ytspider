@@ -4,7 +4,11 @@ import { LeftSidebar } from './LeftSidebar';
 import { ChatWindow } from './ChatWindow';
 import { RightPanel } from './RightPanel';
 import { useConnections, useConversations, useMessengerRealtime } from '../hooks';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Button } from '@/components/ui/button';
+import { Menu, UserCircle, ArrowLeft } from 'lucide-react';
 
 export function InboxLayout() {
   const [state, setState] = useState<MessengerState>({
@@ -74,9 +78,72 @@ export function InboxLayout() {
       )
     : conversations;
 
+  const isMobile = useIsMobile();
+  const [leftOpen, setLeftOpen] = useState(false);
+  const [rightOpen, setRightOpen] = useState(false);
+
+  const handleSelectConversationMobile = (conversationId: string) => {
+    handleSelectConversation(conversationId);
+    setLeftOpen(false);
+  };
+
+  if (isMobile) {
+    return (
+      <div className="flex flex-col h-[calc(100vh-8rem)] bg-background rounded-lg border overflow-hidden">
+        {/* Mobile Header */}
+        <div className="flex items-center justify-between p-2 border-b">
+          <Sheet open={leftOpen} onOpenChange={setLeftOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon"><Menu className="h-5 w-5" /></Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="p-0 w-80">
+              <LeftSidebar
+                connections={connections}
+                conversations={filteredConversations}
+                selectedConnectionId={state.selectedConnectionId}
+                selectedConversationId={state.selectedConversationId}
+                filter={state.filter}
+                searchQuery={state.searchQuery}
+                isLoading={connectionsLoading || conversationsLoading}
+                onSelectConnection={handleSelectConnection}
+                onSelectConversation={handleSelectConversationMobile}
+                onFilterChange={handleFilterChange}
+                onSearchChange={handleSearchChange}
+              />
+            </SheetContent>
+          </Sheet>
+
+          <span className="font-medium text-sm truncate">
+            {selectedConversation?.sender_name || 'Inbox'}
+          </span>
+
+          {selectedConversation && (
+            <Sheet open={rightOpen} onOpenChange={setRightOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon"><UserCircle className="h-5 w-5" /></Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="p-0 w-80">
+                <RightPanel
+                  conversation={selectedConversation}
+                  activeTab={state.controlPanelTab}
+                  onTabChange={handleTabChange}
+                />
+              </SheetContent>
+            </Sheet>
+          )}
+          {!selectedConversation && <div className="w-10" />}
+        </div>
+
+        {/* Chat */}
+        <div className="flex-1 flex flex-col min-w-0">
+          <ChatWindow conversation={selectedConversation} connectionId={state.selectedConnectionId} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-[calc(100vh-8rem)] bg-background rounded-lg border overflow-hidden">
-      {/* Left Sidebar */}
       <div className="w-72 border-r flex-shrink-0">
         <LeftSidebar
           connections={connections}
@@ -92,25 +159,11 @@ export function InboxLayout() {
           onSearchChange={handleSearchChange}
         />
       </div>
-
-      {/* Chat Window */}
       <div className="flex-1 flex flex-col min-w-0">
-        <ChatWindow
-          conversation={selectedConversation}
-          connectionId={state.selectedConnectionId}
-        />
+        <ChatWindow conversation={selectedConversation} connectionId={state.selectedConnectionId} />
       </div>
-
-      {/* Right Panel */}
-      <div className={cn(
-        "w-80 border-l flex-shrink-0 transition-all duration-200",
-        !selectedConversation && "hidden lg:block"
-      )}>
-        <RightPanel
-          conversation={selectedConversation}
-          activeTab={state.controlPanelTab}
-          onTabChange={handleTabChange}
-        />
+      <div className={cn("w-80 border-l flex-shrink-0", !selectedConversation && "hidden lg:block")}>
+        <RightPanel conversation={selectedConversation} activeTab={state.controlPanelTab} onTabChange={handleTabChange} />
       </div>
     </div>
   );
