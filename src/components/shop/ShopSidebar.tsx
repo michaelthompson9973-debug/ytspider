@@ -30,6 +30,8 @@ import {
   Library,
   ChevronDown,
   Wallet,
+  UserCheck,
+  Ticket,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useShop, ShopType } from '@/contexts/ShopContext';
@@ -63,6 +65,8 @@ function getNavGroups(shopType: ShopType): NavGroup[] {
       items: [
         { title: 'প্রোডাক্ট', url: '/shop/products', icon: Package },
         { title: 'অর্ডার', url: '/shop/orders', icon: ShoppingCart },
+        { title: 'কাস্টমার', url: '/shop/customers', icon: UserCheck },
+        { title: 'কুপন', url: '/shop/coupons', icon: Ticket },
         {
           title: 'ল্যান্ডিং পেজ',
           url: '/shop/pages',
