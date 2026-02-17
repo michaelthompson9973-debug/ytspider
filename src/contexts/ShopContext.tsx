@@ -88,14 +88,7 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
       
       // If user is admin (legacy), they can see all shops
       // Otherwise, only shops they're members of
-      let query = supabase.from('shops').select('*');
-      
-      if (!isAdmin) {
-        // Use the RLS - it will filter based on shop_members
-        query = query.eq('is_active', true);
-      }
-
-      const { data: shops, error: shopsError } = await query.order('name');
+      const { data: shops, error: shopsError } = await supabase.rpc('get_user_shops');
 
       if (shopsError) {
         console.error('Error fetching shops:', shopsError);
@@ -140,7 +133,7 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, [user, isAdmin]);
+  }, [user]);
 
   // Fetch user's role in a specific shop
   const fetchUserRole = async (shopId: string) => {
