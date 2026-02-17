@@ -59,6 +59,8 @@ import MarketingEmail from "./pages/admin/MarketingEmail";
 // Shop Owner pages
 import ShopDashboard from "./pages/shop/ShopDashboard";
 import ShopOnboarding from "./pages/shop/ShopOnboarding";
+import ShopCustomers from "./pages/shop/ShopCustomers";
+import ShopCoupons from "./pages/shop/ShopCoupons";
 import { ShopProductsPage, ShopOrdersPage, ShopLandingPagesPage, ShopComponentLibraryPage, ShopMediaPage, ShopInboxMessengerPage, ShopTrackingPage, ShopCourierPage, ShopAiPage, ShopTeamPage, ShopSecurityPage, ShopSubscriptionPage, ShopAnalyticsPage, ShopSettingsPage } from "./pages/shop/ShopPages";
 
 // Public pages
@@ -98,6 +100,8 @@ const App = () => (
                 <Route path="/shop/onboarding" element={<ShopOnboarding />} />
                 <Route path="/shop/products" element={<ShopProtectedRoute><ShopProductsPage /></ShopProtectedRoute>} />
                 <Route path="/shop/orders" element={<ShopProtectedRoute><ShopOrdersPage /></ShopProtectedRoute>} />
+                <Route path="/shop/customers" element={<ShopProtectedRoute><ShopCustomers /></ShopProtectedRoute>} />
+                <Route path="/shop/coupons" element={<ShopProtectedRoute><ShopCoupons /></ShopProtectedRoute>} />
                 <Route path="/shop/pages" element={<Navigate to="/shop/pages/manage" replace />} />
                 <Route path="/shop/pages/manage" element={<ShopProtectedRoute><ShopLandingPagesPage /></ShopProtectedRoute>} />
                 <Route path="/shop/pages/library" element={<ShopProtectedRoute><ShopComponentLibraryPage /></ShopProtectedRoute>} />
