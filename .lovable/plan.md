@@ -1,45 +1,55 @@
 
 
-# Appearance Switching ফিক্স — Forceful DOM Application
+# Shop Area Security Fix — Admin দের সব শপ দেখা বন্ধ করা
 
-## সমস্যা কেন হচ্ছে
+## সমস্যা
 
-`applyThemeToDOM()` ফাংশনটি `document.documentElement.style.setProperty()` দিয়ে CSS variables সেট করে। এই inline styles-এর CSS specificity সবচেয়ে বেশি — তাই `.dark` class-এর variables (background, foreground, card, border ইত্যাদি) কখনোই কাজ করে না।
-
-```text
-Specificity Chain:
-  :root { --primary: light-value }     ← CSS file (low)
-  .dark { --primary: dark-value }      ← CSS file (medium) 
-  style="--primary: theme-value"       ← Inline (HIGHEST - always wins!)
-```
-
-ফলে Dark mode toggle করলেও UI light-ই থাকে কারণ inline styles override করে দেয়।
+`/shop` এরিয়ায় Admin ইউজাররা সব শপ দেখতে পায় কারণ:
+1. `ShopContext.tsx`-এ `isAdmin` হলে কোনো ফিল্টার ছাড়াই `shops` টেবিল থেকে সব ডাটা আনে
+2. RLS policy-তেও `is_admin()` হলে সব শপ দেখানো হয়
+3. `/shop` এরিয়া Shop Owner-দের জন্য — এখানে Admin-দের সব শপ দেখার দরকার নেই
 
 ## সমাধান
 
-`applyThemeToDOM()` ফাংশনকে সম্পূর্ণভাবে refactor করা হবে যাতে:
-
-1. **Dark mode-এ সব প্রয়োজনীয় variables সেট হয়** — শুধু primary/accent নয়, background, foreground, card, muted, border, input, ring সবকিছু
-2. **Light mode-এও সব variables explicitly সেট হয়** — CSS fallback-এর উপর নির্ভর না করে
-3. **Mode switch-এ পুরো variable set forcefully re-apply হয়**
+`ShopContext.tsx`-এ `fetchShops` ফাংশনটা পরিবর্তন করা হবে যাতে `/shop` এরিয়ায় শুধু ইউজারের **নিজের শপ** দেখায় — Admin হোক বা না হোক।
 
 ### পরিবর্তন:
 
 | ফাইল | কী হবে |
 |------|--------|
-| `src/contexts/AdminThemeContext.tsx` | `applyThemeToDOM()` refactor — dark/light উভয় mode-এ সব CSS variables (background, foreground, card, muted, border, destructive, input, ring সহ) forcefully সেট করবে |
+| `src/contexts/ShopContext.tsx` | `fetchShops()` ফাংশনে security definer function `get_user_shops()` ব্যবহার করা হবে — যেটা শুধু `shop_members` টেবিল থেকে ইউজারের নিজের শপগুলো আনবে। Admin-দের জন্যও একই নিয়ম। |
 
 ### টেকনিক্যাল ডিটেইল:
 
-**`ThemeColors` interface-এ নতুন optional dark mode colors যোগ হবে না** — বরং `applyThemeToDOM()` ফাংশনে hardcoded dark-mode base variables থাকবে যেগুলো `.dark` class toggle-এর সাথে সাথে apply হবে:
+Database-এ ইতোমধ্যে `get_user_shops()` নামে একটি security definer function আছে যেটা শুধু `shop_members` টেবিল থেকে ইউজারের শপগুলো আনে:
 
 ```text
-applyThemeToDOM(theme):
-  1. Toggle .dark class (existing)
-  2. Set theme-specific colors (primary, sidebar, accent) — existing
-  3. NEW: If dark mode → set ALL dark base vars (background, foreground, card, muted, border, etc.)
-  4. NEW: If light mode → remove overrides OR set light base vars explicitly
+get_user_shops():
+  SELECT s.* FROM shops s
+  INNER JOIN shop_members sm ON sm.shop_id = s.id
+  WHERE sm.user_id = auth.uid()
+    AND sm.accepted_at IS NOT NULL
+    AND s.is_active = true
 ```
 
-এতে mode switch হলে সব variable immediately ও forcefully update হবে — কোনো CSS specificity conflict থাকবে না।
+**পরিবর্তন:**
+
+`ShopContext.tsx`-এর `fetchShops` ফাংশনে:
+
+```text
+আগে:
+  let query = supabase.from('shops').select('*');
+  if (!isAdmin) {
+    query = query.eq('is_active', true);
+  }
+
+পরে:
+  const { data: shops } = await supabase.rpc('get_user_shops');
+```
+
+এতে:
+- Admin হোক বা Shop Owner — সবাই শুধু নিজেদের শপ দেখবে
+- Platform Admin area (`/admin`) এ All Shops পেজ আলাদাভাবে সব শপ দেখাবে (সেটা ঠিকই আছে)
+- কোনো RLS পরিবর্তন লাগবে না
+- কোনো নতুন database function লাগবে না — existing `get_user_shops()` ব্যবহার হবে
 
