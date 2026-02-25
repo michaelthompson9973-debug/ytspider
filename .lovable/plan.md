@@ -1,118 +1,71 @@
 
-# মোবাইল ফ্রেন্ডলি + Drawer রূপান্তর
+
+# "/" রুটে পাবলিক ল্যান্ডিং পেজ তৈরি
 
 ## সমস্যা
-- Dialog/Modal গুলো মোবাইলে সম্পূর্ণ স্ক্রিন ব্লক করে, UX খারাপ
-- কিছু পেজে অতিরিক্ত টেক্সট, কম অ্যাকশন
-- টেবিল ও কার্ড লেআউট মোবাইলে সংকুচিত হয়ে যায়
+বর্তমানে `/` রুট থেকে `/shop` এ রিডাইরেক্ট হয়। ইউজার চান এখানে একটি রঙিন, ভিজুয়াল পাবলিক ল্যান্ডিং পেজ থাকুক যেটা প্ল্যাটফর্মের পরিচিতি দেবে।
 
 ## পরিকল্পনা
 
-### ধাপ ১: Responsive Drawer Component তৈরি
+### ধাপ ১: `src/pages/Index.tsx` সম্পূর্ণ রিরাইট
 
-একটি `ResponsiveModal` কম্পোনেন্ট তৈরি হবে যেটা:
-- **Desktop (768px+)**: সাধারণ Dialog হিসেবে কাজ করবে
-- **Mobile (<768px)**: নিচ থেকে Drawer (vaul) হিসেবে ওপেন হবে
+একটি ফুল পাবলিক ল্যান্ডিং পেজ তৈরি হবে যেটায় থাকবে:
 
-এটা একবার বানালে সব জায়গায় `Dialog` এর বদলে এটা ব্যবহার করা যাবে।
+**Header (Sticky)**
+- ShopFlow লোগো (বাম)
+- নেভিগেশন: Features, Pricing
+- বাটন: "লগইন" → `/login`, "Get Started" → `/login`
 
-### ধাপ ২: সকল Modal → Drawer রূপান্তর
+**Hero Section (গ্র্যাডিয়েন্ট ব্যাকগ্রাউন্ড)**
+- বড় হেডলাইন: "আপনার অনলাইন শপ তৈরি করুন মিনিটেই"
+- সাবটেক্সট: প্ল্যাটফর্মের সংক্ষিপ্ত বর্ণনা
+- দুটি CTA বাটন: "Create Account" → `/login`, "Get Started" → `/login`
+- রঙিন গ্র্যাডিয়েন্ট (purple → blue → pink)
 
-যেসব ফাইলে Dialog আছে, সেগুলোতে `ResponsiveModal` ব্যবহার করা হবে:
+**Features Section**
+- আইকন কার্ড গ্রিড (3 কলাম desktop, 1 কলাম mobile)
+- ফিচার তালিকা:
+  - 🏪 মাল্টিপল শপ তৈরি ও ম্যানেজ
+  - 🤖 AI Integrated অর্ডার ম্যানেজমেন্ট
+  - 📦 কুরিয়ার ইন্টিগ্রেশন (Pathao, Steadfast)
+  - 📱 মোবাইল-ফার্স্ট ল্যান্ডিং পেজ বিল্ডার
+  - 💬 Messenger/WhatsApp ইনবক্স
+  - 📊 রিয়েলটাইম অ্যানালিটিক্স
+- প্রতিটি কার্ডে রঙিন আইকন ব্যাকগ্রাউন্ড
 
-| ফাইল | মডাল | পরিবর্তন |
-|------|-------|---------|
-| `OrderDetailsModal.tsx` | অর্ডার ডিটেইলস | Dialog → ResponsiveModal (মোবাইলে ফুল-হাইট drawer) |
-| `OrderEditModal.tsx` | অর্ডার এডিট | Dialog → ResponsiveModal |
-| `FraudCheckModal.tsx` | ফ্রড চেক | Dialog → ResponsiveModal |
-| `SendToCourierModal.tsx` | কুরিয়ারে পাঠান | Dialog → ResponsiveModal |
-| `CreateShopDialog.tsx` | নতুন শপ তৈরি | Dialog → ResponsiveModal |
-| `CreateShopForUserDialog.tsx` | ইউজারের জন্য শপ | Dialog → ResponsiveModal |
-| `AddPageModal.tsx` | Facebook পেজ যোগ | Dialog → ResponsiveModal |
-| `MediaPickerDialog.tsx` | মিডিয়া সিলেক্ট | Dialog → ResponsiveModal |
-| `ShopCoupons.tsx` | কুপন ফর্ম | Dialog → ResponsiveModal |
-| `PageConnectionCard.tsx` | Webhook তথ্য | Dialog → ResponsiveModal |
-| `ComponentPreviewModal.tsx` | কম্পোনেন্ট প্রিভিউ | Dialog → ResponsiveModal |
-| `DeleteConfirmDialog (orders)` | ডিলিট কনফার্ম | AlertDialog → মোবাইলে bottom drawer |
-| `DeleteConfirmDialog (landing)` | ডিলিট কনফার্ম | AlertDialog → মোবাইলে bottom drawer |
-| `SectionList.tsx` | নতুন সেকশন যোগ | Dialog → ResponsiveModal |
-| `ShopSwitcher.tsx` | শপ তৈরি ডায়ালগ | Dialog → ResponsiveModal |
+**Pricing Section**
+- ডাটাবেস থেকে `usePricingPlans(true)` দিয়ে প্ল্যান ফেচ
+- বর্তমান Pricing.tsx পেজের মতো কার্ড লেআউট
+- CTA বাটন: "এখনই শুরু করুন" → `/checkout?plan=slug`
 
-### ধাপ ৩: পেজ মোবাইল অপটিমাইজেশন
+**Footer**
+- ShopFlow ব্র্যান্ডিং
+- লিংক: Pricing, Login, Contact
+- কপিরাইট
 
-**ShopDashboard.tsx:**
-- KPI কার্ড 2-column grid রাখা, কিন্তু hidden কার্ডগুলো মোবাইলে collapsible "আরো দেখুন" দিয়ে দেখানো
-- Chart height মোবাইলে কমানো (280 → 200px)
-- চার্ট গুলো মোবাইলে single column stack
+### ধাপ ২: App.tsx রাউট আপডেট
 
-**ShopCustomers.tsx:**
-- কাস্টমার কার্ডে action বাটন (phone call, quick view) যোগ
-- অ্যাভাটার ছোট করা মোবাইলে
+```text
+// আগে:
+<Route path="/" element={<Navigate to="/shop" replace />} />
 
-**ShopCoupons.tsx:**
-- কুপন কার্ড layout মোবাইলে vertical stack
-- অ্যাকশন বাটন (switch, edit, delete) নিচে সরানো মোবাইলে
-- header "কুপন ম্যানেজমেন্ট" → শুধু "কুপন"
+// পরে:
+<Route path="/" element={<Index />} />
+```
 
-**ShopPages.tsx (Settings, placeholder pages):**
-- Settings পেজে card গুলোর মধ্যে compact spacing
+### ধাপ ৩: ডিজাইন স্টাইল
 
-**Orders পেজ:**
-- মোবাইলে OrderTable → OrderGrid (card view) টগল
-- Action বাটনগুলো bottom-sticky bar এ
-
-**InboxLayout.tsx (Messenger):**
-- মোবাইলে 3-panel → single panel with swipe/tab navigation
-- Left sidebar sheet হিসেবে ওপেন হবে
-- Right panel sheet হিসেবে ওপেন হবে
-
-### ধাপ ৪: কম লেখা, বেশি অ্যাকশন
-
-- Page header subtitle গুলো মোবাইলে hide (`hidden sm:block`)
-- বাটন টেক্সট মোবাইলে icon-only (`<span className="hidden sm:inline">`)
-- KPI কার্ডে label ছোট করা
-- Empty state মেসেজ সংক্ষিপ্ত করা
+- **রঙিন গ্র্যাডিয়েন্ট**: Hero তে `bg-gradient-to-br from-violet-600 via-blue-600 to-pink-500`
+- Feature কার্ডে রঙিন icon badge (violet, blue, green, orange, pink, cyan)
+- Pricing কার্ডে featured plan এ ring + scale effect
+- Section separator গুলোতে subtle gradient
 
 ---
 
-## টেকনিক্যাল ডিটেইল
-
-### ResponsiveModal কম্পোনেন্ট
-
-নতুন ফাইল `src/components/ui/responsive-modal.tsx` তৈরি হবে:
-
-```text
-ResponsiveModal: 
-  - useIsMobile() hook দিয়ে device detect
-  - isMobile → Drawer (vaul) component render
-  - isDesktop → Dialog (radix) component render
-  - Same API: open, onOpenChange, children
-  - Sub-components: ResponsiveModalContent, ResponsiveModalHeader, 
-    ResponsiveModalTitle, ResponsiveModalDescription, ResponsiveModalFooter
-```
-
-### ফাইল পরিবর্তন তালিকা
+## ফাইল পরিবর্তন
 
 | ফাইল | ধরন |
 |------|------|
-| `src/components/ui/responsive-modal.tsx` | নতুন |
-| `src/components/admin/orders/OrderDetailsModal.tsx` | আপডেট |
-| `src/components/admin/orders/OrderEditModal.tsx` | আপডেট |
-| `src/components/admin/orders/FraudCheckModal.tsx` | আপডেট |
-| `src/components/admin/orders/DeleteConfirmDialog.tsx` | আপডেট |
-| `src/components/admin/courier/SendToCourierModal.tsx` | আপডেট |
-| `src/components/admin/CreateShopDialog.tsx` | আপডেট |
-| `src/components/admin/CreateShopForUserDialog.tsx` | আপডেট |
-| `src/components/admin/MediaPickerDialog.tsx` | আপডেট |
-| `src/components/admin/ShopSwitcher.tsx` | আপডেট |
-| `src/components/admin/messenger/AddPageModal.tsx` | আপডেট |
-| `src/components/admin/messenger/PageConnectionCard.tsx` | আপডেট |
-| `src/components/admin/library/ComponentPreviewModal.tsx` | আপডেট |
-| `src/components/admin/landing-page-editor/DeleteConfirmDialog.tsx` | আপডেট |
-| `src/components/admin/landing-page-editor/SectionList.tsx` | আপডেট |
-| `src/pages/shop/ShopCoupons.tsx` | আপডেট |
-| `src/pages/shop/ShopDashboard.tsx` | আপডেট |
-| `src/pages/shop/ShopCustomers.tsx` | আপডেট |
-| `src/components/admin/messenger/layout/InboxLayout.tsx` | আপডেট |
+| `src/pages/Index.tsx` | আপডেট (সম্পূর্ণ রিরাইট) |
+| `src/App.tsx` | আপডেট (লাইন ৮৯: Navigate → Index কম্পোনেন্ট) |
 
-মোট: ১ নতুন + ১৮ আপডেট
