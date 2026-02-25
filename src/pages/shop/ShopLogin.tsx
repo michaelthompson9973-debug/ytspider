@@ -11,6 +11,8 @@ import { toast } from 'sonner';
 import { Eye, EyeOff, Store } from 'lucide-react';
 import Header from '@/components/landing/Header';
 import Footer from '@/components/landing/Footer';
+import { AuthSkeleton } from '@/components/landing/AuthSkeleton';
+import { PageLoadWrapper } from '@/components/landing/PageLoadWrapper';
 
 export default function ShopLogin() {
   const [email, setEmail] = useState('');
@@ -18,11 +20,17 @@ export default function ShopLogin() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [shopInfo, setShopInfo] = useState<{ name: string; logo_url: string | null } | null>(null);
+  const [ready, setReady] = useState(false);
 
   const { user, loading: authLoading } = useAuth();
   const { availableShops, switchShop } = useShop();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    const t = setTimeout(() => setReady(true), 80);
+    return () => clearTimeout(t);
+  }, []);
 
   // Detect shop from subdomain or query param
   useEffect(() => {
@@ -30,19 +38,16 @@ export default function ShopLogin() {
       const hostname = window.location.hostname;
       let shopSlug: string | null = null;
 
-      // Check subdomain (e.g., myshop.ytspider.com)
       const parts = hostname.split('.');
       if (parts.length >= 3 && !['www', 'app', 'admin'].includes(parts[0])) {
         shopSlug = parts[0];
       }
 
-      // Or from query param
       if (!shopSlug) {
         shopSlug = searchParams.get('shop');
       }
 
       if (shopSlug) {
-        // Fetch shop info by slug
         const { data } = await supabase
           .from('shops')
           .select('name, logo_url, slug')
@@ -62,7 +67,6 @@ export default function ShopLogin() {
   // Auto redirect if already logged in
   useEffect(() => {
     if (!authLoading && user && availableShops.length > 0) {
-      // Auto-switch to first shop and redirect
       const firstShop = availableShops[0];
       switchShop(firstShop.id).then(() => {
         navigate('/shop', { replace: true });
@@ -92,7 +96,6 @@ export default function ShopLogin() {
       }
 
       toast.success('লগইন সফল!');
-      // Redirect will happen via useEffect
     } catch (err) {
       toast.error('লগইন করতে সমস্যা হয়েছে');
     } finally {
@@ -100,16 +103,12 @@ export default function ShopLogin() {
     }
   };
 
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-muted/30">
-        <p className="text-muted-foreground">লোড হচ্ছে...</p>
-      </div>
-    );
+  if (authLoading || !ready) {
+    return <AuthSkeleton />;
   }
 
   return (
-    <>
+    <PageLoadWrapper>
       <Header />
       <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4 pt-20">
         <Card className="w-full max-w-md">
@@ -154,6 +153,6 @@ export default function ShopLogin() {
         </Card>
       </div>
       <Footer />
-    </>
+    </PageLoadWrapper>
   );
 }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,8 @@ import { Eye, EyeOff, Zap, ArrowRight } from "lucide-react";
 import { z } from "zod";
 import Header from "@/components/landing/Header";
 import Footer from "@/components/landing/Footer";
+import { AuthSkeleton } from "@/components/landing/AuthSkeleton";
+import { PageLoadWrapper } from "@/components/landing/PageLoadWrapper";
 
 const registerSchema = z.object({
   fullName: z.string().trim().min(2, "নাম কমপক্ষে ২ অক্ষর হতে হবে").max(100),
@@ -29,7 +31,13 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [ready, setReady] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const t = setTimeout(() => setReady(true), 80);
+    return () => clearTimeout(t);
+  }, []);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,8 +82,10 @@ export default function Register() {
     }
   };
 
+  if (!ready) return <AuthSkeleton />;
+
   return (
-    <>
+    <PageLoadWrapper>
       <Header />
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-violet-50 via-white to-pink-50 p-4 pt-20">
         <Card className="w-full max-w-md shadow-xl border-0">
@@ -130,6 +140,6 @@ export default function Register() {
         </Card>
       </div>
       <Footer />
-    </>
+    </PageLoadWrapper>
   );
 }
