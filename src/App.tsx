@@ -15,6 +15,7 @@ import { ShopGuard } from "@/components/admin/ShopGuard";
 // Auth pages
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import Register from "./pages/Register";
 import ShopLogin from "./pages/shop/ShopLogin";
 
 // Super Admin pages (Platform Admin)
@@ -91,6 +92,7 @@ const App = () => (
                 
                 {/* Auth Routes */}
                 <Route path="/auth" element={<Auth />} />
+                <Route path="/register" element={<Register />} />
                 <Route path="/login" element={<ShopLogin />} />
                 
                 {/* ================================== */}

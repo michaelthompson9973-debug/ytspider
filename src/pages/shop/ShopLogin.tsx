@@ -176,10 +176,16 @@ export default function ShopLogin() {
             </Button>
           </form>
 
-          <div className="mt-6 text-center text-sm text-muted-foreground">
-            <Link to="/forgot-password" className="hover:underline">
+          <div className="mt-6 text-center text-sm text-muted-foreground space-y-2">
+            <Link to="/forgot-password" className="hover:underline block">
               পাসওয়ার্ড ভুলে গেছেন?
             </Link>
+            <p>
+              নতুন অ্যাকাউন্ট দরকার?{" "}
+              <Link to="/register" className="text-primary font-medium hover:underline">
+                রেজিস্ট্রেশন করুন
+              </Link>
+            </p>
           </div>
 
           <div className="mt-4 text-center text-xs text-muted-foreground">
