@@ -66,13 +66,20 @@ export default function ShopLogin() {
 
   // Auto redirect if already logged in
   useEffect(() => {
-    if (!authLoading && user && availableShops.length > 0) {
-      const firstShop = availableShops[0];
-      switchShop(firstShop.id).then(() => {
-        navigate('/shop', { replace: true });
-      });
+    if (!authLoading && user) {
+      const redirectUrl = searchParams.get('redirect');
+      if (redirectUrl) {
+        navigate(redirectUrl, { replace: true });
+        return;
+      }
+      if (availableShops.length > 0) {
+        const firstShop = availableShops[0];
+        switchShop(firstShop.id).then(() => {
+          navigate('/shop', { replace: true });
+        });
+      }
     }
-  }, [user, authLoading, availableShops, switchShop, navigate]);
+  }, [user, authLoading, availableShops, switchShop, navigate, searchParams]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
