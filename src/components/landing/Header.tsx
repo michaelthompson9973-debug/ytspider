@@ -16,13 +16,13 @@ const Header = () => {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/80 border-b border-gray-100" style={{ fontFamily: "'Oswald', sans-serif" }}>
+    <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/80 border-b border-gray-100" style={{ fontFamily: "'Poppins', sans-serif" }}>
       <div className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 h-16">
         <Link to="/" className="flex items-center gap-2">
           <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-violet-600 to-pink-500 flex items-center justify-center">
             <Zap className="h-5 w-5 text-white" />
           </div>
-          <span className="text-xl font-bold bg-gradient-to-r from-violet-700 to-pink-600 bg-clip-text text-transparent" style={{ fontFamily: "'Oswald', sans-serif" }}>
+          <span className="text-xl font-bold bg-gradient-to-r from-violet-700 to-pink-600 bg-clip-text text-transparent" style={{ fontFamily: "'Poppins', sans-serif" }}>
             ShopFlow
           </span>
         </Link>
@@ -37,7 +37,7 @@ const Header = () => {
 
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
-            <Link to="/login">লগইন</Link>
+            <Link to="/login">Login</Link>
           </Button>
           <Button size="sm" className="bg-gradient-to-r from-violet-600 to-pink-500 hover:from-violet-700 hover:to-pink-600 text-white border-0" asChild>
             <Link to="/register">Get Started</Link>
@@ -65,7 +65,7 @@ const Header = () => {
                 ))}
                 <div className="border-t border-gray-100 mt-4 pt-4 flex flex-col gap-2 px-4">
                   <Button variant="outline" asChild>
-                    <Link to="/login" onClick={() => setOpen(false)}>লগইন</Link>
+                    <Link to="/login" onClick={() => setOpen(false)}>Login</Link>
                   </Button>
                   <Button className="bg-gradient-to-r from-violet-600 to-pink-500 text-white border-0" asChild>
                     <Link to="/register" onClick={() => setOpen(false)}>Get Started</Link>
