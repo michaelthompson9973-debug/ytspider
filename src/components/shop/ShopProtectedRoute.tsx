@@ -9,7 +9,7 @@ interface ShopProtectedRouteProps {
 }
 
 export function ShopProtectedRoute({ children }: ShopProtectedRouteProps) {
-  const { user, loading: authLoading } = useAuth();
+  const { user, isAdmin, loading: authLoading } = useAuth();
   const { currentShop, availableShops, isLoading: shopLoading, switchShop } = useShop();
 
   // Auto-select first shop if none selected but shops available
@@ -34,6 +34,11 @@ export function ShopProtectedRoute({ children }: ShopProtectedRouteProps) {
   // Not logged in
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  // Platform admins are not allowed in /shop area
+  if (isAdmin) {
+    return <Navigate to="/admin" replace />;
   }
 
   // No shops available - redirect to onboarding
