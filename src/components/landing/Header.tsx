@@ -40,7 +40,7 @@ const Header = () => {
             <Link to="/login">লগইন</Link>
           </Button>
           <Button size="sm" className="bg-gradient-to-r from-violet-600 to-pink-500 hover:from-violet-700 hover:to-pink-600 text-white border-0" asChild>
-            <Link to="/login">Get Started</Link>
+            <Link to="/register">Get Started</Link>
           </Button>
 
           {/* Mobile menu */}
@@ -68,7 +68,7 @@ const Header = () => {
                     <Link to="/login" onClick={() => setOpen(false)}>লগইন</Link>
                   </Button>
                   <Button className="bg-gradient-to-r from-violet-600 to-pink-500 text-white border-0" asChild>
-                    <Link to="/login" onClick={() => setOpen(false)}>Get Started</Link>
+                    <Link to="/register" onClick={() => setOpen(false)}>Get Started</Link>
                   </Button>
                 </div>
               </div>

@@ -40,12 +40,12 @@ const Index = () => {
           </p>
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Button size="lg" className="bg-white text-violet-700 hover:bg-gray-100 font-semibold text-base px-8 shadow-xl" asChild>
-              <Link to="/login">
+              <Link to="/register">
                 Create Account <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
             <Button size="lg" variant="outline" className="border-white/50 bg-white/10 text-white hover:bg-white/20 font-semibold text-base px-8 backdrop-blur-sm" asChild>
-              <Link to="/login">Get Started</Link>
+              <Link to="/register">Get Started</Link>
             </Button>
           </div>
         </div>
