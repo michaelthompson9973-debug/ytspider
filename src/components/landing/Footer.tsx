@@ -52,8 +52,9 @@ const Footer = () => (
         </div>
       </div>
 
-      <div className="border-t border-gray-200 mt-10 pt-6 text-center">
+      <div className="border-t border-gray-200 mt-10 pt-6 text-center space-y-1">
         <p className="text-xs text-gray-400">© {new Date().getFullYear()} ShopFlow. All rights reserved.</p>
+        <p className="text-xs text-gray-400">আর্কিটেক্ট: আল গিফারী</p>
       </div>
     </div>
   </footer>
