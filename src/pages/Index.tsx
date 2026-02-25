@@ -123,7 +123,7 @@ const Index = () => {
                     <PlanFeature label={`${formatLimit(plan.max_shops)} শপ`} />
                     <PlanFeature label={`${formatLimit(plan.max_products)} প্রোডাক্ট`} />
                     <PlanFeature label={`${formatLimit(plan.max_landing_pages)} ল্যান্ডিং পেজ`} />
-                    <PlanFeature label={`${formatLimit(plan.max_orders_per_month)} অর্ডার/মাস`} />
+                    <PlanFeature label={`প্রতিদিন সর্বোচ্চ ${formatLimit(plan.max_orders_per_month)} অর্ডার`} />
                     <PlanFeature label={`${formatLimit(plan.max_team_members)} টিম মেম্বার`} />
                   </ul>
                   <Button
