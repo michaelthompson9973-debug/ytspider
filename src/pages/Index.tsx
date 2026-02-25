@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Store, Bot, Package, Smartphone, MessageCircle, BarChart3, CheckCircle, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,8 @@ import HowItWorksSection from "@/components/landing/HowItWorksSection";
 import FAQSection from "@/components/landing/FAQSection";
 import CTABanner from "@/components/landing/CTABanner";
 import Footer from "@/components/landing/Footer";
+import { HomeSkeleton } from "@/components/landing/HomeSkeleton";
+import { PageLoadWrapper } from "@/components/landing/PageLoadWrapper";
 
 const features = [
   { icon: Store, title: "মাল্টিপল শপ তৈরি ও ম্যানেজ", description: "একটি অ্যাকাউন্ট থেকে একাধিক শপ পরিচালনা করুন সহজেই।", bg: "bg-violet-100 text-violet-700" },
@@ -21,9 +24,19 @@ const features = [
 
 const Index = () => {
   const { data: plans, isLoading: plansLoading } = usePricingPlans(true);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setReady(true), 100);
+    return () => clearTimeout(t);
+  }, []);
+
+  if (!ready) {
+    return <HomeSkeleton />;
+  }
 
   return (
-    <div className="min-h-screen bg-white">
+    <PageLoadWrapper className="min-h-screen bg-white">
       <Header />
 
       {/* ===== HERO ===== */}
@@ -151,7 +164,7 @@ const Index = () => {
       <FAQSection />
       <CTABanner />
       <Footer />
-    </div>
+    </PageLoadWrapper>
   );
 };
 

@@ -1,4 +1,5 @@
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -6,6 +7,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Check, Star, Zap, Shield, Headphones } from 'lucide-react';
 import { usePricingPlans, formatLimit, isUnlimited } from '@/hooks/usePricingPlans';
 import { useLanguage } from '@/contexts/LanguageContext';
+import Header from '@/components/landing/Header';
+import Footer from '@/components/landing/Footer';
+import { PageLoadWrapper } from '@/components/landing/PageLoadWrapper';
 
 export default function Pricing() {
   const navigate = useNavigate();
@@ -15,7 +19,6 @@ export default function Pricing() {
   
   const handleBuy = (planSlug: string, isContactSales: boolean) => {
     if (isContactSales) {
-      // TODO: Open contact form or redirect to contact page
       window.open('mailto:sales@ytspider.com?subject=Enterprise Plan Inquiry', '_blank');
     } else {
       navigate(`/checkout?plan=${planSlug}`);
@@ -23,18 +26,10 @@ export default function Pricing() {
   };
   
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
-      {/* Header */}
-      <header className="border-b bg-background/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-xl font-bold">Ytspider</h1>
-          <Button variant="outline" onClick={() => navigate('/auth')}>
-            {language === 'bn' ? 'লগইন' : 'Login'}
-          </Button>
-        </div>
-      </header>
+    <PageLoadWrapper className="min-h-screen bg-gradient-to-b from-background to-muted/30">
+      <Header />
       
-      <main className="container mx-auto px-4 py-12">
+      <main className="container mx-auto px-4 py-12 pt-24">
         {/* Hero */}
         <div className="text-center max-w-3xl mx-auto mb-12">
           <Badge className="mb-4" variant="secondary">
@@ -112,27 +107,19 @@ export default function Pricing() {
                     <ul className="space-y-3 flex-1">
                       <li className="flex items-center gap-2 text-sm">
                         <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                        <span>
-                          {formatLimit(plan.max_shops, unlimitedText)} {language === 'bn' ? 'শপ' : 'Shops'}
-                        </span>
+                        <span>{formatLimit(plan.max_shops, unlimitedText)} {language === 'bn' ? 'শপ' : 'Shops'}</span>
                       </li>
                       <li className="flex items-center gap-2 text-sm">
                         <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                        <span>
-                          {formatLimit(plan.max_orders_per_month, unlimitedText)} {language === 'bn' ? 'অর্ডার/মাস' : 'Orders/mo'}
-                        </span>
+                        <span>{formatLimit(plan.max_orders_per_month, unlimitedText)} {language === 'bn' ? 'অর্ডার/মাস' : 'Orders/mo'}</span>
                       </li>
                       <li className="flex items-center gap-2 text-sm">
                         <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                        <span>
-                          {formatLimit(plan.max_team_members, unlimitedText)} {language === 'bn' ? 'টিম মেম্বার' : 'Team Members'}
-                        </span>
+                        <span>{formatLimit(plan.max_team_members, unlimitedText)} {language === 'bn' ? 'টিম মেম্বার' : 'Team Members'}</span>
                       </li>
                       <li className="flex items-center gap-2 text-sm">
                         <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                        <span>
-                          {formatLimit(plan.max_landing_pages, unlimitedText)} {language === 'bn' ? 'ল্যান্ডিং পেজ' : 'Landing Pages'}
-                        </span>
+                        <span>{formatLimit(plan.max_landing_pages, unlimitedText)} {language === 'bn' ? 'ল্যান্ডিং পেজ' : 'Landing Pages'}</span>
                       </li>
                       {plan.features?.slice(0, 3).map((feature, idx) => (
                         <li key={idx} className="flex items-center gap-2 text-sm">
@@ -177,10 +164,7 @@ export default function Pricing() {
         </div>
       </main>
       
-      {/* Footer */}
-      <footer className="border-t mt-20 py-8 text-center text-muted-foreground">
-        <p>© 2026 Ytspider. All rights reserved.</p>
-      </footer>
-    </div>
+      <Footer />
+    </PageLoadWrapper>
   );
 }
