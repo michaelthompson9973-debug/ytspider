@@ -44,7 +44,7 @@ const Index = () => {
                 Create Account <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
-            <Button size="lg" variant="outline" className="border-white/40 text-white hover:bg-white/10 font-semibold text-base px-8" asChild>
+            <Button size="lg" variant="outline" className="border-white/50 bg-white/10 text-white hover:bg-white/20 font-semibold text-base px-8 backdrop-blur-sm" asChild>
               <Link to="/login">Get Started</Link>
             </Button>
           </div>
