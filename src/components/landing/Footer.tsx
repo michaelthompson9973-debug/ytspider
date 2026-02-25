@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { Zap } from "lucide-react";
 
 const Footer = () => (
-  <footer id="contact" className="border-t border-gray-100 bg-gray-50">
+  <footer id="contact" className="border-t border-gray-100 bg-gray-50" style={{ fontFamily: "'Poppins', 'Hind Siliguri', sans-serif" }}>
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-14">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-10">
         {/* Brand */}
