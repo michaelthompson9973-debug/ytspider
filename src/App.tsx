@@ -13,6 +13,7 @@ import { ShopLayout } from "@/components/shop";
 import { ShopGuard } from "@/components/admin/ShopGuard";
 
 // Auth pages
+import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import ShopLogin from "./pages/shop/ShopLogin";
 
@@ -86,7 +87,7 @@ const App = () => (
             <BrowserRouter>
               <Routes>
                 {/* Root redirect */}
-                <Route path="/" element={<Navigate to="/shop" replace />} />
+                <Route path="/" element={<Index />} />
                 
                 {/* Auth Routes */}
                 <Route path="/auth" element={<Auth />} />
