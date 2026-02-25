@@ -1,61 +1,44 @@
 
 
-# ল্যান্ডিং পেজ হেডার ও ফুটার আপগ্রেড — কম্পানি স্টার্টাপ স্ট্যান্ডার্ড
+# "Create Account" → রেজিস্ট্রেশন → সাবস্ক্রিপশন ফ্লো ফিক্স
 
-## সমস্যা
-বর্তমান হেডারে মাত্র ২টি নেভ লিংক (Features, Pricing) আছে। একটি স্টার্টাপ/কম্পানি ওয়েবসাইটের জন্য আরও সেকশন ও প্রফেশনাল স্ট্রাকচার দরকার।
+## বর্তমান সমস্যা
+- "Create Account" বাটন `/login` এ যায় যেখানে শুধু লগইন ফর্ম আছে, কোনো সাইনআপ নেই
+- রেজিস্ট্রেশনের পর সাবস্ক্রিপশন কেনার কোনো ফ্লো নেই
 
 ## পরিকল্পনা
 
-### ধাপ ১: `src/pages/Index.tsx` আপডেট
+### ধাপ ১: নতুন `/register` পেজ তৈরি (`src/pages/Register.tsx`)
 
-**হেডার নেভিগেশন বাড়ানো হবে:**
-- Features
-- How It Works (নতুন সেকশন)
-- Pricing
-- FAQ (নতুন সেকশন)
-- Contact (ফুটারে স্ক্রল)
+একটি ShopFlow ব্র্যান্ডেড রেজিস্ট্রেশন ফর্ম:
+- ফিল্ড: পুরো নাম, ইমেইল, পাসওয়ার্ড, পাসওয়ার্ড কনফার্ম
+- Zod ভ্যালিডেশন
+- `supabase.auth.signUp()` কল
+- সফল হলে → `/pricing` পেজে রিডাইরেক্ট (সাবস্ক্রিপশন বেছে নিতে)
+- নিচে "ইতিমধ্যে অ্যাকাউন্ট আছে? লগইন" লিংক
 
-**মোবাইল হ্যামবার্গার মেনু** যোগ হবে (Sheet কম্পোনেন্ট ব্যবহার করে) — ছোট স্ক্রিনে নেভ আইটেম গুলো সাইড ড্রয়ারে দেখাবে।
-
-### ধাপ ২: নতুন সেকশন যোগ
-
-**"How It Works" সেকশন** (Features ও Pricing এর মাঝে):
-- ৩ স্টেপ: ১) অ্যাকাউন্ট তৈরি → ২) শপ সেটআপ → ৩) সেল শুরু
-- নম্বরযুক্ত স্টেপ কার্ড, gradient accent
-
-**"Stats / Social Proof" সেকশন** (Hero এর পরে):
-- কাউন্টার স্টাইলে: ১০০০+ শপ, ৫০,০০০+ অর্ডার, ৯৯.৯% আপটাইম, ২৪/৭ সাপোর্ট
-
-**"FAQ" সেকশন** (Pricing এর পরে):
-- Accordion কম্পোনেন্ট ব্যবহার করে ৫-৬ টি সাধারণ প্রশ্ন-উত্তর
-
-**"CTA Banner" সেকশন** (FAQ এর পরে, ফুটারের আগে):
-- গ্র্যাডিয়েন্ট ব্যাকগ্রাউন্ড, বড় CTA — "আজই শুরু করুন"
-
-### ধাপ ৩: ফুটার আপগ্রেড
-
-বর্তমান সিঙ্গেল-লাইন ফুটারকে মাল্টি-কলাম কম্পানি ফুটারে রূপান্তর:
-
+### ধাপ ২: `App.tsx` এ রাউট যোগ
 ```text
-┌─────────────────────────────────────────────────┐
-│  ShopFlow          Product        Company        │
-│  ট্যাগলাইন         Features       About Us       │
-│                    Pricing        Contact        │
-│  Social Icons      How It Works   Privacy Policy │
-│  (FB, Twitter,     FAQ            Terms          │
-│   LinkedIn)                                      │
-├─────────────────────────────────────────────────┤
-│  © 2026 ShopFlow. All rights reserved.           │
-└─────────────────────────────────────────────────┘
+<Route path="/register" element={<Register />} />
 ```
 
-### ধাপ ৪: ইউনিফর্ম ডিজাইন সিস্টেম
+### ধাপ ৩: `Index.tsx` বাটন লিংক আপডেট
+- "Create Account" → `/register`
+- "Get Started" → `/register`
 
-- সব সেকশনে consistent spacing (`py-20 sm:py-28`)
-- সব হেডিংয়ে একই ফন্ট ওয়েট ও সাইজ প্যাটার্ন
-- সেকশন ব্যাকগ্রাউন্ড alternating: white → gray-50 → white → gradient
-- সব CTA বাটনে একই gradient স্টাইল (`from-violet-600 to-pink-500`)
+### ধাপ ৪: `Header.tsx` আপডেট
+- "Get Started" বাটন → `/register`
+
+### ধাপ ৫: `ShopLogin.tsx` এ সাইনআপ লিংক যোগ
+- ফর্মের নিচে "নতুন অ্যাকাউন্ট তৈরি করুন" → `/register` লিংক
+
+### সম্পূর্ণ ফ্লো
+```text
+Landing Page → "Create Account" → /register (সাইনআপ ফর্ম)
+  → সফল → /pricing (প্ল্যান বাছাই)
+    → /checkout?plan=slug (পেমেন্ট)
+      → /purchase-success
+```
 
 ---
 
@@ -63,12 +46,9 @@
 
 | ফাইল | পরিবর্তন |
 |------|----------|
-| `src/pages/Index.tsx` | হেডার নেভ বাড়ানো, মোবাইল মেনু, How It Works, Stats, FAQ, CTA Banner সেকশন যোগ, ফুটার রিডিজাইন |
-
-**ব্যবহৃত কম্পোনেন্ট:**
-- `Sheet` (মোবাইল মেনু ড্রয়ার)
-- `Accordion` (FAQ সেকশন)
-- `lucide-react` আইকন (Menu, X, Users, ShoppingCart, Clock, Headphones ইত্যাদি)
-
-কোনো নতুন ফাইল বা ডাটাবেস পরিবর্তন দরকার নেই।
+| `src/pages/Register.tsx` | নতুন — রেজিস্ট্রেশন ফর্ম পেজ |
+| `src/App.tsx` | `/register` রাউট যোগ |
+| `src/pages/Index.tsx` | বাটন লিংক `/login` → `/register` |
+| `src/components/landing/Header.tsx` | "Get Started" লিংক → `/register` |
+| `src/pages/shop/ShopLogin.tsx` | সাইনআপ লিংক যোগ |
 
