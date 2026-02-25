@@ -9,6 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Eye, EyeOff, Store } from 'lucide-react';
+import Header from '@/components/landing/Header';
+import Footer from '@/components/landing/Footer';
 
 export default function ShopLogin() {
   const [email, setEmail] = useState('');
@@ -107,95 +109,51 @@ export default function ShopLogin() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          {shopInfo?.logo_url ? (
-            <img
-              src={shopInfo.logo_url}
-              alt={shopInfo.name}
-              className="h-16 w-16 mx-auto rounded-lg object-cover mb-2"
-            />
-          ) : (
-            <div className="h-16 w-16 mx-auto rounded-lg bg-primary flex items-center justify-center mb-2">
-              <Store className="h-8 w-8 text-primary-foreground" />
-            </div>
-          )}
-          <CardTitle className="text-2xl">
-            {shopInfo?.name || 'Shop Login'}
-          </CardTitle>
-          <CardDescription>
-            আপনার শপ ড্যাশবোর্ডে প্রবেশ করুন
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">ইমেইল</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="your@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                autoComplete="email"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="password">পাসওয়ার্ড</Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  autoComplete="current-password"
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-0 top-0 h-full px-3"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </Button>
+    <>
+      <Header />
+      <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4 pt-20">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            {shopInfo?.logo_url ? (
+              <img src={shopInfo.logo_url} alt={shopInfo.name} className="h-16 w-16 mx-auto rounded-lg object-cover mb-2" />
+            ) : (
+              <div className="h-16 w-16 mx-auto rounded-lg bg-primary flex items-center justify-center mb-2">
+                <Store className="h-8 w-8 text-primary-foreground" />
               </div>
+            )}
+            <CardTitle className="text-2xl">{shopInfo?.name || 'Shop Login'}</CardTitle>
+            <CardDescription>আপনার শপ ড্যাশবোর্ডে প্রবেশ করুন</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">ইমেইল</Label>
+                <Input id="email" type="email" placeholder="your@email.com" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">পাসওয়ার্ড</Label>
+                <div className="relative">
+                  <Input id="password" type={showPassword ? 'text' : 'password'} placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" />
+                  <Button type="button" variant="ghost" size="icon" className="absolute right-0 top-0 h-full px-3" onClick={() => setShowPassword(!showPassword)}>
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? 'লগইন হচ্ছে...' : 'লগইন'}
+              </Button>
+            </form>
+            <div className="mt-6 text-center text-sm text-muted-foreground space-y-2">
+              <Link to="/forgot-password" className="hover:underline block">পাসওয়ার্ড ভুলে গেছেন?</Link>
+              <p>নতুন অ্যাকাউন্ট দরকার?{" "}<Link to="/register" className="text-primary font-medium hover:underline">রেজিস্ট্রেশন করুন</Link></p>
             </div>
-
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'লগইন হচ্ছে...' : 'লগইন'}
-            </Button>
-          </form>
-
-          <div className="mt-6 text-center text-sm text-muted-foreground space-y-2">
-            <Link to="/forgot-password" className="hover:underline block">
-              পাসওয়ার্ড ভুলে গেছেন?
-            </Link>
-            <p>
-              নতুন অ্যাকাউন্ট দরকার?{" "}
-              <Link to="/register" className="text-primary font-medium hover:underline">
-                রেজিস্ট্রেশন করুন
-              </Link>
-            </p>
-          </div>
-
-          <div className="mt-4 text-center text-xs text-muted-foreground">
-            Powered by{' '}
-            <a href="https://ytspider.com" className="hover:underline" target="_blank" rel="noopener">
-              YTSpider
-            </a>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+            <div className="mt-4 text-center text-xs text-muted-foreground">
+              Powered by{' '}<a href="https://ytspider.com" className="hover:underline" target="_blank" rel="noopener">YTSpider</a>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      <Footer />
+    </>
   );
 }
