@@ -16,13 +16,13 @@ const Header = () => {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/80 border-b border-gray-100">
+    <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/80 border-b border-gray-100" style={{ fontFamily: "'Oswald', sans-serif" }}>
       <div className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 h-16">
         <Link to="/" className="flex items-center gap-2">
           <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-violet-600 to-pink-500 flex items-center justify-center">
             <Zap className="h-5 w-5 text-white" />
           </div>
-          <span className="text-xl font-bold bg-gradient-to-r from-violet-700 to-pink-600 bg-clip-text text-transparent">
+          <span className="text-xl font-bold bg-gradient-to-r from-violet-700 to-pink-600 bg-clip-text text-transparent" style={{ fontFamily: "'Oswald', sans-serif" }}>
             ShopFlow
           </span>
         </Link>
