@@ -2198,6 +2198,9 @@ export type Database = {
           payment_provider: string
           payment_session_id: string | null
           payment_status: string | null
+          paystation_invoice_number: string | null
+          paystation_payment_url: string | null
+          paystation_trx_id: string | null
           phone: string | null
           plan_id: string
           plan_snapshot: Json
@@ -2222,6 +2225,9 @@ export type Database = {
           payment_provider?: string
           payment_session_id?: string | null
           payment_status?: string | null
+          paystation_invoice_number?: string | null
+          paystation_payment_url?: string | null
+          paystation_trx_id?: string | null
           phone?: string | null
           plan_id: string
           plan_snapshot: Json
@@ -2246,6 +2252,9 @@ export type Database = {
           payment_provider?: string
           payment_session_id?: string | null
           payment_status?: string | null
+          paystation_invoice_number?: string | null
+          paystation_payment_url?: string | null
+          paystation_trx_id?: string | null
           phone?: string | null
           plan_id?: string
           plan_snapshot?: Json

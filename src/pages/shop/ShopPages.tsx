@@ -5,6 +5,7 @@
  */
 
 import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { RotateCcw, Palette, Save, Undo2 } from 'lucide-react';
 import { ShopLayout } from '@/components/shop';
 import { ProductsContent } from '@/components/admin/products';
@@ -18,6 +19,7 @@ import { useAdminThemePreference } from '@/hooks/useAdminThemePreference';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ThemePresetCard, ColorPicker, AppearanceToggle, LanguageToggle } from '@/components/admin/settings';
 import { toast } from 'sonner';
+import { UsageOverview } from '@/components/admin/billing';
 
 // Products Page for Shop Owners - Uses shared content
 export function ShopProductsPage() {
@@ -129,10 +131,39 @@ export function ShopTeamPage() {
 
 // Subscription for Shop Owners
 export function ShopSubscriptionPage() {
+  const navigate = useNavigate();
+  const { currentShop } = useShop();
+  const { t } = useLanguage();
+  
   return (
     <ShopLayout>
       <ShopGuard>
-        <PlaceholderPage title="সাবস্ক্রিপশন" description="বিলিং ও প্ল্যান ম্যানেজমেন্ট শীঘ্রই আসছে" />
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-2xl font-bold">{t('subscription.title') || 'সাবস্ক্রিপশন ও বিলিং'}</h1>
+            <p className="text-muted-foreground">{t('subscription.subtitle') || 'আপনার প্ল্যান ও বিলিং ম্যানেজ করুন'}</p>
+          </div>
+
+          {/* Current Plan */}
+          <Card>
+            <CardHeader>
+              <CardTitle>বর্তমান প্ল্যান</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-2xl font-bold capitalize">{currentShop?.plan || 'Free'}</p>
+                  <p className="text-sm text-muted-foreground">আপনার বর্তমান সাবস্ক্রিপশন প্ল্যান</p>
+                </div>
+                <Button onClick={() => navigate('/pricing')}>
+                  প্ল্যান আপগ্রেড করুন
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <UsageOverview />
+        </div>
       </ShopGuard>
     </ShopLayout>
   );
