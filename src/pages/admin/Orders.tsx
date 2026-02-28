@@ -32,6 +32,7 @@ import {
   formatCurrency,
   normalizePhone,
 } from '@/components/admin/orders';
+import { printInvoiceHTML } from '@/components/admin/orders/InvoicePrintView';
 
 const PAGE_SIZE = 15;
 
@@ -359,38 +360,13 @@ export default function Orders() {
 
   // Print invoice
   const printInvoice = useCallback((order: Order) => {
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
+    printInvoiceHTML({ order, items: orderItems, shopName: currentShop?.name || 'Shop', type: 'invoice' });
+  }, [orderItems, currentShop]);
 
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Invoice - ${order.id.slice(0, 8)}</title>
-        <style>
-          body { font-family: sans-serif; padding: 20px; }
-          h1 { font-size: 24px; }
-          .info { margin: 20px 0; }
-          table { width: 100%; border-collapse: collapse; }
-          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-          .total { font-weight: bold; font-size: 18px; text-align: right; margin-top: 20px; }
-        </style>
-      </head>
-      <body>
-        <h1>Invoice #${order.id.slice(0, 8).toUpperCase()}</h1>
-        <div class="info">
-          <p><strong>Customer:</strong> ${order.customer_name}</p>
-          <p><strong>Phone:</strong> ${order.customer_phone}</p>
-          <p><strong>Address:</strong> ${order.customer_address}, ${order.customer_city}</p>
-          <p><strong>Date:</strong> ${format(new Date(order.created_at), 'dd/MM/yyyy HH:mm')}</p>
-        </div>
-        <div class="total">Total: ${formatCurrency(order.total, order.currency)}</div>
-      </body>
-      </html>
-    `);
-    printWindow.document.close();
-    printWindow.print();
-  }, []);
+  // Print shipping label
+  const printShippingLabel = useCallback((order: Order) => {
+    printInvoiceHTML({ order, items: [], shopName: currentShop?.name || 'Shop', type: 'label' });
+  }, [currentShop]);
 
   // Handlers
   const handleSelectAll = useCallback((selected: boolean) => {

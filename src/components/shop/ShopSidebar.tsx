@@ -32,6 +32,8 @@ import {
   Wallet,
   UserCheck,
   Ticket,
+  RotateCcw,
+  Banknote,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useShop, ShopType } from '@/contexts/ShopContext';
@@ -67,6 +69,8 @@ function getNavGroups(shopType: ShopType): NavGroup[] {
         { title: 'অর্ডার', url: '/shop/orders', icon: ShoppingCart },
         { title: 'কাস্টমার', url: '/shop/customers', icon: UserCheck },
         { title: 'কুপন', url: '/shop/coupons', icon: Ticket },
+        { title: 'রিটার্ন/রিফান্ড', url: '/shop/returns', icon: RotateCcw, shopType: 'physical' },
+        { title: 'COD', url: '/shop/cod', icon: Banknote, shopType: 'physical' },
         {
           title: 'ল্যান্ডিং পেজ',
           url: '/shop/pages',

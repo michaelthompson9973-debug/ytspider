@@ -1582,6 +1582,69 @@ export type Database = {
           },
         ]
       }
+      order_returns: {
+        Row: {
+          admin_note: string | null
+          created_at: string
+          id: string
+          order_id: string
+          processed_at: string | null
+          processed_by: string | null
+          reason: string
+          refund_amount: number | null
+          refund_method: string | null
+          requested_at: string
+          shop_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_note?: string | null
+          created_at?: string
+          id?: string
+          order_id: string
+          processed_at?: string | null
+          processed_by?: string | null
+          reason: string
+          refund_amount?: number | null
+          refund_method?: string | null
+          requested_at?: string
+          shop_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_note?: string | null
+          created_at?: string
+          id?: string
+          order_id?: string
+          processed_at?: string | null
+          processed_by?: string | null
+          reason?: string
+          refund_amount?: number | null
+          refund_method?: string | null
+          requested_at?: string
+          shop_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_returns_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_returns_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_status_history: {
         Row: {
           changed_by: string | null
@@ -2110,11 +2173,14 @@ export type Database = {
           description: string | null
           id: string
           images: string[] | null
+          low_stock_threshold: number | null
           name: string
           price: number
           product_type: Database["public"]["Enums"]["product_type"]
           shop_id: string | null
           size_options: Json | null
+          stock: number | null
+          track_stock: boolean | null
           updated_at: string
           videos: string[] | null
         }
@@ -2124,11 +2190,14 @@ export type Database = {
           description?: string | null
           id?: string
           images?: string[] | null
+          low_stock_threshold?: number | null
           name: string
           price?: number
           product_type?: Database["public"]["Enums"]["product_type"]
           shop_id?: string | null
           size_options?: Json | null
+          stock?: number | null
+          track_stock?: boolean | null
           updated_at?: string
           videos?: string[] | null
         }
@@ -2138,11 +2207,14 @@ export type Database = {
           description?: string | null
           id?: string
           images?: string[] | null
+          low_stock_threshold?: number | null
           name?: string
           price?: number
           product_type?: Database["public"]["Enums"]["product_type"]
           shop_id?: string | null
           size_options?: Json | null
+          stock?: number | null
+          track_stock?: boolean | null
           updated_at?: string
           videos?: string[] | null
         }
