@@ -23,7 +23,8 @@ import {
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Plus, Pencil, Trash2, ImageIcon, Film, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, ImageIcon, Film, X, AlertTriangle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { z } from 'zod';
 import MediaPickerDialog from '@/components/admin/MediaPickerDialog';
 
@@ -34,6 +35,9 @@ const productSchema = z.object({
   active: z.boolean(),
   images: z.array(z.string()),
   videos: z.array(z.string()),
+  track_stock: z.boolean(),
+  stock: z.number().nullable(),
+  low_stock_threshold: z.number(),
 });
 
 type ProductForm = z.infer<typeof productSchema>;
@@ -45,6 +49,9 @@ const defaultForm: ProductForm = {
   active: true,
   images: [],
   videos: [],
+  track_stock: false,
+  stock: null,
+  low_stock_threshold: 5,
 };
 
 export function ProductsContent() {
@@ -89,6 +96,9 @@ export function ProductsContent() {
             active: data.active,
             images: data.images,
             videos: data.videos,
+            track_stock: data.track_stock,
+            stock: data.track_stock ? data.stock : null,
+            low_stock_threshold: data.low_stock_threshold,
           })
           .eq('id', editingId);
         if (error) throw error;
@@ -101,6 +111,9 @@ export function ProductsContent() {
           images: data.images,
           videos: data.videos,
           shop_id: currentShop.id,
+          track_stock: data.track_stock,
+          stock: data.track_stock ? data.stock : null,
+          low_stock_threshold: data.low_stock_threshold,
         }]);
         if (error) throw error;
       }
@@ -145,6 +158,9 @@ export function ProductsContent() {
       active: product.active,
       images: product.images ?? [],
       videos: product.videos ?? [],
+      track_stock: (product as any).track_stock ?? false,
+      stock: (product as any).stock ?? null,
+      low_stock_threshold: (product as any).low_stock_threshold ?? 5,
     });
     setEditingId(product.id);
     setDialogOpen(true);
@@ -204,23 +220,24 @@ export function ProductsContent() {
                 <thead>
                   <tr className="border-b bg-accent/50 text-accent-foreground">
                     <th className="px-4 py-3 text-left font-medium w-16">{t('products.image')}</th>
-                    <th className="px-4 py-3 text-left font-medium">{t('products.name')}</th>
-                    <th className="px-4 py-3 text-left font-medium">{t('products.price')}</th>
-                    <th className="px-4 py-3 text-left font-medium">{t('common.status')}</th>
-                    <th className="px-4 py-3 text-right font-medium">{t('common.actions')}</th>
+                     <th className="px-4 py-3 text-left font-medium">{t('products.name')}</th>
+                     <th className="px-4 py-3 text-left font-medium">{t('products.price')}</th>
+                     <th className="px-4 py-3 text-left font-medium">স্টক</th>
+                     <th className="px-4 py-3 text-left font-medium">{t('common.status')}</th>
+                     <th className="px-4 py-3 text-right font-medium">{t('common.actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {isLoading ? (
                     <tr>
-                      <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
-                        {t('common.loading')}
-                      </td>
-                    </tr>
-                  ) : products?.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
-                        {t('products.noProducts')}
+                     <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
+                         {t('common.loading')}
+                       </td>
+                     </tr>
+                   ) : products?.length === 0 ? (
+                     <tr>
+                       <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
+                         {t('products.noProducts')}
                       </td>
                     </tr>
                   ) : (
@@ -240,8 +257,22 @@ export function ProductsContent() {
                           </div>
                         </td>
                         <td className="px-4 py-3 font-medium">{product.name}</td>
-                        <td className="px-4 py-3">৳{Number(product.price).toLocaleString()}</td>
-                        <td className="px-4 py-3">
+                         <td className="px-4 py-3">৳{Number(product.price).toLocaleString()}</td>
+                         <td className="px-4 py-3">
+                           {(product as any).track_stock ? (
+                             <div className="flex items-center gap-1.5">
+                               <span className="font-medium">{(product as any).stock ?? 0}</span>
+                               {(product as any).stock !== null && (product as any).stock <= ((product as any).low_stock_threshold || 5) && (
+                                 <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
+                                   <AlertTriangle className="h-3 w-3 mr-0.5" />লো
+                                 </Badge>
+                               )}
+                             </div>
+                           ) : (
+                             <span className="text-muted-foreground text-xs">ট্র্যাক নেই</span>
+                           )}
+                         </td>
+                         <td className="px-4 py-3">
                           <span className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${
                             product.active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                           }`}>
@@ -316,6 +347,42 @@ export function ProductsContent() {
                   onCheckedChange={(checked) => setForm({ ...form, active: checked })}
                 />
                 <Label htmlFor="active">{t('common.active')}</Label>
+              </div>
+
+              {/* Stock Management */}
+              <div className="rounded-lg border p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="track_stock"
+                    checked={form.track_stock}
+                    onCheckedChange={(checked) => setForm({ ...form, track_stock: checked })}
+                  />
+                  <Label htmlFor="track_stock">স্টক ট্র্যাক করুন</Label>
+                </div>
+                {form.track_stock && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label htmlFor="stock">বর্তমান স্টক</Label>
+                      <Input
+                        id="stock"
+                        type="number"
+                        min={0}
+                        value={form.stock ?? 0}
+                        onChange={(e) => setForm({ ...form, stock: parseInt(e.target.value) || 0 })}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="low_threshold">লো-স্টক থ্রেশহোল্ড</Label>
+                      <Input
+                        id="low_threshold"
+                        type="number"
+                        min={0}
+                        value={form.low_stock_threshold}
+                        onChange={(e) => setForm({ ...form, low_stock_threshold: parseInt(e.target.value) || 5 })}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
               
               <div className="space-y-2">
