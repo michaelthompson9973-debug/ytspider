@@ -36,8 +36,17 @@ export default function CreateShop() {
 
   const form = useForm<CreateShopForUserInput>({
     resolver: zodResolver(createShopForUserSchema),
-    defaultValues: { shopName: '', slug: '', shopType: 'physical', ownerEmail: '', planId: '', durationDays: '30', sendCredentials: true },
+    defaultValues: { shopName: '', slug: '', shopType: 'physical', ownerEmail: '', ownerPassword: '', planId: '', durationDays: '30', sendCredentials: true },
   });
+
+  const generateCredentials = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+    const array = new Uint8Array(16);
+    crypto.getRandomValues(array);
+    const password = Array.from(array, (byte) => chars[byte % chars.length]).join('');
+    form.setValue('ownerPassword', password);
+    toast.success(language === 'bn' ? 'পাসওয়ার্ড জেনারেট হয়েছে!' : 'Password generated!');
+  };
 
   const { data: plans, isLoading: plansLoading } = useQuery({
     queryKey: ['pricing-plans-active'],
