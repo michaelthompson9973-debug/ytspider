@@ -165,6 +165,7 @@ const App = () => (
                 {/* Business Management (Platform Admin) */}
                 <Route path="/admin/business" element={<Navigate to="/admin/business/shops" replace />} />
                 <Route path="/admin/business/shops" element={<ProtectedRoute requireAdmin><AllShops /></ProtectedRoute>} />
+                <Route path="/admin/business/shops/create" element={<ProtectedRoute requireAdmin><CreateShop /></ProtectedRoute>} />
                 <Route path="/admin/business/team" element={<ProtectedRoute requireAdmin><TeamMembers /></ProtectedRoute>} />
                 <Route path="/admin/business/subscription" element={<ProtectedRoute requireAdmin><ShopSubscription /></ProtectedRoute>} />
                 <Route path="/admin/business/security" element={<ProtectedRoute requireAdmin><ShopSecurity /></ProtectedRoute>} />
