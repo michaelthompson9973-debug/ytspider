@@ -33,7 +33,7 @@ export function ShopProtectedRoute({ children }: ShopProtectedRouteProps) {
 
   // Not logged in
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/shop/login" replace />;
   }
 
   // Platform admins are not allowed in /shop area
