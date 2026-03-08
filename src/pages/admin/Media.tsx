@@ -492,7 +492,7 @@ export default function Media() {
                 ) : (
                   <Trash2 className="mr-2 h-4 w-4" />
                 )}
-                {selectedIds.size}টি ডিলিট করুন
+                Delete {selectedIds.size} Files
               </Button>
             </DialogFooter>
           </DialogContent>
