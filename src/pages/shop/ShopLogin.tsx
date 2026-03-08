@@ -86,25 +86,40 @@ export default function ShopLogin() {
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
       });
 
       if (error) {
         if (error.message.includes('Invalid login credentials')) {
-          toast.error('Invalid email or password');
+          toast.error('ইমেইল অথবা পাসওয়ার্ড ভুল');
         } else if (error.message.includes('Email not confirmed')) {
-          toast.error('Please verify your email');
+          toast.error('আপনার ইমেইল ভেরিফাই করুন');
         } else {
           toast.error(error.message);
         }
         return;
       }
 
-      toast.success('Login successful!');
+      // Block platform admins from logging in via shop login
+      if (data.user) {
+        const { data: roleData } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', data.user.id)
+          .maybeSingle();
+
+        if (roleData?.role === 'admin' || roleData?.role === 'super_admin') {
+          await supabase.auth.signOut();
+          toast.error('প্ল্যাটফর্ম অ্যাডমিনরা এখান থেকে লগইন করতে পারবেন না। অ্যাডমিন প্যানেল ব্যবহার করুন।');
+          return;
+        }
+      }
+
+      toast.success('লগইন সফল!');
     } catch (err) {
-      toast.error('Login failed');
+      toast.error('লগইন ব্যর্থ হয়েছে');
     } finally {
       setIsLoading(false);
     }
