@@ -95,8 +95,8 @@ const App = () => (
                 {/* Auth Routes */}
                 <Route path="/admin/login" element={<Auth />} />
                 <Route path="/auth" element={<Navigate to="/admin/login" replace />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/login" element={<ShopLogin />} />
+                <Route path="/shop/login" element={<ShopLogin />} />
+                <Route path="/login" element={<Navigate to="/shop/login" replace />} />
                 
                 {/* ================================== */}
                 {/* SHOP OWNER AREA (/shop/*) */}
