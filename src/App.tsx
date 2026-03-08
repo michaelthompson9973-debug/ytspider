@@ -93,7 +93,8 @@ const App = () => (
                 <Route path="/" element={<Index />} />
                 
                 {/* Auth Routes */}
-                <Route path="/auth" element={<Auth />} />
+                <Route path="/admin/login" element={<Auth />} />
+                <Route path="/auth" element={<Navigate to="/admin/login" replace />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/login" element={<ShopLogin />} />
                 
