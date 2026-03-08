@@ -104,7 +104,7 @@ export default function ShopLogin() {
 
       toast.success('Login successful!');
     } catch (err) {
-      toast.error('লগইন করতে সমস্যা হয়েছে');
+      toast.error('Login failed');
     } finally {
       setIsLoading(false);
     }
