@@ -365,7 +365,7 @@ export default function AllowedDomains() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-2 mb-4">
               <Info className="h-5 w-5 text-primary" />
-              <h4 className="font-semibold text-lg">ডোমেইন সেটাপ গাইড</h4>
+              <h4 className="font-semibold text-lg">Domain Setup Guide</h4>
             </div>
             
             <Tabs defaultValue="vercel" className="w-full">
