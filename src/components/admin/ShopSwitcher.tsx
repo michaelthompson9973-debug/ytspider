@@ -188,16 +188,7 @@ export function ShopSwitcher() {
   return (
     <>
       <div className="flex items-center gap-2">
-        {/* Add New Shop Button */}
-        <Button 
-          variant="outline" 
-          size="sm"
-          onClick={() => setCreateDialogOpen(true)}
-          className="gap-1"
-        >
-          <Plus className="h-4 w-4" />
-          <span className="hidden sm:inline">Add Shop</span>
-        </Button>
+        {/* Shop Switch Dropdown */}
 
         {/* Shop Switch Dropdown */}
         <DropdownMenu>
