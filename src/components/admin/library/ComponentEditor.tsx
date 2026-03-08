@@ -61,9 +61,9 @@ export function ComponentEditor({
     if (!name.trim() || !html.trim()) return;
 
     if (isEditing) {
-      onUpdate({ id: component.id, name, category, html });
+      onUpdate({ id: component.id, name, category, html, min_plan_tier: minPlanTier });
     } else {
-      onSave({ name, category, html });
+      onSave({ name, category, html, min_plan_tier: minPlanTier });
     }
     onOpenChange(false);
   };
