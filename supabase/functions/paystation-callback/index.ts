@@ -144,7 +144,13 @@ async function activatePlan(adminClient: any, purchase: any) {
 
       await adminClient
         .from('shops')
-        .update({ plan: planType })
+        .update({ 
+          plan: planType, 
+          status: 'active',
+          is_active: true,
+          expires_at: expiresAt.toISOString(),
+          grace_period_ends_at: null,
+        })
         .eq('id', shopId)
 
       // Create or update subscription

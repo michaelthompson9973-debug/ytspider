@@ -85,3 +85,6 @@ verify_jwt = false
 
 [functions.paystation-callback]
 verify_jwt = false
+
+[functions.check-subscription-expiry]
+verify_jwt = false
