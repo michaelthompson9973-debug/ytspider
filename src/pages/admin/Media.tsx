@@ -271,11 +271,11 @@ export default function Media() {
               {selectedIds.size > 0 ? (
                 <>
                   <span className="text-sm text-muted-foreground">
-                    {selectedIds.size}টি সিলেক্ট
+                    {selectedIds.size} selected
                   </span>
                   <Button variant="outline" size="sm" onClick={clearSelection}>
                     <X className="mr-1 h-3 w-3" />
-                    বাতিল
+                    Cancel
                   </Button>
                   <Button 
                     variant="destructive" 
@@ -283,7 +283,7 @@ export default function Media() {
                     onClick={() => setBulkDeleteOpen(true)}
                   >
                     <Trash2 className="mr-1 h-3 w-3" />
-                    ডিলিট করুন
+                    Delete
                   </Button>
                 </>
               ) : (
