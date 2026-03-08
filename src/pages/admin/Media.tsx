@@ -139,7 +139,7 @@ export default function Media() {
     onSuccess: (count) => {
       queryClient.invalidateQueries({ queryKey: ['media'] });
       clearSelection();
-      toast({ title: `${count}টি ফাইল ডিলিট হয়েছে` });
+      toast({ title: `${count} files deleted` });
     },
     onError: (error) => {
       toast({ title: 'Bulk delete failed', description: error.message, variant: 'destructive' });
