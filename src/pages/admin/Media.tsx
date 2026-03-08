@@ -178,8 +178,8 @@ export default function Media() {
         
         const savedKB = ((result.originalSize - result.compressedSize) / 1024).toFixed(1);
         toast({ 
-          title: 'ইমেজ কম্প্রেস হয়েছে ⚡', 
-          description: `${savedKB} KB সেভ হয়েছে (${result.reductionPercent.toFixed(0)}% কম)` 
+          title: 'Image compressed ⚡', 
+          description: `${savedKB} KB saved (${result.reductionPercent.toFixed(0)}% less)` 
         });
       }
     } catch (error) {
