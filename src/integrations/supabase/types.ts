@@ -3049,6 +3049,7 @@ export type Database = {
           total_rows: number
         }[]
       }
+      get_shop_quota_status: { Args: { _shop_id: string }; Returns: Json }
       get_user_shop_role: { Args: { _shop_id: string }; Returns: string }
       get_user_shops: {
         Args: never
