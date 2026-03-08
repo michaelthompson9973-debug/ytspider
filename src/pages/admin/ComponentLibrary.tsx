@@ -137,14 +137,14 @@ export default function ComponentLibrary() {
   return (
     <AdminLayout>
       <div className="flex h-full">
-        {/* Desktop Sidebar - Menu Style */}
+        {/* Desktop Sidebar - Sticky Category Filter */}
         {!isMobile && (
-          <div className="w-56 shrink-0 border-r bg-card overflow-y-auto p-2">
+          <div className="w-56 shrink-0 border-r bg-card overflow-y-auto p-2 sticky top-0 self-start h-[calc(100vh-3.5rem)]">
             <CategorySidebar />
           </div>
         )}
 
-        {/* Main Content */}
+        {/* Main Content - Scrollable */}
         <div className="flex-1 p-4 md:p-6 space-y-4 md:space-y-6 overflow-auto">
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
