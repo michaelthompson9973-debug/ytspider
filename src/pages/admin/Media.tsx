@@ -405,9 +405,9 @@ export default function Media() {
         <Dialog open={!!deleteItem} onOpenChange={(open) => !open && setDeleteItem(null)}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>ফাইল ডিলিট করুন?</DialogTitle>
+              <DialogTitle>Delete File?</DialogTitle>
               <DialogDescription>
-                আপনি কি নিশ্চিত যে "{deleteItem?.file_name}" ফাইলটি ডিলিট করতে চান? এই কাজটি আর ফেরানো যাবে না।
+                Are you sure you want to delete "{deleteItem?.file_name}"? This action cannot be undone.
               </DialogDescription>
             </DialogHeader>
             {deleteItem && (
