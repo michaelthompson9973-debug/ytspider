@@ -41,7 +41,7 @@ export function useAISuggestion() {
       if (error) {
         console.error('AI suggestion error:', error);
         if (error.message?.includes('429')) {
-          toast.error('AI রেট লিমিট, পরে চেষ্টা করুন');
+          toast.error('AI rate limit reached, please try again later');
         }
         return null;
       }

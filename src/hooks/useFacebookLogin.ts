@@ -57,17 +57,14 @@ export function useFacebookLogin(appId: string | null) {
     error: null,
   });
 
-  // Initialize Facebook SDK
   useEffect(() => {
     if (!appId) return;
 
-    // Check if SDK is already loaded
     if (window.FB) {
       setState(prev => ({ ...prev, isSDKLoaded: true }));
       return;
     }
 
-    // Load Facebook SDK
     window.fbAsyncInit = () => {
       window.FB.init({
         appId,
@@ -78,7 +75,6 @@ export function useFacebookLogin(appId: string | null) {
       setState(prev => ({ ...prev, isSDKLoaded: true }));
     };
 
-    // Load the SDK script
     const script = document.createElement('script');
     script.src = 'https://connect.facebook.net/en_US/sdk.js';
     script.async = true;
@@ -86,9 +82,7 @@ export function useFacebookLogin(appId: string | null) {
     script.crossOrigin = 'anonymous';
     document.body.appendChild(script);
 
-    return () => {
-      // Cleanup if needed
-    };
+    return () => {};
   }, [appId]);
 
   const fetchPages = useCallback((accessToken: string) => {
@@ -110,7 +104,7 @@ export function useFacebookLogin(appId: string | null) {
 
   const login = useCallback(async () => {
     if (!window.FB || !state.isSDKLoaded) {
-      setState(prev => ({ ...prev, error: 'Facebook SDK লোড হয়নি' }));
+      setState(prev => ({ ...prev, error: 'Facebook SDK not loaded' }));
       return;
     }
 
@@ -130,7 +124,7 @@ export function useFacebookLogin(appId: string | null) {
               }));
               resolve();
             } catch (error) {
-              const errorMessage = error instanceof Error ? error.message : 'পেজ লোড করতে সমস্যা হয়েছে';
+              const errorMessage = error instanceof Error ? error.message : 'Failed to load pages';
               setState(prev => ({
                 ...prev,
                 isLoading: false,
@@ -142,7 +136,7 @@ export function useFacebookLogin(appId: string | null) {
             setState(prev => ({
               ...prev,
               isLoading: false,
-              error: 'Facebook লগইন বাতিল করা হয়েছে',
+              error: 'Facebook login was cancelled',
             }));
             reject(new Error('Login cancelled'));
           }

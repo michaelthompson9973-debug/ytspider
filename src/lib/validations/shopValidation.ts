@@ -1,36 +1,33 @@
 import { z } from 'zod';
 
 export const shopTypeSchema = z.enum(['physical', 'digital'], {
-  required_error: 'প্রোডাক্ট টাইপ নির্বাচন করুন',
+  required_error: 'Please select a product type',
 });
 
 export const shopNameSchema = z.string()
-  .min(3, 'নাম কমপক্ষে ৩ অক্ষর হতে হবে')
-  .max(50, 'নাম সর্বোচ্চ ৫০ অক্ষর হতে পারে')
-  .refine((val) => val.trim().length >= 3, 'নাম কমপক্ষে ৩ অক্ষর হতে হবে');
+  .min(3, 'Name must be at least 3 characters')
+  .max(50, 'Name can be at most 50 characters')
+  .refine((val) => val.trim().length >= 3, 'Name must be at least 3 characters');
 
 export const shopSlugSchema = z.string()
-  .min(3, 'Slug কমপক্ষে ৩ অক্ষর হতে হবে')
-  .max(30, 'Slug সর্বোচ্চ ৩০ অক্ষর হতে পারে')
-  .regex(/^[a-z0-9-]+$/, 'শুধু ছোট হাতের অক্ষর, সংখ্যা ও হাইফেন ব্যবহার করুন')
-  .refine((val) => !val.startsWith('-') && !val.endsWith('-'), 'হাইফেন দিয়ে শুরু বা শেষ হতে পারবে না');
+  .min(3, 'Slug must be at least 3 characters')
+  .max(30, 'Slug can be at most 30 characters')
+  .regex(/^[a-z0-9-]+$/, 'Only lowercase letters, numbers, and hyphens allowed')
+  .refine((val) => !val.startsWith('-') && !val.endsWith('-'), 'Cannot start or end with a hyphen');
 
 export const emailSchema = z.string()
-  .email('সঠিক ইমেইল ঠিকানা দিন')
-  .max(255, 'ইমেইল সর্বোচ্চ ২৫৫ অক্ষর হতে পারে');
+  .email('Please enter a valid email address')
+  .max(255, 'Email can be at most 255 characters');
 
-// Step 1: Shop Type only
 export const createShopStep1Schema = z.object({
   shopType: shopTypeSchema,
 });
 
-// Step 2: Shop Name + optional slug
 export const createShopStep2Schema = z.object({
   name: shopNameSchema,
   slug: shopSlugSchema.optional(),
 });
 
-// Full schema for creating shop
 export const createShopSchema = z.object({
   name: shopNameSchema,
   slug: shopSlugSchema,
@@ -41,10 +38,10 @@ export const createShopForUserSchema = z.object({
   slug: shopSlugSchema,
   shopType: shopTypeSchema,
   ownerEmail: emailSchema,
-  planId: z.string().min(1, 'প্ল্যান নির্বাচন করুন'),
+  planId: z.string().min(1, 'Please select a plan'),
   durationDays: z.string().refine(
     (val) => ['30', '90', '180', '365'].includes(val),
-    'সঠিক মেয়াদ নির্বাচন করুন'
+    'Please select a valid duration'
   ),
   sendCredentials: z.boolean(),
 });

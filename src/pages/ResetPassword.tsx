@@ -11,8 +11,8 @@ import { z } from 'zod';
 
 const passwordSchema = z
   .string()
-  .min(6, 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে')
-  .max(72, 'পাসওয়ার্ড সর্বোচ্চ ৭২ অক্ষরের হতে পারে');
+  .min(6, 'Password must be at least 6 characters')
+  .max(72, 'Password can be at most 72 characters');
 
 export default function ResetPassword() {
   const [password, setPassword] = useState('');
@@ -23,7 +23,6 @@ export default function ResetPassword() {
   const [success, setSuccess] = useState(false);
   const navigate = useNavigate();
 
-  // Listen for PASSWORD_RECOVERY event from the Supabase redirect
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event) => {
@@ -33,7 +32,6 @@ export default function ResetPassword() {
       }
     );
 
-    // Also check URL hash for recovery token (type=recovery)
     const hash = window.location.hash;
     if (hash.includes('type=recovery')) {
       setIsRecovery(true);
@@ -45,16 +43,14 @@ export default function ResetPassword() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate password
     const result = passwordSchema.safeParse(password);
     if (!result.success) {
       toast.error(result.error.errors[0].message);
       return;
     }
 
-    // Confirm match
     if (password !== confirmPassword) {
-      toast.error('পাসওয়ার্ড মিলছে না');
+      toast.error('Passwords do not match');
       return;
     }
 
@@ -64,7 +60,7 @@ export default function ResetPassword() {
 
       if (error) {
         if (error.message.includes('same password')) {
-          toast.error('আগের পাসওয়ার্ড ব্যবহার করা যাবে না');
+          toast.error('Cannot use the same password as before');
         } else {
           toast.error(error.message);
         }
@@ -72,28 +68,26 @@ export default function ResetPassword() {
       }
 
       setSuccess(true);
-      toast.success('পাসওয়ার্ড সফলভাবে পরিবর্তন হয়েছে!');
+      toast.success('Password changed successfully!');
 
-      // Redirect after short delay
       setTimeout(() => {
         navigate('/shop/login', { replace: true });
       }, 2000);
     } catch {
-      toast.error('কিছু সমস্যা হয়েছে');
+      toast.error('Something went wrong');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // If not a recovery session, show an error state
   if (!isRecovery && !success) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <CardTitle className="text-xl">অবৈধ লিংক</CardTitle>
+            <CardTitle className="text-xl">Invalid Link</CardTitle>
             <CardDescription>
-              এই পাসওয়ার্ড রিসেট লিংকটি মেয়াদোত্তীর্ণ বা অবৈধ। অনুগ্রহ করে আবার রিসেট রিকোয়েস্ট করুন।
+              This password reset link has expired or is invalid. Please request a new one.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -101,7 +95,7 @@ export default function ResetPassword() {
               className="w-full"
               onClick={() => navigate('/forgot-password')}
             >
-              নতুন রিসেট লিংক নিন
+              Get New Reset Link
             </Button>
           </CardContent>
         </Card>
@@ -121,24 +115,24 @@ export default function ResetPassword() {
             )}
           </div>
           <CardTitle className="text-2xl">
-            {success ? 'পাসওয়ার্ড পরিবর্তন সফল!' : 'নতুন পাসওয়ার্ড সেট করুন'}
+            {success ? 'Password Changed!' : 'Set New Password'}
           </CardTitle>
           <CardDescription>
             {success
-              ? 'আপনাকে লগইন পেজে নিয়ে যাওয়া হচ্ছে...'
-              : 'আপনার নতুন পাসওয়ার্ড দিন।'}
+              ? 'Redirecting you to the login page...'
+              : 'Enter your new password.'}
           </CardDescription>
         </CardHeader>
         {!success && (
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="password">নতুন পাসওয়ার্ড</Label>
+                <Label htmlFor="password">New Password</Label>
                 <div className="relative">
                   <Input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="কমপক্ষে ৬ অক্ষর"
+                    placeholder="At least 6 characters"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
@@ -157,11 +151,11 @@ export default function ResetPassword() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword">পাসওয়ার্ড নিশ্চিত করুন</Label>
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
                 <Input
                   id="confirmPassword"
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="আবার পাসওয়ার্ড দিন"
+                  placeholder="Re-enter password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
@@ -169,7 +163,7 @@ export default function ResetPassword() {
                 />
               </div>
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'আপডেট হচ্ছে...' : 'পাসওয়ার্ড আপডেট করুন'}
+                {isLoading ? 'Updating...' : 'Update Password'}
               </Button>
             </form>
           </CardContent>

@@ -14,12 +14,12 @@ import { AuthSkeleton } from "@/components/landing/AuthSkeleton";
 import { PageLoadWrapper } from "@/components/landing/PageLoadWrapper";
 
 const registerSchema = z.object({
-  fullName: z.string().trim().min(2, "নাম কমপক্ষে ২ অক্ষর হতে হবে").max(100),
-  email: z.string().trim().email("সঠিক ইমেইল দিন").max(255),
-  password: z.string().min(6, "পাসওয়ার্ড কমপক্ষে ৬ অক্ষর হতে হবে").max(72),
+  fullName: z.string().trim().min(2, "Name must be at least 2 characters").max(100),
+  email: z.string().trim().email("Please enter a valid email").max(255),
+  password: z.string().min(6, "Password must be at least 6 characters").max(72),
   confirmPassword: z.string(),
 }).refine((d) => d.password === d.confirmPassword, {
-  message: "পাসওয়ার্ড মিলছে না",
+  message: "Passwords do not match",
   path: ["confirmPassword"],
 });
 
@@ -66,17 +66,17 @@ export default function Register() {
 
       if (error) {
         if (error.message.includes("already registered")) {
-          toast.error("এই ইমেইল দিয়ে আগেই অ্যাকাউন্ট তৈরি করা হয়েছে");
+          toast.error("An account with this email already exists");
         } else {
           toast.error(error.message);
         }
         return;
       }
 
-      toast.success("অ্যাকাউন্ট তৈরি হয়েছে! ইমেইল ভেরিফাই করুন, তারপর লগইন করে প্ল্যান বেছে নিন।");
+      toast.success("Account created! Please verify your email, then log in and choose a plan.");
       navigate("/pricing");
     } catch {
-      toast.error("অ্যাকাউন্ট তৈরি করতে সমস্যা হয়েছে");
+      toast.error("Failed to create account");
     } finally {
       setIsLoading(false);
     }
@@ -98,25 +98,25 @@ export default function Register() {
                 ShopFlow
               </span>
             </Link>
-            <CardTitle className="text-2xl">অ্যাকাউন্ট তৈরি করুন</CardTitle>
-            <CardDescription>ফ্রিতে শুরু করুন, পরে আপগ্রেড করুন</CardDescription>
+            <CardTitle className="text-2xl">Create Account</CardTitle>
+            <CardDescription>Start for free, upgrade later</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleRegister} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="fullName">পুরো নাম</Label>
-                <Input id="fullName" placeholder="আপনার নাম" value={fullName} onChange={(e) => setFullName(e.target.value)} required autoComplete="name" />
+                <Label htmlFor="fullName">Full Name</Label>
+                <Input id="fullName" placeholder="Your name" value={fullName} onChange={(e) => setFullName(e.target.value)} required autoComplete="name" />
                 {errors.fullName && <p className="text-sm text-destructive">{errors.fullName}</p>}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">ইমেইল</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input id="email" type="email" placeholder="your@email.com" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />
                 {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">পাসওয়ার্ড</Label>
+                <Label htmlFor="password">Password</Label>
                 <div className="relative">
-                  <Input id="password" type={showPassword ? "text" : "password"} placeholder="কমপক্ষে ৬ অক্ষর" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="new-password" />
+                  <Input id="password" type={showPassword ? "text" : "password"} placeholder="At least 6 characters" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="new-password" />
                   <Button type="button" variant="ghost" size="icon" className="absolute right-0 top-0 h-full px-3" onClick={() => setShowPassword(!showPassword)}>
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </Button>
@@ -124,17 +124,17 @@ export default function Register() {
                 {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword">পাসওয়ার্ড নিশ্চিত করুন</Label>
-                <Input id="confirmPassword" type={showPassword ? "text" : "password"} placeholder="আবার পাসওয়ার্ড দিন" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required autoComplete="new-password" />
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <Input id="confirmPassword" type={showPassword ? "text" : "password"} placeholder="Re-enter password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required autoComplete="new-password" />
                 {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword}</p>}
               </div>
               <Button type="submit" className="w-full bg-gradient-to-r from-violet-600 to-pink-500 hover:from-violet-700 hover:to-pink-600 text-white border-0 font-semibold" disabled={isLoading}>
-                {isLoading ? "তৈরি হচ্ছে..." : (<>অ্যাকাউন্ট তৈরি করুন <ArrowRight className="ml-2 h-4 w-4" /></>)}
+                {isLoading ? "Creating..." : (<>Create Account <ArrowRight className="ml-2 h-4 w-4" /></>)}
               </Button>
             </form>
             <div className="mt-6 text-center text-sm text-muted-foreground">
-              ইতিমধ্যে অ্যাকাউন্ট আছে?{" "}
-              <Link to="/login" className="text-violet-600 font-medium hover:underline">লগইন করুন</Link>
+              Already have an account?{" "}
+              <Link to="/login" className="text-violet-600 font-medium hover:underline">Log in</Link>
             </div>
           </CardContent>
         </Card>

@@ -68,7 +68,6 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Generate slug from name
   const generateSlug = (name: string): string => {
     return name
       .toLowerCase()
@@ -78,7 +77,6 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
       .trim();
   };
 
-  // Fetch user's shops
   const fetchShops = useCallback(async () => {
     if (!user) {
       setAvailableShops([]);
@@ -91,17 +89,14 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
     try {
       setError(null);
       
-      // If user is admin (legacy), they can see all shops
-      // Otherwise, only shops they're members of
       const { data: shops, error: shopsError } = await supabase.rpc('get_user_shops');
 
       if (shopsError) {
         console.error('Error fetching shops:', shopsError);
-        setError('শপ লোড করতে সমস্যা হয়েছে');
+        setError('Failed to load shops');
         return;
       }
 
-      // Type cast the shops data
       const typedShops: Shop[] = (shops || []).map((shop: Record<string, unknown>) => ({
         id: shop.id as string,
         name: shop.name as string,
@@ -123,7 +118,6 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
 
       setAvailableShops(typedShops);
 
-      // Try to restore last used shop from localStorage
       const savedShopId = localStorage.getItem(STORAGE_KEY);
       const savedShop = typedShops.find(s => s.id === savedShopId);
 
@@ -131,26 +125,23 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
         setCurrentShop(savedShop);
         await fetchUserRole(savedShop.id);
       } else {
-        // Stay in Platform Mode - don't auto-select first shop
         setCurrentShop(null);
         setUserRole(null);
       }
     } catch (err) {
       console.error('Error in fetchShops:', err);
-      setError('শপ লোড করতে সমস্যা হয়েছে');
+      setError('Failed to load shops');
     } finally {
       setIsLoading(false);
     }
   }, [user]);
 
-  // Fetch user's role in a specific shop
   const fetchUserRole = async (shopId: string) => {
     if (!user) {
       setUserRole(null);
       return;
     }
 
-    // If legacy admin, treat as owner
     if (isAdmin) {
       setUserRole('owner');
       return;
@@ -177,11 +168,10 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Switch to a different shop
   const switchShop = async (shopId: string) => {
     const shop = availableShops.find(s => s.id === shopId);
     if (!shop) {
-      throw new Error('শপ খুঁজে পাওয়া যায়নি');
+      throw new Error('Shop not found');
     }
 
     setCurrentShop(shop);
@@ -189,19 +179,17 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
     await fetchUserRole(shopId);
   };
 
-  // Create a new shop
   const createShop = async (
     name: string, 
     customSlug?: string, 
     options?: CreateShopOptions
   ): Promise<Shop> => {
     if (!user) {
-      throw new Error('লগইন করুন');
+      throw new Error('Please log in');
     }
 
     const slug = customSlug || generateSlug(name);
 
-    // Insert shop with new fields
     const { data: shop, error: shopError } = await supabase
       .from('shops')
       .insert({
@@ -221,12 +209,11 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
     if (shopError) {
       console.error('Error creating shop:', shopError);
       if (shopError.code === '23505') {
-        throw new Error('এই slug ইতিমধ্যে ব্যবহৃত হয়েছে');
+        throw new Error('This slug is already in use');
       }
-      throw new Error('শপ তৈরি করতে সমস্যা হয়েছে');
+      throw new Error('Failed to create shop');
     }
 
-    // Add owner as shop member
     const { error: memberError } = await supabase
       .from('shop_members')
       .insert({
@@ -239,12 +226,10 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
 
     if (memberError) {
       console.error('Error adding shop member:', memberError);
-      // Cleanup: delete the shop
       await supabase.from('shops').delete().eq('id', shop.id);
-      throw new Error('শপ মেম্বার যোগ করতে সমস্যা হয়েছে');
+      throw new Error('Failed to add shop member');
     }
 
-    // Type cast the new shop
     const newShop: Shop = {
       id: shop.id,
       name: shop.name,
@@ -264,39 +249,32 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
       updated_at: shop.updated_at,
     };
 
-    // Directly set as current shop (don't rely on switchShop which needs availableShops to be updated)
     setCurrentShop(newShop);
     setUserRole('owner');
     localStorage.setItem(STORAGE_KEY, newShop.id);
     
-    // Update available shops list
     setAvailableShops(prev => [...prev, newShop]);
 
     return newShop;
   };
 
-  // Refresh shops list
   const refreshShops = async () => {
     setIsLoading(true);
     await fetchShops();
   };
 
-  // Enter platform mode (clear current shop)
   const enterPlatformMode = () => {
     setCurrentShop(null);
     setUserRole(null);
     localStorage.removeItem(STORAGE_KEY);
   };
 
-  // Computed value for platform mode
   const isPlatformMode = currentShop === null;
 
-  // Load shops when user changes
   useEffect(() => {
     fetchShops();
   }, [fetchShops]);
 
-  // Subscribe to realtime updates
   useEffect(() => {
     if (!user) return;
 
@@ -360,7 +338,6 @@ export function useShop() {
   return context;
 }
 
-// Helper hook to check if user has minimum role
 export function useShopAccess(minRole: ShopRole = 'viewer'): boolean {
   const { userRole } = useShop();
   
