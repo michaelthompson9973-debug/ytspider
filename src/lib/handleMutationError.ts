@@ -20,7 +20,7 @@ export function handleMutationError(error: unknown, fallbackMessage = 'Operation
   if (QUOTA_PATTERNS.some((p) => lower.includes(p))) {
     toast.error('Plan limit reached', {
       description:
-        'You've reached the maximum allowed by your current plan. Please upgrade to continue.',
+        'You have reached the maximum allowed by your current plan. Please upgrade to continue.',
       action: {
         label: 'Upgrade',
         onClick: () => {
