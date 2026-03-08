@@ -3017,6 +3017,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_platform_staff: {
+        Args: { _email: string; _role: string }
+        Returns: Json
+      }
+      change_platform_staff_role: {
+        Args: { _new_role: string; _role_id: string }
+        Returns: Json
+      }
       check_plan_quota: {
         Args: { _resource_type: string; _shop_id: string }
         Returns: boolean
@@ -3047,6 +3055,18 @@ export type Database = {
           status: string
           team_member_count: number
           total_rows: number
+        }[]
+      }
+      get_platform_staff: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          granted_at: string
+          role: string
+          role_id: string
+          user_email: string
+          user_id: string
+          user_name: string
         }[]
       }
       get_shop_quota_status: { Args: { _shop_id: string }; Returns: Json }
@@ -3092,9 +3112,11 @@ export type Database = {
       }
       is_admin: { Args: never; Returns: boolean }
       is_shop_active: { Args: { _shop_id: string }; Returns: boolean }
+      is_super_admin: { Args: never; Returns: boolean }
+      remove_platform_staff: { Args: { _role_id: string }; Returns: Json }
     }
     Enums: {
-      app_role: "admin"
+      app_role: "admin" | "super_admin" | "support"
       campaign_channel: "whatsapp" | "sms" | "email"
       campaign_status:
         | "draft"
@@ -3286,7 +3308,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin"],
+      app_role: ["admin", "super_admin", "support"],
       campaign_channel: ["whatsapp", "sms", "email"],
       campaign_status: [
         "draft",
