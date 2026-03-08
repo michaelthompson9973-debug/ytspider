@@ -123,10 +123,10 @@ export function SubdomainSetupHelper({
             <StepIcon step={1} />
             <div className="flex-1">
               <p className="font-medium text-sm">
-                Step 1: Admin Panel এ Domain Added
+                Step 1: Domain Added in Admin Panel
               </p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                ✓ আপনার domain সফলভাবে যুক্ত হয়েছে
+                ✓ Your domain has been added successfully
               </p>
             </div>
           </div>
@@ -136,7 +136,7 @@ export function SubdomainSetupHelper({
             <StepIcon step={2} />
             <div className="flex-1 space-y-2">
               <p className="font-medium text-sm">
-                Step 2: Vercel এ Domain Add করুন
+                Step 2: Add Domain to Vercel
               </p>
               
               <div className="bg-muted rounded-lg p-3 space-y-2">
@@ -158,7 +158,7 @@ export function SubdomainSetupHelper({
               </div>
               
               <p className="text-xs text-muted-foreground">
-                অথবা <span className="font-medium">Vercel Dashboard</span> → Settings → Domains → Add
+                Or go to <span className="font-medium">Vercel Dashboard</span> → Settings → Domains → Add
               </p>
             </div>
           </div>
@@ -168,7 +168,7 @@ export function SubdomainSetupHelper({
             <StepIcon step={3} />
             <div className="flex-1 space-y-3">
               <p className="font-medium text-sm">
-                Step 3: DNS Record সেট করুন
+                Step 3: Configure DNS Records
               </p>
               
               {/* CNAME Record */}
@@ -227,7 +227,7 @@ export function SubdomainSetupHelper({
             <StepIcon step={4} />
             <div className="flex-1 space-y-2">
               <p className="font-medium text-sm">
-                Step 4: DNS Propagation Check করুন
+                Step 4: Check DNS Propagation
               </p>
               <div className="flex flex-wrap gap-2">
                 <Button variant="outline" size="sm" asChild>

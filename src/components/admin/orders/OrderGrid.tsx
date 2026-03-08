@@ -67,7 +67,7 @@ export const OrderGrid = React.forwardRef<HTMLDivElement, OrderGridProps>(
     if (orders.length === 0) {
       return (
         <div ref={ref} className="text-center py-12">
-          <p className="text-muted-foreground">কোনো অর্ডার পাওয়া যায়নি</p>
+          <p className="text-muted-foreground">No orders found</p>
         </div>
       );
     }
@@ -97,7 +97,7 @@ export const OrderGrid = React.forwardRef<HTMLDivElement, OrderGridProps>(
                       checked={isSelected}
                       onCheckedChange={(checked) => handleRowSelect(order.id, !!checked)}
                       onClick={(e) => e.stopPropagation()}
-                      aria-label={`সিলেক্ট ${order.customer_name}`}
+                      aria-label={`Select ${order.customer_name}`}
                     />
                     <div>
                       <p className="font-mono text-xs text-muted-foreground">
@@ -173,7 +173,7 @@ export const OrderGrid = React.forwardRef<HTMLDivElement, OrderGridProps>(
                     onClick={() => onEdit(order)}
                   >
                     <Edit className="h-3 w-3 mr-1" />
-                    এডিট
+                    Edit
                   </Button>
                   <Button
                     variant="ghost"
@@ -182,7 +182,7 @@ export const OrderGrid = React.forwardRef<HTMLDivElement, OrderGridProps>(
                     onClick={() => onPrint(order)}
                   >
                     <Printer className="h-3 w-3 mr-1" />
-                    প্রিন্ট
+                    Print
                   </Button>
                   {!order.tracking_code && (
                     <Button
@@ -192,7 +192,7 @@ export const OrderGrid = React.forwardRef<HTMLDivElement, OrderGridProps>(
                       onClick={() => onSendToCourier(order)}
                     >
                       <Truck className="h-3 w-3 mr-1" />
-                      কুরিয়ার
+                      Courier
                     </Button>
                   )}
                   <Button

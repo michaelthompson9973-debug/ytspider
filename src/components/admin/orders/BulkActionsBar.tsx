@@ -32,7 +32,7 @@ export const BulkActionsBar = React.forwardRef<HTMLDivElement, BulkActionsBarPro
       >
         {/* Selected Count */}
         <div className="flex items-center gap-2">
-          <span className="font-medium">{selectedCount} টি সিলেক্টেড</span>
+          <span className="font-medium">{selectedCount} selected</span>
           <Button
             variant="ghost"
             size="icon"
@@ -48,7 +48,7 @@ export const BulkActionsBar = React.forwardRef<HTMLDivElement, BulkActionsBarPro
         {/* Bulk Status Change */}
         <Select onValueChange={(status: OrderStatus) => onBulkStatusChange(status)} disabled={isProcessing}>
           <SelectTrigger className="w-36">
-            <SelectValue placeholder="স্ট্যাটাস পরিবর্তন" />
+            <SelectValue placeholder="Change Status" />
           </SelectTrigger>
           <SelectContent>
             {Object.entries(STATUS_CONFIG).map(([value, config]) => (
@@ -62,7 +62,7 @@ export const BulkActionsBar = React.forwardRef<HTMLDivElement, BulkActionsBarPro
         {/* Bulk Send to Courier */}
         <Button onClick={onBulkSendToCourier} disabled={isProcessing}>
           <Truck className="mr-2 h-4 w-4" />
-          কুরিয়ারে পাঠান
+          Send to Courier
         </Button>
       </div>
     );

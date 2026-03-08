@@ -38,7 +38,7 @@ export function ShopSwitcher() {
                 <Store className="h-4 w-4" />
               )}
               <span className="truncate max-w-[120px]">
-                {currentShop?.name || 'শপ নির্বাচন করুন'}
+                {currentShop?.name || 'Select Shop'}
               </span>
             </div>
             <ChevronDown className="h-4 w-4 opacity-50" />
@@ -73,7 +73,7 @@ export function ShopSwitcher() {
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => setCreateOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
-            নতুন শপ তৈরি করুন
+            Create New Shop
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

@@ -75,21 +75,21 @@ export type DateFilter = 'today' | 'yesterday' | '7days' | '30days' | 'all';
 
 export type ViewMode = 'table' | 'grid';
 
-// Status labels and colors in Bengali
+// Status labels and colors
 export const STATUS_CONFIG: Record<OrderStatus, { label: string; color: string; bgColor: string }> = {
-  new: { label: 'নতুন', color: 'text-blue-700', bgColor: 'bg-blue-100' },
-  pending: { label: 'পেন্ডিং', color: 'text-yellow-700', bgColor: 'bg-yellow-100' },
-  processing: { label: 'প্রসেসিং', color: 'text-orange-700', bgColor: 'bg-orange-100' },
-  confirmed: { label: 'কনফার্মড', color: 'text-green-700', bgColor: 'bg-green-100' },
-  shipped: { label: 'শিপড', color: 'text-purple-700', bgColor: 'bg-purple-100' },
-  delivered: { label: 'ডেলিভারড', color: 'text-emerald-700', bgColor: 'bg-emerald-100' },
-  cancelled: { label: 'বাতিল', color: 'text-red-700', bgColor: 'bg-red-100' },
+  new: { label: 'New', color: 'text-blue-700', bgColor: 'bg-blue-100' },
+  pending: { label: 'Pending', color: 'text-yellow-700', bgColor: 'bg-yellow-100' },
+  processing: { label: 'Processing', color: 'text-orange-700', bgColor: 'bg-orange-100' },
+  confirmed: { label: 'Confirmed', color: 'text-green-700', bgColor: 'bg-green-100' },
+  shipped: { label: 'Shipped', color: 'text-purple-700', bgColor: 'bg-purple-100' },
+  delivered: { label: 'Delivered', color: 'text-emerald-700', bgColor: 'bg-emerald-100' },
+  cancelled: { label: 'Cancelled', color: 'text-red-700', bgColor: 'bg-red-100' },
 };
 
 export const DATE_FILTER_OPTIONS: { value: DateFilter; label: string }[] = [
-  { value: 'today', label: 'আজ' },
-  { value: 'yesterday', label: 'গতকাল' },
-  { value: '7days', label: '৭ দিন' },
-  { value: '30days', label: '৩০ দিন' },
-  { value: 'all', label: 'সব' },
+  { value: 'today', label: 'Today' },
+  { value: 'yesterday', label: 'Yesterday' },
+  { value: '7days', label: '7 Days' },
+  { value: '30days', label: '30 Days' },
+  { value: 'all', label: 'All' },
 ];

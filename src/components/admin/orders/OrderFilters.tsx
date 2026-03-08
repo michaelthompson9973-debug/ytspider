@@ -20,7 +20,7 @@ export const OrderFilters = React.forwardRef<HTMLDivElement, OrderFiltersProps>(
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="অর্ডার নম্বর, নাম বা ফোন দিয়ে খুঁজুন..."
+            placeholder="Search by order #, name, or phone..."
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
             className="pl-10 pr-10"

@@ -54,24 +54,10 @@ interface OrderDetailsModalProps {
 export const OrderDetailsModal = React.forwardRef<HTMLDivElement, OrderDetailsModalProps>(
   (
     {
-      open,
-      onOpenChange,
-      order,
-      orderItems,
-      statusHistory,
-      courierHistory,
-      products,
-      onStatusChange,
-      onSendToCourier,
-      onPrint,
-      onEdit,
-      onSaveItems,
-      onTrustBadgeClick,
-      onRefreshTrust,
-      isRefreshingTrust = false,
-      isSavingItems = false,
-      isSendingToCourier = false,
-      isLoadingHistory = false,
+      open, onOpenChange, order, orderItems, statusHistory, courierHistory, products,
+      onStatusChange, onSendToCourier, onPrint, onEdit, onSaveItems, onTrustBadgeClick,
+      onRefreshTrust, isRefreshingTrust = false, isSavingItems = false,
+      isSendingToCourier = false, isLoadingHistory = false,
     },
     ref
   ) => {
@@ -87,7 +73,7 @@ export const OrderDetailsModal = React.forwardRef<HTMLDivElement, OrderDetailsMo
           <ResponsiveModalHeader>
             <div className="flex items-center justify-between">
               <ResponsiveModalTitle className="flex items-center gap-2">
-                <span>অর্ডার {getShortOrderId(order.id)}</span>
+                <span>Order {getShortOrderId(order.id)}</span>
                 <span className={cn('text-sm px-2 py-0.5 rounded', statusConfig.bgColor, statusConfig.color)}>
                   {statusConfig.label}
                 </span>
@@ -95,11 +81,11 @@ export const OrderDetailsModal = React.forwardRef<HTMLDivElement, OrderDetailsMo
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm" onClick={onPrint}>
                   <Printer className="h-4 w-4 sm:mr-1" />
-                  <span className="hidden sm:inline">প্রিন্ট</span>
+                  <span className="hidden sm:inline">Print</span>
                 </Button>
                 <Button variant="outline" size="sm" onClick={onEdit}>
                   <Edit className="h-4 w-4 sm:mr-1" />
-                  <span className="hidden sm:inline">এডিট</span>
+                  <span className="hidden sm:inline">Edit</span>
                 </Button>
               </div>
             </div>
@@ -110,24 +96,15 @@ export const OrderDetailsModal = React.forwardRef<HTMLDivElement, OrderDetailsMo
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium flex items-center justify-between">
-                  <span>কাস্টমার তথ্য</span>
-                  <TrustBadge
-                    courierHistory={courierHistory}
-                    phone={order.customer_phone}
-                    onClick={onTrustBadgeClick}
-                    onRefresh={onRefreshTrust}
-                    isRefreshing={isRefreshingTrust}
-                    size="md"
-                  />
+                  <span>Customer Info</span>
+                  <TrustBadge courierHistory={courierHistory} phone={order.customer_phone} onClick={onTrustBadgeClick} onRefresh={onRefreshTrust} isRefreshing={isRefreshingTrust} size="md" />
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 text-sm">
                 <p className="font-medium text-base">{order.customer_name}</p>
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Phone className="h-4 w-4" />
-                  <a href={`tel:${order.customer_phone}`} className="hover:underline">
-                    {order.customer_phone}
-                  </a>
+                  <a href={`tel:${order.customer_phone}`} className="hover:underline">{order.customer_phone}</a>
                 </div>
                 <div className="flex items-start gap-2 text-muted-foreground">
                   <MapPin className="h-4 w-4 mt-0.5 shrink-0" />
@@ -135,7 +112,7 @@ export const OrderDetailsModal = React.forwardRef<HTMLDivElement, OrderDetailsMo
                 </div>
                 {order.note && (
                   <div className="mt-2 p-2 bg-muted rounded text-sm">
-                    <strong>নোট:</strong> {order.note}
+                    <strong>Note:</strong> {order.note}
                   </div>
                 )}
               </CardContent>
@@ -146,7 +123,7 @@ export const OrderDetailsModal = React.forwardRef<HTMLDivElement, OrderDetailsMo
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium flex items-center gap-2">
                   <Package className="h-4 w-4" />
-                  অর্ডার সারসংক্ষেপ
+                  Order Summary
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
@@ -163,16 +140,14 @@ export const OrderDetailsModal = React.forwardRef<HTMLDivElement, OrderDetailsMo
 
                 {/* Status Change */}
                 <div className="flex items-center gap-3">
-                  <span className="text-muted-foreground">স্ট্যাটাস:</span>
+                  <span className="text-muted-foreground">Status:</span>
                   <Select value={order.status} onValueChange={onStatusChange}>
                     <SelectTrigger className={cn('w-36', statusConfig.bgColor, statusConfig.color)}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       {Object.entries(STATUS_CONFIG).map(([value, config]) => (
-                        <SelectItem key={value} value={value}>
-                          {config.label}
-                        </SelectItem>
+                        <SelectItem key={value} value={value}>{config.label}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -186,17 +161,17 @@ export const OrderDetailsModal = React.forwardRef<HTMLDivElement, OrderDetailsMo
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium flex items-center gap-2">
                     <Truck className="h-4 w-4" />
-                    কুরিয়ার তথ্য
+                    Courier Info
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 text-sm">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-muted-foreground">কুরিয়ার</p>
+                      <p className="text-muted-foreground">Courier</p>
                       <p className="font-medium">{order.courier_provider}</p>
                     </div>
                     <div>
-                      <p className="text-muted-foreground">স্ট্যাটাস</p>
+                      <p className="text-muted-foreground">Status</p>
                       <p className="font-medium">{order.courier_status || 'N/A'}</p>
                     </div>
                     <div>
@@ -204,13 +179,8 @@ export const OrderDetailsModal = React.forwardRef<HTMLDivElement, OrderDetailsMo
                       <p className="font-mono text-xs break-all">{order.consignment_id}</p>
                     </div>
                     <div>
-                      <p className="text-muted-foreground">ট্র্যাকিং কোড</p>
-                      <a
-                        href={`https://steadfast.com.bd/t/${order.tracking_code}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-primary hover:underline font-mono text-xs"
-                      >
+                      <p className="text-muted-foreground">Tracking Code</p>
+                      <a href={`https://steadfast.com.bd/t/${order.tracking_code}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline font-mono text-xs">
                         {order.tracking_code}
                         <ExternalLink className="h-3 w-3" />
                       </a>
@@ -221,41 +191,31 @@ export const OrderDetailsModal = React.forwardRef<HTMLDivElement, OrderDetailsMo
             ) : (
               <Button onClick={onSendToCourier} disabled={isSendingToCourier} className="w-full">
                 <Truck className="mr-2 h-4 w-4" />
-                {isSendingToCourier ? 'পাঠানো হচ্ছে...' : 'কুরিয়ারে পাঠান'}
+                {isSendingToCourier ? 'Sending...' : 'Send to Courier'}
               </Button>
             )}
 
             {/* Order Items */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">অর্ডার আইটেম</CardTitle>
+                <CardTitle className="text-sm font-medium">Order Items</CardTitle>
               </CardHeader>
               <CardContent>
-                <OrderItemsEditor
-                  items={orderItems}
-                  products={products}
-                  currency={order.currency || 'BDT'}
-                  onSave={onSaveItems}
-                  isEditing={isEditingItems}
-                  onEditChange={setIsEditingItems}
-                  isSaving={isSavingItems}
-                />
-
+                <OrderItemsEditor items={orderItems} products={products} currency={order.currency || 'BDT'} onSave={onSaveItems} isEditing={isEditingItems} onEditChange={setIsEditingItems} isSaving={isSavingItems} />
                 <Separator className="my-4" />
-
                 {/* Financial Summary */}
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">সাবটোটাল:</span>
+                    <span className="text-muted-foreground">Subtotal:</span>
                     <span>{formatCurrency(order.subtotal, order.currency)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">ডেলিভারি:</span>
+                    <span className="text-muted-foreground">Delivery:</span>
                     <span>{formatCurrency(order.delivery_charge, order.currency)}</span>
                   </div>
                   <Separator />
                   <div className="flex justify-between font-bold text-base">
-                    <span>মোট:</span>
+                    <span>Total:</span>
                     <span>{formatCurrency(order.total, order.currency)}</span>
                   </div>
                 </div>
@@ -265,7 +225,7 @@ export const OrderDetailsModal = React.forwardRef<HTMLDivElement, OrderDetailsMo
             {/* Order Timeline */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">স্ট্যাটাস ইতিহাস</CardTitle>
+                <CardTitle className="text-sm font-medium">Status History</CardTitle>
               </CardHeader>
               <CardContent>
                 <OrderTimeline history={statusHistory} isLoading={isLoadingHistory} />
@@ -276,7 +236,7 @@ export const OrderDetailsModal = React.forwardRef<HTMLDivElement, OrderDetailsMo
             {(order.utm_source || order.utm_medium || order.utm_campaign) && (
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">UTM প্যারামিটার</CardTitle>
+                  <CardTitle className="text-sm font-medium">UTM Parameters</CardTitle>
                 </CardHeader>
                 <CardContent className="text-xs text-muted-foreground space-y-1">
                   {order.utm_source && <p>Source: {order.utm_source}</p>}

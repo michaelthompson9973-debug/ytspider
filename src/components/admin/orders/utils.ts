@@ -1,28 +1,27 @@
 import { formatDistanceToNow, format, isToday, isYesterday, subDays, startOfDay } from 'date-fns';
-import { bn } from 'date-fns/locale';
 import { TrustLevel, DateFilter } from './types';
 
 /**
- * Format currency in Bengali style with ৳ symbol
+ * Format currency with ৳ symbol
  */
 export const formatCurrency = (amount: number | null, currency?: string | null): string => {
   if (amount === null || amount === undefined) return '-';
   const symbol = currency === 'USD' ? '$' : currency === 'INR' ? '₹' : '৳';
-  return `${symbol}${Number(amount).toLocaleString('bn-BD')}`;
+  return `${symbol}${Number(amount).toLocaleString()}`;
 };
 
 /**
- * Format date as relative time in Bengali
+ * Format date as relative time
  */
 export const formatRelativeTime = (date: string): string => {
-  return formatDistanceToNow(new Date(date), { addSuffix: true, locale: bn });
+  return formatDistanceToNow(new Date(date), { addSuffix: true });
 };
 
 /**
- * Format date in Bengali
+ * Format date
  */
 export const formatDateBengali = (date: string, formatStr: string = 'dd MMM, HH:mm'): string => {
-  return format(new Date(date), formatStr, { locale: bn });
+  return format(new Date(date), formatStr);
 };
 
 /**
@@ -41,14 +40,14 @@ export const getTrustLevel = (successRate: number | null): TrustLevel => {
 export const getTrustBadgeConfig = (level: TrustLevel): { emoji: string; label: string; color: string; bgColor: string } => {
   switch (level) {
     case 'trusted':
-      return { emoji: '🟢', label: 'বিশ্বস্ত', color: 'text-green-700', bgColor: 'bg-green-100' };
+      return { emoji: '🟢', label: 'Trusted', color: 'text-green-700', bgColor: 'bg-green-100' };
     case 'medium':
-      return { emoji: '🟡', label: 'মধ্যম', color: 'text-yellow-700', bgColor: 'bg-yellow-100' };
+      return { emoji: '🟡', label: 'Medium', color: 'text-yellow-700', bgColor: 'bg-yellow-100' };
     case 'risky':
-      return { emoji: '🔴', label: 'ঝুঁকিপূর্ণ', color: 'text-red-700', bgColor: 'bg-red-100' };
+      return { emoji: '🔴', label: 'Risky', color: 'text-red-700', bgColor: 'bg-red-100' };
     case 'new':
     default:
-      return { emoji: '⚪', label: 'নতুন', color: 'text-gray-700', bgColor: 'bg-gray-100' };
+      return { emoji: '⚪', label: 'New', color: 'text-gray-700', bgColor: 'bg-gray-100' };
   }
 };
 
@@ -101,20 +100,14 @@ export const bengaliToEnglishDigits = (str: string): string => {
  * Normalize phone number for API calls
  */
 export const normalizePhone = (phone: string): string => {
-  // Remove spaces, dashes, and convert Bengali digits
   let normalized = bengaliToEnglishDigits(phone).replace(/[\s\-()]/g, '');
-  
-  // Handle +88 prefix
   if (normalized.startsWith('+88')) {
     normalized = normalized.slice(3);
   } else if (normalized.startsWith('88')) {
     normalized = normalized.slice(2);
   }
-  
-  // Ensure it starts with 01
   if (!normalized.startsWith('01') && normalized.length === 10) {
     normalized = '0' + normalized;
   }
-  
   return normalized;
 };

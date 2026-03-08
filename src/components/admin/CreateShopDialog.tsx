@@ -53,7 +53,7 @@ export function CreateShopDialog({ open, onOpenChange, onSuccess }: CreateShopDi
 
   const handleNameChange = (value: string) => { step2Form.setValue('name', value); step2Form.setValue('slug', generateSlug(value)); };
   const handleTypeSelect = (type: ShopType) => { setSelectedType(type); step1Form.setValue('shopType', type); step1Form.clearErrors('shopType'); };
-  const handleStep1Submit = () => { if (!selectedType) { step1Form.setError('shopType', { message: 'প্রোডাক্ট টাইপ নির্বাচন করুন' }); return; } setStep(2); };
+  const handleStep1Submit = () => { if (!selectedType) { step1Form.setError('shopType', { message: 'Please select a product type' }); return; } setStep(2); };
 
   const handleStep2Submit = async (data: CreateShopStep2Input) => {
     if (!selectedType) { setStep(1); return; }
@@ -61,12 +61,12 @@ export function CreateShopDialog({ open, onOpenChange, onSuccess }: CreateShopDi
     try {
       const slug = data.slug || generateSlug(data.name);
       await createShop(data.name.trim(), slug, { shop_type: selectedType, onboarding_completed: true });
-      toast.success('শপ তৈরি হয়েছে!');
+      toast.success('Shop created!');
       handleClose();
       onSuccess?.();
       navigate('/shop');
     } catch (error: any) {
-      toast.error(error.message || 'শপ তৈরি করতে সমস্যা হয়েছে');
+      toast.error(error.message || 'Failed to create shop');
     } finally { setIsCreating(false); }
   };
 
@@ -77,20 +77,20 @@ export function CreateShopDialog({ open, onOpenChange, onSuccess }: CreateShopDi
       <ResponsiveModalContent className="sm:max-w-[480px]">
         <ResponsiveModalHeader>
           <ResponsiveModalTitle className="flex items-center gap-2">
-            <Store className="h-5 w-5" /> নতুন শপ তৈরি করুন
+           <Store className="h-5 w-5" /> Create New Shop
           </ResponsiveModalTitle>
           <ResponsiveModalDescription>
-            {step === 1 ? 'কোন ধরনের প্রোডাক্ট বিক্রি করবেন?' : 'আপনার শপের নাম দিন'}
+            {step === 1 ? 'What type of product will you sell?' : 'Give your shop a name'}
           </ResponsiveModalDescription>
         </ResponsiveModalHeader>
 
         {/* Step indicator */}
         <div className="flex items-center justify-center gap-2 py-2">
           <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors", step >= 1 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>
-            {step > 1 ? <Check className="h-4 w-4" /> : '১'}
+            {step > 1 ? <Check className="h-4 w-4" /> : '1'}
           </div>
           <div className={cn("w-12 h-0.5 transition-colors", step > 1 ? "bg-primary" : "bg-muted")} />
-          <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors", step >= 2 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>২</div>
+          <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors", step >= 2 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>2</div>
         </div>
 
         {step === 1 && (
@@ -102,20 +102,20 @@ export function CreateShopDialog({ open, onOpenChange, onSuccess }: CreateShopDi
                     <button type="button" onClick={() => handleTypeSelect('physical')} className={cn("relative flex flex-col items-center gap-3 p-5 rounded-xl border-2 transition-all hover:border-primary/50", selectedType === 'physical' ? "border-primary bg-primary/5 ring-2 ring-primary/20" : "border-border bg-card hover:bg-accent/50")}>
                       {selectedType === 'physical' && <div className="absolute top-2 right-2"><Check className="h-5 w-5 text-primary" /></div>}
                       <div className={cn("p-3 rounded-full", selectedType === 'physical' ? "bg-primary/10" : "bg-muted")}><Package className={cn("h-7 w-7", selectedType === 'physical' ? "text-primary" : "text-muted-foreground")} /></div>
-                      <div className="text-center"><p className="font-semibold text-sm">ফিজিক্যাল</p><p className="text-xs text-muted-foreground mt-1">পোশাক, গ্যাজেট</p></div>
-                    </button>
-                    <button type="button" onClick={() => handleTypeSelect('digital')} className={cn("relative flex flex-col items-center gap-3 p-5 rounded-xl border-2 transition-all hover:border-primary/50", selectedType === 'digital' ? "border-primary bg-primary/5 ring-2 ring-primary/20" : "border-border bg-card hover:bg-accent/50")}>
-                      {selectedType === 'digital' && <div className="absolute top-2 right-2"><Check className="h-5 w-5 text-primary" /></div>}
-                      <div className={cn("p-3 rounded-full", selectedType === 'digital' ? "bg-primary/10" : "bg-muted")}><Download className={cn("h-7 w-7", selectedType === 'digital' ? "text-primary" : "text-muted-foreground")} /></div>
-                      <div className="text-center"><p className="font-semibold text-sm">ডিজিটাল</p><p className="text-xs text-muted-foreground mt-1">সফটওয়্যার, কোর্স</p></div>
+                       <div className="text-center"><p className="font-semibold text-sm">Physical</p><p className="text-xs text-muted-foreground mt-1">Clothing, Gadgets</p></div>
+                     </button>
+                     <button type="button" onClick={() => handleTypeSelect('digital')} className={cn("relative flex flex-col items-center gap-3 p-5 rounded-xl border-2 transition-all hover:border-primary/50", selectedType === 'digital' ? "border-primary bg-primary/5 ring-2 ring-primary/20" : "border-border bg-card hover:bg-accent/50")}>
+                       {selectedType === 'digital' && <div className="absolute top-2 right-2"><Check className="h-5 w-5 text-primary" /></div>}
+                       <div className={cn("p-3 rounded-full", selectedType === 'digital' ? "bg-primary/10" : "bg-muted")}><Download className={cn("h-7 w-7", selectedType === 'digital' ? "text-primary" : "text-muted-foreground")} /></div>
+                       <div className="text-center"><p className="font-semibold text-sm">Digital</p><p className="text-xs text-muted-foreground mt-1">Software, Courses</p></div>
                     </button>
                   </div>
                   <FormMessage className="text-center mt-2" />
                 </FormItem>
               )} />
               <ResponsiveModalFooter className="pt-4">
-                <Button type="button" variant="outline" onClick={handleClose}>বাতিল</Button>
-                <Button type="submit" disabled={!selectedType} className="gap-2">পরবর্তী <ArrowRight className="h-4 w-4" /></Button>
+                <Button type="button" variant="outline" onClick={handleClose}>Cancel</Button>
+                <Button type="submit" disabled={!selectedType} className="gap-2">Next <ArrowRight className="h-4 w-4" /></Button>
               </ResponsiveModalFooter>
             </form>
           </Form>
@@ -125,19 +125,19 @@ export function CreateShopDialog({ open, onOpenChange, onSuccess }: CreateShopDi
           <Form {...step2Form}>
             <form onSubmit={step2Form.handleSubmit(handleStep2Submit)} className="space-y-4 py-2">
               <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 text-sm">
-                {selectedType === 'physical' ? <><Package className="h-4 w-4 text-primary" /><span>ফিজিক্যাল শপ</span></> : <><Download className="h-4 w-4 text-primary" /><span>ডিজিটাল শপ</span></>}
+                {selectedType === 'physical' ? <><Package className="h-4 w-4 text-primary" /><span>Physical Shop</span></> : <><Download className="h-4 w-4 text-primary" /><span>Digital Shop</span></>}
               </div>
               <FormField control={step2Form.control} name="name" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>শপের নাম *</FormLabel>
-                  <FormControl><Input placeholder="যেমন: My Store" {...field} onChange={(e) => handleNameChange(e.target.value)} disabled={isCreating} autoFocus /></FormControl>
+                   <FormLabel>Shop Name *</FormLabel>
+                   <FormControl><Input placeholder="e.g. My Store" {...field} onChange={(e) => handleNameChange(e.target.value)} disabled={isCreating} autoFocus /></FormControl>
                   <FormMessage />
                 </FormItem>
               )} />
               <ResponsiveModalFooter className="pt-4">
-                <Button type="button" variant="outline" onClick={() => setStep(1)} disabled={isCreating} className="gap-2"><ArrowLeft className="h-4 w-4" /> পেছনে</Button>
+                <Button type="button" variant="outline" onClick={() => setStep(1)} disabled={isCreating} className="gap-2"><ArrowLeft className="h-4 w-4" /> Back</Button>
                 <Button type="submit" disabled={isCreating}>
-                  {isCreating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />তৈরি হচ্ছে...</> : 'শপ তৈরি করুন'}
+                  {isCreating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Creating...</> : 'Create Shop'}
                 </Button>
               </ResponsiveModalFooter>
             </form>

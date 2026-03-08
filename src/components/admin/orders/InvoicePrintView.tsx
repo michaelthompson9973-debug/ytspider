@@ -52,27 +52,27 @@ export function printInvoiceHTML({ order, items, shopName = 'Shop', type }: Prin
       <div style="text-align:right"><div style="font-size:14px;font-weight:600">#${orderId}</div><div style="color:#666">${date}</div></div>
     </div>
     <div class="meta-grid">
-      <div class="meta-box"><div class="meta-label">গ্রাহক</div><div class="meta-value">${order.customer_name}</div><div>${order.customer_phone}</div></div>
-      <div class="meta-box"><div class="meta-label">ঠিকানা</div><div class="meta-value">${order.customer_address}</div><div>${order.customer_city}</div></div>
+      <div class="meta-box"><div class="meta-label">Customer</div><div class="meta-value">${order.customer_name}</div><div>${order.customer_phone}</div></div>
+      <div class="meta-box"><div class="meta-label">Address</div><div class="meta-value">${order.customer_address}</div><div>${order.customer_city}</div></div>
     </div>
     ${!isLabel ? `
-    <table><thead><tr><th>প্রোডাক্ট</th><th style="text-align:center">পরিমাণ</th><th style="text-align:right">একক মূল্য</th><th style="text-align:right">মোট</th></tr></thead>
+    <table><thead><tr><th>Product</th><th style="text-align:center">Qty</th><th style="text-align:right">Unit Price</th><th style="text-align:right">Total</th></tr></thead>
     <tbody>${itemRows || `<tr><td colspan="4" style="padding:8px">${(order as any).products?.name || 'Product'} × ${order.quantity || 1}</td></tr>`}</tbody></table>
     <div class="totals">
-      <div class="row"><span>সাবটোটাল:</span><span>${formatCurrency(order.subtotal, order.currency)}</span></div>
-      <div class="row"><span>ডেলিভারি:</span><span>${formatCurrency(order.delivery_charge, order.currency)}</span></div>
-      <div class="row grand"><span>মোট:</span><span>${formatCurrency(order.total, order.currency)}</span></div>
+      <div class="row"><span>Subtotal:</span><span>${formatCurrency(order.subtotal, order.currency)}</span></div>
+      <div class="row"><span>Delivery:</span><span>${formatCurrency(order.delivery_charge, order.currency)}</span></div>
+      <div class="row grand"><span>Total:</span><span>${formatCurrency(order.total, order.currency)}</span></div>
     </div>
     ` : `
     <div class="label-box">
       <div class="barcode">${order.id.slice(0, 12).toUpperCase()}</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
-        <div><strong>প্রাপক:</strong> ${order.customer_name}<br/>${order.customer_phone}</div>
-        <div><strong>ঠিকানা:</strong> ${order.customer_address}<br/>${order.customer_city}</div>
+        <div><strong>Recipient:</strong> ${order.customer_name}<br/>${order.customer_phone}</div>
+        <div><strong>Address:</strong> ${order.customer_address}<br/>${order.customer_city}</div>
       </div>
       <div style="margin-top:12px;padding-top:8px;border-top:1px solid #ddd;display:flex;justify-content:space-between">
         <span><strong>COD:</strong> ${formatCurrency(order.total, order.currency)}</span>
-        <span><strong>ওজন:</strong> —</span>
+        <span><strong>Weight:</strong> —</span>
       </div>
     </div>
     `}

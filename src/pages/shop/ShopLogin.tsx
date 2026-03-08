@@ -93,18 +93,18 @@ export default function ShopLogin() {
 
       if (error) {
         if (error.message.includes('Invalid login credentials')) {
-          toast.error('ইমেইল বা পাসওয়ার্ড ভুল হয়েছে');
+          toast.error('Invalid email or password');
         } else if (error.message.includes('Email not confirmed')) {
-          toast.error('আপনার ইমেইল ভেরিফাই করুন');
+          toast.error('Please verify your email');
         } else {
           toast.error(error.message);
         }
         return;
       }
 
-      toast.success('লগইন সফল!');
+      toast.success('Login successful!');
     } catch (err) {
-      toast.error('লগইন করতে সমস্যা হয়েছে');
+      toast.error('Login failed');
     } finally {
       setIsLoading(false);
     }
@@ -128,16 +128,16 @@ export default function ShopLogin() {
               </div>
             )}
             <CardTitle className="text-2xl">{shopInfo?.name || 'Shop Login'}</CardTitle>
-            <CardDescription>আপনার শপ ড্যাশবোর্ডে প্রবেশ করুন</CardDescription>
+            <CardDescription>Access your shop dashboard</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">ইমেইল</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input id="email" type="email" placeholder="your@email.com" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">পাসওয়ার্ড</Label>
+                <Label htmlFor="password">Password</Label>
                 <div className="relative">
                   <Input id="password" type={showPassword ? 'text' : 'password'} placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" />
                   <Button type="button" variant="ghost" size="icon" className="absolute right-0 top-0 h-full px-3" onClick={() => setShowPassword(!showPassword)}>
@@ -146,12 +146,12 @@ export default function ShopLogin() {
                 </div>
               </div>
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'লগইন হচ্ছে...' : 'লগইন'}
+                {isLoading ? 'Signing in...' : 'Sign In'}
               </Button>
             </form>
             <div className="mt-6 text-center text-sm text-muted-foreground space-y-2">
-              <Link to="/forgot-password" className="hover:underline block">পাসওয়ার্ড ভুলে গেছেন?</Link>
-              <p>নতুন অ্যাকাউন্ট দরকার?{" "}<Link to="/register" className="text-primary font-medium hover:underline">রেজিস্ট্রেশন করুন</Link></p>
+              <Link to="/forgot-password" className="hover:underline block">Forgot password?</Link>
+              <p>Need a new account?{" "}<Link to="/register" className="text-primary font-medium hover:underline">Register</Link></p>
             </div>
             <div className="mt-4 text-center text-xs text-muted-foreground">
               Powered by{' '}<a href="https://ytspider.com" className="hover:underline" target="_blank" rel="noopener">YTSpider</a>
