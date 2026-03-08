@@ -40,7 +40,7 @@ export function UserMenu() {
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => navigate('/shop/settings')}>
           <Settings className="h-4 w-4 mr-2" />
-          সেটিংস
+          Settings
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
