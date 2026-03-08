@@ -199,7 +199,7 @@ export default function AllShops() {
                   : 'Create your first shop to get started'}
               </p>
               {!debouncedSearch && !statusFilter && (
-                <Button onClick={() => setCreateDialogOpen(true)}>
+                <Button onClick={() => navigate('/admin/business/shops/create')}>
                   <Plus className="h-4 w-4 mr-2" />
                   Create Shop
                 </Button>
