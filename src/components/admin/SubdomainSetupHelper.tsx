@@ -123,10 +123,10 @@ export function SubdomainSetupHelper({
             <StepIcon step={1} />
             <div className="flex-1">
               <p className="font-medium text-sm">
-                Step 1: Admin Panel এ Domain Added
+                Step 1: Domain Added in Admin Panel
               </p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                ✓ আপনার domain সফলভাবে যুক্ত হয়েছে
+                ✓ Your domain has been added successfully
               </p>
             </div>
           </div>
