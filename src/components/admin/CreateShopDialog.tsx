@@ -125,7 +125,7 @@ export function CreateShopDialog({ open, onOpenChange, onSuccess }: CreateShopDi
           <Form {...step2Form}>
             <form onSubmit={step2Form.handleSubmit(handleStep2Submit)} className="space-y-4 py-2">
               <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 text-sm">
-                {selectedType === 'physical' ? <><Package className="h-4 w-4 text-primary" /><span>ফিজিক্যাল শপ</span></> : <><Download className="h-4 w-4 text-primary" /><span>ডিজিটাল শপ</span></>}
+                {selectedType === 'physical' ? <><Package className="h-4 w-4 text-primary" /><span>Physical Shop</span></> : <><Download className="h-4 w-4 text-primary" /><span>Digital Shop</span></>}
               </div>
               <FormField control={step2Form.control} name="name" render={({ field }) => (
                 <FormItem>
