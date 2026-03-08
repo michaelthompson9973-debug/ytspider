@@ -427,7 +427,7 @@ export default function AllowedDomains() {
                         </div>
                         
                         <div className="bg-muted p-3 rounded-lg space-y-2">
-                          <p className="font-medium text-xs">Wildcard (সব subdomain):</p>
+                          <p className="font-medium text-xs">Wildcard (all subdomains):</p>
                           <div className="flex items-center justify-between gap-2 font-mono text-xs">
                             <div>Type: <strong>A</strong> | Host: <strong>*</strong> | Value: <strong>76.76.21.21</strong></div>
                             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyToClipboard('76.76.21.21')}>
