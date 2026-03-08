@@ -442,7 +442,7 @@ export default function Media() {
                 ) : (
                   <Trash2 className="mr-2 h-4 w-4" />
                 )}
-                ডিলিট করুন
+                Delete
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -452,9 +452,9 @@ export default function Media() {
         <Dialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>বাল্ক ডিলিট করুন?</DialogTitle>
+              <DialogTitle>Bulk Delete?</DialogTitle>
               <DialogDescription>
-                আপনি কি নিশ্চিত যে {selectedIds.size}টি ফাইল ডিলিট করতে চান? এই কাজটি আর ফেরানো যাবে না।
+                Are you sure you want to delete {selectedIds.size} files? This action cannot be undone.
               </DialogDescription>
             </DialogHeader>
             <div className="grid grid-cols-4 gap-2 max-h-40 overflow-y-auto py-4">
