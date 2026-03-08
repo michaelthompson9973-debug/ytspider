@@ -6,6 +6,8 @@ export type ShopRole = 'owner' | 'admin' | 'manager' | 'editor' | 'support' | 'v
 export type ShopPlan = 'free' | 'pro' | 'enterprise';
 export type ShopType = 'physical' | 'digital';
 
+export type ShopStatus = 'active' | 'grace_period' | 'suspended' | 'cancelled';
+
 export interface Shop {
   id: string;
   name: string;
@@ -18,6 +20,9 @@ export interface Shop {
   onboarding_completed: boolean;
   settings: Record<string, unknown>;
   is_active: boolean;
+  status: ShopStatus;
+  grace_period_ends_at: string | null;
+  expires_at: string | null;
   created_at: string;
   updated_at: string;
 }
