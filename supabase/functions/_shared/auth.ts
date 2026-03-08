@@ -78,9 +78,19 @@ export async function verifyAuth(req: Request): Promise<AuthResult> {
 
     const userId = claimsData.claims.sub as string;
 
-    // Check admin status using the has_role function
-    const { data: isAdminData, error: adminError } = await supabase
-      .rpc('has_role', { _user_id: userId, _role: 'admin' });
+    // Check admin status using the is_admin function (covers both admin and super_admin)
+    const adminClient = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
+
+    const { data: isAdminData, error: adminError } = await adminClient
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId)
+      .in('role', ['admin', 'super_admin'])
+      .maybeSingle();
 
     if (adminError) {
       console.error('Error checking admin status:', adminError);
