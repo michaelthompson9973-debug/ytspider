@@ -114,6 +114,9 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
         onboarding_completed: shop.onboarding_completed as boolean ?? false,
         settings: (shop.settings || {}) as Record<string, unknown>,
         is_active: shop.is_active as boolean,
+        status: (shop.status as ShopStatus) || 'active',
+        grace_period_ends_at: shop.grace_period_ends_at as string | null,
+        expires_at: shop.expires_at as string | null,
         created_at: shop.created_at as string,
         updated_at: shop.updated_at as string,
       }));
