@@ -173,7 +173,7 @@ export const OrderGrid = React.forwardRef<HTMLDivElement, OrderGridProps>(
                     onClick={() => onEdit(order)}
                   >
                     <Edit className="h-3 w-3 mr-1" />
-                    এডিট
+                    Edit
                   </Button>
                   <Button
                     variant="ghost"
