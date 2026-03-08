@@ -465,7 +465,7 @@ export default function AllowedDomains() {
                 <Accordion type="single" collapsible className="w-full">
                   <AccordionItem value="vps-step1">
                     <AccordionTrigger className="text-sm font-medium">
-                      ধাপ ১: DNS Record যুক্ত করুন
+                      Step 1: Add DNS Record
                     </AccordionTrigger>
                     <AccordionContent className="space-y-3 text-sm">
                       <p className="text-muted-foreground">
