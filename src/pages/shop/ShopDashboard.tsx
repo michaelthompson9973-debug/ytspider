@@ -12,7 +12,6 @@ import {
   ArrowUpRight, ArrowDownRight, BarChart3, Crown
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { bn } from 'date-fns/locale';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, BarChart, Bar
@@ -23,7 +22,6 @@ export default function ShopDashboard() {
   const [dateRange, setDateRange] = useState<'7d' | '30d'>('7d');
   const { kpis, chartData, topProducts, isLoading: analyticsLoading } = useShopAnalytics(dateRange);
 
-  // Fetch recent orders
   const { data: recentOrders = [] } = useQuery({
     queryKey: ['shop-recent-orders', currentShop?.id],
     queryFn: async () => {
@@ -41,14 +39,8 @@ export default function ShopDashboard() {
   });
 
   const statusLabels: Record<string, string> = {
-    new: 'নতুন',
-    pending: 'অপেক্ষমান',
-    confirmed: 'কনফার্মড',
-    processing: 'প্রসেসিং',
-    shipped: 'শিপড',
-    delivered: 'ডেলিভার্ড',
-    cancelled: 'বাতিল',
-    returned: 'রিটার্ন',
+    new: 'New', pending: 'Pending', confirmed: 'Confirmed', processing: 'Processing',
+    shipped: 'Shipped', delivered: 'Delivered', cancelled: 'Cancelled', returned: 'Returned',
   };
 
   const ChangeIndicator = ({ value }: { value: number }) => {
@@ -69,7 +61,7 @@ export default function ShopDashboard() {
         <p className="font-medium text-card-foreground mb-1">{label}</p>
         {payload.map((entry: any, i: number) => (
           <p key={i} style={{ color: entry.color }} className="text-xs">
-            {entry.name === 'revenue' ? 'রেভিনিউ' : 'অর্ডার'}: {entry.name === 'revenue' ? `৳${Number(entry.value).toLocaleString()}` : entry.value}
+            {entry.name === 'revenue' ? 'Revenue' : 'Orders'}: {entry.name === 'revenue' ? `৳${Number(entry.value).toLocaleString()}` : entry.value}
           </p>
         ))}
       </div>
@@ -79,27 +71,25 @@ export default function ShopDashboard() {
   return (
     <ShopLayout>
       <div className="space-y-6">
-        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold">স্বাগতম, {currentShop?.name}!</h1>
-            <p className="text-muted-foreground hidden sm:block">আপনার শপের বিস্তারিত বিবরণ</p>
+            <h1 className="text-2xl font-bold">Welcome, {currentShop?.name}!</h1>
+            <p className="text-muted-foreground hidden sm:block">Your shop overview at a glance</p>
           </div>
           <Tabs value={dateRange} onValueChange={(v) => setDateRange(v as '7d' | '30d')}>
             <TabsList>
-              <TabsTrigger value="7d">৭ দিন</TabsTrigger>
-              <TabsTrigger value="30d">৩০ দিন</TabsTrigger>
+              <TabsTrigger value="7d">7 Days</TabsTrigger>
+              <TabsTrigger value="30d">30 Days</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
 
-        {/* KPI Cards */}
         <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
           {[
-            { title: 'মোট অর্ডার', value: kpis.totalOrders, change: kpis.ordersChange, icon: ShoppingCart, format: (v: number) => v.toString() },
-            { title: 'রেভিনিউ', value: kpis.totalRevenue, change: kpis.revenueChange, icon: TrendingUp, format: (v: number) => `৳${v.toLocaleString()}` },
-            { title: 'প্রোডাক্ট', value: kpis.totalVisitors, change: kpis.visitorsChange, icon: Package, format: (v: number) => v.toString(), hideOnMobile: true },
-            { title: 'কনভার্শন', value: kpis.conversionRate, change: kpis.conversionChange, icon: FileText, format: (v: number) => `${v.toFixed(1)}%`, hideOnMobile: true },
+            { title: 'Total Orders', value: kpis.totalOrders, change: kpis.ordersChange, icon: ShoppingCart, format: (v: number) => v.toString() },
+            { title: 'Revenue', value: kpis.totalRevenue, change: kpis.revenueChange, icon: TrendingUp, format: (v: number) => `৳${v.toLocaleString()}` },
+            { title: 'Products', value: kpis.totalVisitors, change: kpis.visitorsChange, icon: Package, format: (v: number) => v.toString(), hideOnMobile: true },
+            { title: 'Conversion', value: kpis.conversionRate, change: kpis.conversionChange, icon: FileText, format: (v: number) => `${v.toFixed(1)}%`, hideOnMobile: true },
           ].map((kpi) => (
             <Card key={kpi.title} className={kpi.hideOnMobile ? 'hidden lg:block' : ''}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -107,14 +97,12 @@ export default function ShopDashboard() {
                 <kpi.icon className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                {analyticsLoading ? (
-                  <Skeleton className="h-8 w-20" />
-                ) : (
+                {analyticsLoading ? <Skeleton className="h-8 w-20" /> : (
                   <>
                     <div className="text-2xl font-bold tracking-tight">{kpi.format(kpi.value)}</div>
                     <div className="flex items-center gap-1 mt-1">
                       <ChangeIndicator value={kpi.change} />
-                      <span className="text-xs text-muted-foreground">আগের তুলনায়</span>
+                      <span className="text-xs text-muted-foreground">vs previous</span>
                     </div>
                   </>
                 )}
@@ -123,61 +111,36 @@ export default function ShopDashboard() {
           ))}
         </div>
 
-        {/* Charts Row */}
         <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
-          {/* Revenue Chart */}
           <Card className="lg:col-span-2">
             <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <BarChart3 className="h-4 w-4" />
-                রেভিনিউ ও অর্ডার
-              </CardTitle>
+              <CardTitle className="flex items-center gap-2 text-base"><BarChart3 className="h-4 w-4" />Revenue & Orders</CardTitle>
             </CardHeader>
             <CardContent>
-              {analyticsLoading ? (
-                <Skeleton className="h-[280px] w-full" />
-              ) : chartData.length === 0 ? (
-                <p className="text-muted-foreground text-center py-16">ডাটা নেই</p>
+              {analyticsLoading ? <Skeleton className="h-[280px] w-full" /> : chartData.length === 0 ? (
+                <p className="text-muted-foreground text-center py-16">No data</p>
               ) : (
                 <ResponsiveContainer width="100%" height={window.innerWidth < 768 ? 200 : 280}>
                   <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
+                    <defs><linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} /><stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} /></linearGradient></defs>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                     <XAxis dataKey="date" tick={{ fontSize: 11 }} className="text-muted-foreground" />
                     <YAxis tick={{ fontSize: 11 }} className="text-muted-foreground" />
                     <Tooltip content={<CustomTooltip />} />
-                    <Area
-                      type="monotone"
-                      dataKey="revenue"
-                      stroke="hsl(var(--primary))"
-                      fill="url(#revenueGradient)"
-                      strokeWidth={2}
-                      name="revenue"
-                    />
+                    <Area type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" fill="url(#revenueGradient)" strokeWidth={2} name="revenue" />
                   </AreaChart>
                 </ResponsiveContainer>
               )}
             </CardContent>
           </Card>
 
-          {/* Order Count Bar Chart */}
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <ShoppingCart className="h-4 w-4" />
-                দৈনিক অর্ডার
-              </CardTitle>
+              <CardTitle className="flex items-center gap-2 text-base"><ShoppingCart className="h-4 w-4" />Daily Orders</CardTitle>
             </CardHeader>
             <CardContent>
-              {analyticsLoading ? (
-                <Skeleton className="h-[280px] w-full" />
-              ) : chartData.length === 0 ? (
-                <p className="text-muted-foreground text-center py-16">ডাটা নেই</p>
+              {analyticsLoading ? <Skeleton className="h-[280px] w-full" /> : chartData.length === 0 ? (
+                <p className="text-muted-foreground text-center py-16">No data</p>
               ) : (
                 <ResponsiveContainer width="100%" height={window.innerWidth < 768 ? 200 : 280}>
                   <BarChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
@@ -185,12 +148,7 @@ export default function ShopDashboard() {
                     <XAxis dataKey="date" tick={{ fontSize: 10 }} className="text-muted-foreground" />
                     <YAxis tick={{ fontSize: 11 }} allowDecimals={false} className="text-muted-foreground" />
                     <Tooltip content={<CustomTooltip />} />
-                    <Bar
-                      dataKey="orders"
-                      fill="hsl(var(--primary))"
-                      radius={[4, 4, 0, 0]}
-                      name="orders"
-                    />
+                    <Bar dataKey="orders" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} name="orders" />
                   </BarChart>
                 </ResponsiveContainer>
               )}
@@ -198,38 +156,21 @@ export default function ShopDashboard() {
           </Card>
         </div>
 
-        {/* Bottom Row: Top Products + Recent Orders */}
         <div className="grid gap-4 lg:grid-cols-2">
-          {/* Top Products */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Crown className="h-4 w-4" />
-                টপ সেলিং প্রোডাক্ট
-              </CardTitle>
-            </CardHeader>
+            <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Crown className="h-4 w-4" />Top Selling Products</CardTitle></CardHeader>
             <CardContent>
-              {analyticsLoading ? (
-                <div className="space-y-3">
-                  {[1, 2, 3].map(i => <Skeleton key={i} className="h-12 w-full" />)}
-                </div>
-              ) : topProducts.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">এখনো ডাটা নেই</p>
+              {analyticsLoading ? <div className="space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-12 w-full" />)}</div> : topProducts.length === 0 ? (
+                <p className="text-muted-foreground text-center py-8">No data yet</p>
               ) : (
                 <div className="space-y-3">
                   {topProducts.map((product, idx) => (
                     <div key={product.name} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                       <div className="flex items-center gap-3">
-                        <span className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
-                          idx === 0 ? 'bg-amber-100 text-amber-700' :
-                          idx === 1 ? 'bg-slate-100 text-slate-600' :
-                          'bg-orange-50 text-orange-600'
-                        }`}>
-                          {idx + 1}
-                        </span>
+                        <span className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${idx === 0 ? 'bg-amber-100 text-amber-700' : idx === 1 ? 'bg-slate-100 text-slate-600' : 'bg-orange-50 text-orange-600'}`}>{idx + 1}</span>
                         <div>
                           <p className="font-medium text-sm line-clamp-1">{product.name}</p>
-                          <p className="text-xs text-muted-foreground">{product.sold} টি বিক্রি</p>
+                          <p className="text-xs text-muted-foreground">{product.sold} sold</p>
                         </div>
                       </div>
                       <p className="font-semibold text-sm">৳{product.revenue.toLocaleString()}</p>
@@ -240,34 +181,22 @@ export default function ShopDashboard() {
             </CardContent>
           </Card>
 
-          {/* Recent Orders */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Clock className="h-4 w-4" />
-                সাম্প্রতিক অর্ডার
-              </CardTitle>
-            </CardHeader>
+            <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Clock className="h-4 w-4" />Recent Orders</CardTitle></CardHeader>
             <CardContent>
               {recentOrders.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">এখনো কোনো অর্ডার নেই</p>
+                <p className="text-muted-foreground text-center py-8">No orders yet</p>
               ) : (
                 <div className="space-y-3">
                   {recentOrders.map((order) => (
                     <div key={order.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                       <div>
                         <p className="font-medium text-sm">{order.customer_name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatDistanceToNow(new Date(order.created_at), { addSuffix: true, locale: bn })}
-                        </p>
+                        <p className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(order.created_at), { addSuffix: true })}</p>
                       </div>
                       <div className="text-right">
                         <p className="font-semibold text-sm">৳{Number(order.total).toLocaleString()}</p>
-                        <span className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${
-                          order.status === 'delivered' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400' :
-                          order.status === 'cancelled' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
-                          'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
-                        }`}>
+                        <span className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${order.status === 'delivered' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400' : order.status === 'cancelled' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'}`}>
                           {statusLabels[order.status] || order.status}
                         </span>
                       </div>

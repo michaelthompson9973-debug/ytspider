@@ -1,23 +1,7 @@
 import React from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerDescription,
-  DrawerFooter,
-} from '@/components/ui/drawer';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Order } from './types';
 import { getShortOrderId } from './utils';
@@ -33,7 +17,6 @@ interface DeleteConfirmDialogProps {
 export const DeleteConfirmDialog = React.forwardRef<HTMLDivElement, DeleteConfirmDialogProps>(
   ({ open, onOpenChange, order, onConfirm, isDeleting = false }, ref) => {
     const isMobile = useIsMobile();
-
     if (!order) return null;
 
     if (isMobile) {
@@ -41,19 +24,14 @@ export const DeleteConfirmDialog = React.forwardRef<HTMLDivElement, DeleteConfir
         <Drawer open={open} onOpenChange={onOpenChange}>
           <DrawerContent>
             <DrawerHeader className="text-left">
-              <DrawerTitle>অর্ডার ডিলিট করতে চান?</DrawerTitle>
+              <DrawerTitle>Delete this order?</DrawerTitle>
               <DrawerDescription>
-                <strong>{order.customer_name}</strong> এর অর্ডার{' '}
-                <strong>{getShortOrderId(order.id)}</strong> ডিলিট করলে পূর্বাবস্থায় ফেরানো যাবে না।
+                Order <strong>{getShortOrderId(order.id)}</strong> by <strong>{order.customer_name}</strong> will be permanently deleted. This action cannot be undone.
               </DrawerDescription>
             </DrawerHeader>
             <DrawerFooter>
-              <Button variant="destructive" onClick={onConfirm} disabled={isDeleting}>
-                {isDeleting ? 'ডিলিট হচ্ছে...' : 'ডিলিট করুন'}
-              </Button>
-              <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isDeleting}>
-                বাতিল
-              </Button>
+              <Button variant="destructive" onClick={onConfirm} disabled={isDeleting}>{isDeleting ? 'Deleting...' : 'Delete'}</Button>
+              <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isDeleting}>Cancel</Button>
             </DrawerFooter>
           </DrawerContent>
         </Drawer>
@@ -64,18 +42,16 @@ export const DeleteConfirmDialog = React.forwardRef<HTMLDivElement, DeleteConfir
       <AlertDialog open={open} onOpenChange={onOpenChange}>
         <AlertDialogContent ref={ref}>
           <AlertDialogHeader>
-            <AlertDialogTitle>অর্ডার ডিলিট করতে চান?</AlertDialogTitle>
+            <AlertDialogTitle>Delete this order?</AlertDialogTitle>
             <AlertDialogDescription>
-              আপনি কি নিশ্চিত যে আপনি <strong>{order.customer_name}</strong> এর অর্ডার{' '}
-              <strong>{getShortOrderId(order.id)}</strong> ডিলিট করতে চান?
-              <br /><br />
-              এই অ্যাকশনটি পূর্বাবস্থায় ফেরানো যাবে না।
+              Are you sure you want to delete order <strong>{getShortOrderId(order.id)}</strong> by <strong>{order.customer_name}</strong>?
+              <br /><br />This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>বাতিল</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={onConfirm} disabled={isDeleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              {isDeleting ? 'ডিলিট হচ্ছে...' : 'ডিলিট করুন'}
+              {isDeleting ? 'Deleting...' : 'Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
