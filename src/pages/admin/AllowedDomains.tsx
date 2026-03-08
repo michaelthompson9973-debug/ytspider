@@ -528,7 +528,7 @@ export default function AllowedDomains() {
 
                   <AccordionItem value="vps-step3">
                     <AccordionTrigger className="text-sm font-medium">
-                      ধাপ ৩: SSL Certificate (HTTPS)
+                      Step 3: SSL Certificate (HTTPS)
                     </AccordionTrigger>
                     <AccordionContent className="space-y-3 text-sm">
                       <p className="text-muted-foreground">
