@@ -32,7 +32,7 @@ export const BulkActionsBar = React.forwardRef<HTMLDivElement, BulkActionsBarPro
       >
         {/* Selected Count */}
         <div className="flex items-center gap-2">
-          <span className="font-medium">{selectedCount} টি সিলেক্টেড</span>
+          <span className="font-medium">{selectedCount} selected</span>
           <Button
             variant="ghost"
             size="icon"
