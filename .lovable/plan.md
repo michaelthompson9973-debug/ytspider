@@ -1,19 +1,54 @@
 
 
-## Problem
+# "Create Account" → রেজিস্ট্রেশন → সাবস্ক্রিপশন ফ্লো ফিক্স
 
-`ShopHeader.tsx`-এ `SidebarTrigger` শুধু `md:hidden` ক্লাসে আছে, তাই ডেস্কটপে কলাপ্স বাটন দেখা যাচ্ছে না। মোবাইলেই শুধু দেখায়।
+## বর্তমান সমস্যা
+- "Create Account" বাটন `/login` এ যায় যেখানে শুধু লগইন ফর্ম আছে, কোনো সাইনআপ নেই
+- রেজিস্ট্রেশনের পর সাবস্ক্রিপশন কেনার কোনো ফ্লো নেই
 
-## Plan
+## পরিকল্পনা
 
-**File: `src/components/shop/ShopHeader.tsx`**
+### ধাপ ১: নতুন `/register` পেজ তৈরি (`src/pages/Register.tsx`)
 
-- `SidebarTrigger` থেকে `md:hidden` ক্লাস সরিয়ে দিতে হবে যাতে সব স্ক্রিন সাইজে দেখা যায়
-- এটা হেডারের বাম পাশে থাকবে, ক্লিক করলে সাইডবার collapse/expand হবে
+একটি ShopFlow ব্র্যান্ডেড রেজিস্ট্রেশন ফর্ম:
+- ফিল্ড: পুরো নাম, ইমেইল, পাসওয়ার্ড, পাসওয়ার্ড কনফার্ম
+- Zod ভ্যালিডেশন
+- `supabase.auth.signUp()` কল
+- সফল হলে → `/pricing` পেজে রিডাইরেক্ট (সাবস্ক্রিপশন বেছে নিতে)
+- নিচে "ইতিমধ্যে অ্যাকাউন্ট আছে? লগইন" লিংক
 
-```tsx
-<SidebarTrigger className="-ml-1" />  // md:hidden removed
+### ধাপ ২: `App.tsx` এ রাউট যোগ
+```text
+<Route path="/register" element={<Register />} />
 ```
 
-Single line change, one file only.
+### ধাপ ৩: `Index.tsx` বাটন লিংক আপডেট
+- "Create Account" → `/register`
+- "Get Started" → `/register`
+
+### ধাপ ৪: `Header.tsx` আপডেট
+- "Get Started" বাটন → `/register`
+
+### ধাপ ৫: `ShopLogin.tsx` এ সাইনআপ লিংক যোগ
+- ফর্মের নিচে "নতুন অ্যাকাউন্ট তৈরি করুন" → `/register` লিংক
+
+### সম্পূর্ণ ফ্লো
+```text
+Landing Page → "Create Account" → /register (সাইনআপ ফর্ম)
+  → সফল → /pricing (প্ল্যান বাছাই)
+    → /checkout?plan=slug (পেমেন্ট)
+      → /purchase-success
+```
+
+---
+
+## কারিগরি বিবরণ
+
+| ফাইল | পরিবর্তন |
+|------|----------|
+| `src/pages/Register.tsx` | নতুন — রেজিস্ট্রেশন ফর্ম পেজ |
+| `src/App.tsx` | `/register` রাউট যোগ |
+| `src/pages/Index.tsx` | বাটন লিংক `/login` → `/register` |
+| `src/components/landing/Header.tsx` | "Get Started" লিংক → `/register` |
+| `src/pages/shop/ShopLogin.tsx` | সাইনআপ লিংক যোগ |
 
