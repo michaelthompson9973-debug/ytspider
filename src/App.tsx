@@ -119,6 +119,7 @@ const App = () => (
                 <Route path="/shop/cod" element={<ShopProtectedRoute><ShopCOD /></ShopProtectedRoute>} />
                 <Route path="/shop/pages" element={<Navigate to="/shop/pages/manage" replace />} />
                 <Route path="/shop/pages/manage" element={<ShopProtectedRoute><ShopLandingPagesPage /></ShopProtectedRoute>} />
+                <Route path="/shop/pages/builder/:pageId" element={<ShopProtectedRoute><LandingPageBuilder /></ShopProtectedRoute>} />
                 <Route path="/shop/pages/library" element={<ShopProtectedRoute><ShopComponentLibraryPage /></ShopProtectedRoute>} />
                 <Route path="/shop/media" element={<ShopProtectedRoute><ShopMediaPage /></ShopProtectedRoute>} />
                 <Route path="/shop/inbox" element={<Navigate to="/shop/inbox/messenger" replace />} />
