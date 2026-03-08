@@ -354,7 +354,7 @@ export default function Media() {
                           size="sm"
                           onClick={() => handleCompress(item)}
                           disabled={compressingId === item.id}
-                          title="কম্প্রেস করুন"
+                          title="Compress"
                         >
                           {compressingId === item.id ? (
                             <Loader2 className="h-3 w-3 animate-spin" />
