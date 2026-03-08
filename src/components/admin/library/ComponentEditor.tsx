@@ -75,7 +75,7 @@ export function ComponentEditor({
           <DialogTitle>{isEditing ? 'Edit Component' : 'Add Component'}</DialogTitle>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto space-y-4 py-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="name">Name</Label>
               <Input
@@ -97,6 +97,19 @@ export function ComponentEditor({
                       {cat.label}
                     </SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="plan-tier">Min Plan Tier</Label>
+              <Select value={minPlanTier} onValueChange={setMinPlanTier}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="free">Free (All users)</SelectItem>
+                  <SelectItem value="pro">Pro</SelectItem>
+                  <SelectItem value="enterprise">Enterprise</SelectItem>
                 </SelectContent>
               </Select>
             </div>
