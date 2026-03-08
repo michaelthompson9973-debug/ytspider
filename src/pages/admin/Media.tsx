@@ -289,7 +289,7 @@ export default function Media() {
               ) : (
                 <Button variant="outline" size="sm" onClick={selectAll}>
                   <CheckSquare className="mr-1 h-3 w-3" />
-                  সব সিলেক্ট
+                  Select All
                 </Button>
               )}
             </div>
