@@ -100,7 +100,7 @@ export default function Auth() {
           </form>
           <div className="mt-6 text-center text-sm text-muted-foreground">
             শপ ওনার?{' '}
-            <a href="/login" className="text-primary hover:underline">
+            <a href="/shop/login" className="text-primary hover:underline">
               এখানে লগইন করুন
             </a>
           </div>
