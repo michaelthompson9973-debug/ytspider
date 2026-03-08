@@ -33,8 +33,10 @@ export function ShopLayout({ children }: { children: React.ReactNode }) {
   const [defaultOpen] = useState(() => getStoredSidebarState());
 
   return (
-    <SidebarProvider defaultOpen={defaultOpen}>
-      <ShopLayoutContent>{children}</ShopLayoutContent>
-    </SidebarProvider>
+    <div className="shop-growth-workspace">
+      <SidebarProvider defaultOpen={defaultOpen}>
+        <ShopLayoutContent>{children}</ShopLayoutContent>
+      </SidebarProvider>
+    </div>
   );
 }

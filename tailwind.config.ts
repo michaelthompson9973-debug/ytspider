@@ -57,6 +57,15 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        shop: {
+          primary: "hsl(var(--shop-primary, 239 84% 67%))",
+          "primary-foreground": "hsl(var(--shop-primary-foreground, 0 0% 100%))",
+          accent: "hsl(var(--shop-accent, 160 84% 39%))",
+          "accent-foreground": "hsl(var(--shop-accent-foreground, 0 0% 100%))",
+          bg: "hsl(var(--shop-bg, 220 14% 96%))",
+          text: "hsl(var(--shop-text, 215 28% 17%))",
+          muted: "hsl(var(--shop-text-muted, 218 11% 45%))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

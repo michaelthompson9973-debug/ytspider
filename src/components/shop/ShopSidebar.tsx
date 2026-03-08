@@ -241,8 +241,8 @@ export function ShopSidebar() {
         ))}
       </SidebarContent>
 
-      <SidebarFooter className="border-t p-2">
-        <div className="text-xs text-muted-foreground text-center">
+      <SidebarFooter className="border-t border-sidebar-border p-2">
+        <div className="text-xs text-sidebar-foreground/50 text-center">
           Powered by YTSpider
         </div>
       </SidebarFooter>
