@@ -532,7 +532,7 @@ export default function AllowedDomains() {
                     </AccordionTrigger>
                     <AccordionContent className="space-y-3 text-sm">
                       <p className="text-muted-foreground">
-                        Certbot দিয়ে Free SSL certificate নিন:
+                        Get a free SSL certificate with Certbot:
                       </p>
                       
                       <div className="bg-muted p-3 rounded-lg font-mono text-xs space-y-1">
