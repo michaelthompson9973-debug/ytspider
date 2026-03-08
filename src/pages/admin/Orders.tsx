@@ -313,7 +313,7 @@ export default function Orders() {
       await new Promise(resolve => setTimeout(resolve, 500));
       await queryClient.invalidateQueries({ queryKey: ['courier-history'] });
       await queryClient.refetchQueries({ queryKey: ['courier-history', phones] });
-      toast({ title: 'ফ্রড চেক সম্পন্ন' });
+      toast({ title: 'Fraud check completed' });
     },
     onError: (error) => {
       toast({ title: 'এরর', description: error.message, variant: 'destructive' });
