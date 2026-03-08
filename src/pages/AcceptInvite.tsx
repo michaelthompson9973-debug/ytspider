@@ -46,25 +46,23 @@ export default function AcceptInvite() {
       const result = await acceptInvitation(token, user.id);
       if (result.success) {
         setStatus('accepted');
-        toast.success('ইনভাইট গ্রহণ করা হয়েছে!');
+        toast.success('Invitation accepted!');
         
-        // Redirect to admin after 2 seconds
         setTimeout(() => {
           navigate('/admin');
         }, 2000);
       } else {
         setStatus('error');
-        setErrorMessage(result.error || 'কিছু সমস্যা হয়েছে');
+        setErrorMessage(result.error || 'Something went wrong');
       }
     } catch (error) {
       setStatus('error');
-      setErrorMessage(error instanceof Error ? error.message : 'কিছু সমস্যা হয়েছে');
+      setErrorMessage(error instanceof Error ? error.message : 'Something went wrong');
     } finally {
       setIsAccepting(false);
     }
   };
 
-  // Show loading while checking auth
   if (authLoading || status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -72,7 +70,7 @@ export default function AcceptInvite() {
           <CardContent className="pt-6">
             <div className="flex flex-col items-center justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-              <p className="text-muted-foreground">লোড হচ্ছে...</p>
+              <p className="text-muted-foreground">Loading...</p>
             </div>
           </CardContent>
         </Card>
@@ -80,16 +78,15 @@ export default function AcceptInvite() {
     );
   }
 
-  // Show login prompt if not authenticated
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <LogIn className="h-12 w-12 mx-auto text-primary mb-4" />
-            <CardTitle>লগইন করুন</CardTitle>
+            <CardTitle>Please Log In</CardTitle>
             <CardDescription>
-              ইনভাইট গ্রহণ করতে প্রথমে লগইন করুন
+              You need to log in first to accept this invitation
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -97,7 +94,7 @@ export default function AcceptInvite() {
               className="w-full" 
               onClick={() => navigate(`/auth?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`)}
             >
-              লগইন পেজে যান
+              Go to Login
             </Button>
           </CardContent>
         </Card>
@@ -105,16 +102,15 @@ export default function AcceptInvite() {
     );
   }
 
-  // Invitation not found
   if (status === 'not_found') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <XCircle className="h-12 w-12 mx-auto text-destructive mb-4" />
-            <CardTitle>ইনভাইট পাওয়া যায়নি</CardTitle>
+            <CardTitle>Invitation Not Found</CardTitle>
             <CardDescription>
-              এই ইনভাইট লিংকটি সঠিক নয় অথবা মেয়াদ শেষ হয়ে গেছে।
+              This invitation link is invalid or has expired.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -123,7 +119,7 @@ export default function AcceptInvite() {
               className="w-full" 
               onClick={() => navigate('/')}
             >
-              হোমে ফিরে যান
+              Go Home
             </Button>
           </CardContent>
         </Card>
@@ -131,14 +127,13 @@ export default function AcceptInvite() {
     );
   }
 
-  // Error state
   if (status === 'error') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <XCircle className="h-12 w-12 mx-auto text-destructive mb-4" />
-            <CardTitle>সমস্যা হয়েছে</CardTitle>
+            <CardTitle>Something Went Wrong</CardTitle>
             <CardDescription>
               {errorMessage}
             </CardDescription>
@@ -149,7 +144,7 @@ export default function AcceptInvite() {
               className="w-full" 
               onClick={() => navigate('/')}
             >
-              হোমে ফিরে যান
+              Go Home
             </Button>
           </CardContent>
         </Card>
@@ -157,16 +152,15 @@ export default function AcceptInvite() {
     );
   }
 
-  // Accepted state
   if (status === 'accepted') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <CheckCircle className="h-12 w-12 mx-auto text-emerald-500 mb-4" />
-            <CardTitle>স্বাগতম!</CardTitle>
+            <CardTitle>Welcome!</CardTitle>
             <CardDescription>
-              আপনি সফলভাবে {invitation?.shops?.name || 'শপ'} টিমে যোগ হয়েছেন। ড্যাশবোর্ডে নিয়ে যাচ্ছি...
+              You have successfully joined the {invitation?.shops?.name || 'shop'} team. Redirecting to dashboard...
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -179,31 +173,30 @@ export default function AcceptInvite() {
     );
   }
 
-  // Show invitation details
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <UserPlus className="h-12 w-12 mx-auto text-primary mb-4" />
-          <CardTitle>টিমে যোগ দিন</CardTitle>
+          <CardTitle>Join Team</CardTitle>
           <CardDescription>
-            আপনাকে <strong>{invitation?.shops?.name || 'একটি শপ'}</strong>-এর টিমে যোগ হতে আমন্ত্রণ জানানো হয়েছে
+            You have been invited to join the <strong>{invitation?.shops?.name || 'a shop'}</strong> team
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="bg-muted/50 p-4 rounded-lg space-y-2">
             {invitation?.shops?.name && (
               <div className="flex justify-between">
-                <span className="text-muted-foreground">শপ:</span>
+                <span className="text-muted-foreground">Shop:</span>
                 <span className="font-medium">{invitation.shops.name}</span>
               </div>
             )}
             <div className="flex justify-between">
-              <span className="text-muted-foreground">ইমেইল:</span>
+              <span className="text-muted-foreground">Email:</span>
               <span className="font-medium">{invitation?.email}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">রোল:</span>
+              <span className="text-muted-foreground">Role:</span>
               <span className="font-medium capitalize">{invitation?.role}</span>
             </div>
           </div>
@@ -214,7 +207,7 @@ export default function AcceptInvite() {
             disabled={isAccepting}
           >
             {isAccepting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            ইনভাইট গ্রহণ করুন
+            Accept Invitation
           </Button>
 
           <Button 
@@ -222,7 +215,7 @@ export default function AcceptInvite() {
             className="w-full" 
             onClick={() => navigate('/')}
           >
-            বাতিল
+            Cancel
           </Button>
         </CardContent>
       </Card>

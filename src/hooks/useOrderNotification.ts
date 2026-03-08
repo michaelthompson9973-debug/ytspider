@@ -3,7 +3,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Order } from '@/components/admin/orders/types';
 
-// Base64 encoded notification sound (short beep)
 const NOTIFICATION_SOUND = 'data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU' + 
   'tvT19AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
   'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
@@ -25,43 +24,30 @@ export function useOrderNotification({ enabled, onNewOrder }: UseOrderNotificati
     return true;
   });
 
-  // Request notification permission
   const requestPermission = useCallback(async () => {
-    if (!('Notification' in window)) {
-      console.log('This browser does not support notifications');
-      return false;
-    }
-
-    if (Notification.permission === 'granted') {
-      return true;
-    }
-
+    if (!('Notification' in window)) return false;
+    if (Notification.permission === 'granted') return true;
     if (Notification.permission !== 'denied') {
       const permission = await Notification.requestPermission();
       return permission === 'granted';
     }
-
     return false;
   }, []);
 
-  // Play notification sound
   const playSound = useCallback(() => {
     if (!audioRef.current) {
       audioRef.current = new Audio(NOTIFICATION_SOUND);
     }
     audioRef.current.currentTime = 0;
-    audioRef.current.play().catch(() => {
-      // Ignore autoplay errors
-    });
+    audioRef.current.play().catch(() => {});
   }, []);
 
-  // Show browser notification
   const showBrowserNotification = useCallback((order: Order) => {
     if (Notification.permission === 'granted') {
-      const notification = new Notification('নতুন অর্ডার!', {
-        body: `${order.customer_name} - ৳${order.total?.toLocaleString('bn-BD') || '0'}`,
+      const notification = new Notification('New Order!', {
+        body: `${order.customer_name} - ৳${order.total?.toLocaleString() || '0'}`,
         icon: '/favicon.ico',
-        tag: order.id, // Prevents duplicate notifications
+        tag: order.id,
       });
 
       notification.onclick = () => {
@@ -69,35 +55,25 @@ export function useOrderNotification({ enabled, onNewOrder }: UseOrderNotificati
         notification.close();
       };
 
-      // Auto close after 5 seconds
       setTimeout(() => notification.close(), 5000);
     }
   }, []);
 
-  // Handle new order
   const handleNewOrder = useCallback((order: Order) => {
     if (!notificationsEnabled) return;
-    
-    // Skip initial load
     if (isInitialLoadRef.current) return;
 
-    // Play sound
     playSound();
-
-    // Show browser notification
     showBrowserNotification(order);
 
-    // Show toast
     toast({
-      title: '🔔 নতুন অর্ডার!',
-      description: `${order.customer_name} - ৳${order.total?.toLocaleString('bn-BD') || '0'}`,
+      title: '🔔 New Order!',
+      description: `${order.customer_name} - ৳${order.total?.toLocaleString() || '0'}`,
     });
 
-    // Callback
     onNewOrder?.(order);
   }, [notificationsEnabled, playSound, showBrowserNotification, toast, onNewOrder]);
 
-  // Toggle notifications
   const toggleNotifications = useCallback(() => {
     setNotificationsEnabled((prev) => {
       const newValue = !prev;
@@ -106,13 +82,13 @@ export function useOrderNotification({ enabled, onNewOrder }: UseOrderNotificati
       if (newValue) {
         requestPermission();
         toast({
-          title: 'নোটিফিকেশন চালু',
-          description: 'নতুন অর্ডার আসলে আপনাকে জানানো হবে',
+          title: 'Notifications Enabled',
+          description: 'You will be notified when new orders arrive',
         });
       } else {
         toast({
-          title: 'নোটিফিকেশন বন্ধ',
-          description: 'নতুন অর্ডারের নোটিফিকেশন আর আসবে না',
+          title: 'Notifications Disabled',
+          description: 'You will no longer receive new order notifications',
         });
       }
       
@@ -120,21 +96,17 @@ export function useOrderNotification({ enabled, onNewOrder }: UseOrderNotificati
     });
   }, [requestPermission, toast]);
 
-  // Subscribe to realtime updates
   useEffect(() => {
     if (!enabled) return;
 
-    // Request permission on mount if enabled
     if (notificationsEnabled) {
       requestPermission();
     }
 
-    // Mark initial load complete after a delay
     const timeout = setTimeout(() => {
       isInitialLoadRef.current = false;
     }, 2000);
 
-    // Subscribe to new orders
     const channel = supabase
       .channel('orders-notifications')
       .on(

@@ -99,9 +99,9 @@ export default function Auth() {
             </Button>
           </form>
           <div className="mt-6 text-center text-sm text-muted-foreground">
-            শপ ওনার?{' '}
+          Shop owner?{' '}
             <a href="/shop/login" className="text-primary hover:underline">
-              এখানে লগইন করুন
+              Login here
             </a>
           </div>
         </CardContent>

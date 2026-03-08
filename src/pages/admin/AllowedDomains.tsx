@@ -365,7 +365,7 @@ export default function AllowedDomains() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-2 mb-4">
               <Info className="h-5 w-5 text-primary" />
-              <h4 className="font-semibold text-lg">ডোমেইন সেটাপ গাইড</h4>
+              <h4 className="font-semibold text-lg">Domain Setup Guide</h4>
             </div>
             
             <Tabs defaultValue="vercel" className="w-full">
@@ -378,19 +378,19 @@ export default function AllowedDomains() {
                 <Accordion type="single" collapsible className="w-full">
                   <AccordionItem value="vercel-step1">
                     <AccordionTrigger className="text-sm font-medium">
-                      ধাপ ১: Vercel এ Domain Add করুন
+                      Step 1: Add Domain in Vercel
                     </AccordionTrigger>
                     <AccordionContent className="space-y-3 text-sm">
                       <ol className="list-decimal list-inside space-y-2 text-muted-foreground">
-                        <li>Vercel Dashboard → আপনার Project → Settings → Domains</li>
-                        <li>"Add" বাটনে ক্লিক করুন</li>
-                        <li>আপনার domain লিখুন (যেমন: <code className="bg-muted px-1 rounded">example.com</code>)</li>
-                        <li>Wildcard এর জন্য: <code className="bg-muted px-1 rounded">*.example.com</code></li>
+                        <li>Vercel Dashboard → Your Project → Settings → Domains</li>
+                        <li>Click the "Add" button</li>
+                        <li>Enter your domain (e.g., <code className="bg-muted px-1 rounded">example.com</code>)</li>
+                        <li>For wildcard: <code className="bg-muted px-1 rounded">*.example.com</code></li>
                       </ol>
                       
                       <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-3 rounded-lg">
                         <p className="text-amber-800 dark:text-amber-200 text-xs">
-                          <strong>⚠️ Note:</strong> Wildcard domains (*.example.com) শুধু Vercel Pro plan এ available।
+                          <strong>⚠️ Note:</strong> Wildcard domains (*.example.com) are only available on Vercel Pro plan.
                         </p>
                       </div>
                     </AccordionContent>
@@ -398,11 +398,11 @@ export default function AllowedDomains() {
 
                   <AccordionItem value="vercel-step2">
                     <AccordionTrigger className="text-sm font-medium">
-                      ধাপ ২: DNS Records সেট করুন
+                      Step 2: Set Up DNS Records
                     </AccordionTrigger>
                     <AccordionContent className="space-y-3 text-sm">
                       <p className="text-muted-foreground">
-                        আপনার Domain Provider (Namecheap, GoDaddy ইত্যাদি) এর DNS Settings এ যান:
+                        Go to your Domain Provider's (Namecheap, GoDaddy, etc.) DNS Settings:
                       </p>
                       
                       <div className="space-y-3">
@@ -427,7 +427,7 @@ export default function AllowedDomains() {
                         </div>
                         
                         <div className="bg-muted p-3 rounded-lg space-y-2">
-                          <p className="font-medium text-xs">Wildcard (সব subdomain):</p>
+                          <p className="font-medium text-xs">Wildcard (all subdomains):</p>
                           <div className="flex items-center justify-between gap-2 font-mono text-xs">
                             <div>Type: <strong>A</strong> | Host: <strong>*</strong> | Value: <strong>76.76.21.21</strong></div>
                             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyToClipboard('76.76.21.21')}>
@@ -441,19 +441,19 @@ export default function AllowedDomains() {
 
                   <AccordionItem value="vercel-step3">
                     <AccordionTrigger className="text-sm font-medium">
-                      ধাপ ৩: এখানে Domain Add করুন
+                      Step 3: Add Domain Here
                     </AccordionTrigger>
                     <AccordionContent className="space-y-3 text-sm">
                       <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
-                        <li>"Add Domain" বাটনে ক্লিক করুন</li>
-                        <li>আপনার base domain লিখুন (যেমন: example.com)</li>
-                        <li><strong>Wildcard Mode</strong> check করুন সব subdomain allow করতে</li>
-                        <li>অথবা specific subdomain লিখুন</li>
+                        <li>Click the "Add Domain" button</li>
+                        <li>Enter your base domain (e.g., example.com)</li>
+                        <li>Check <strong>Wildcard Mode</strong> to allow all subdomains</li>
+                        <li>Or enter a specific subdomain</li>
                       </ol>
                       
                       <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 p-3 rounded-lg">
                         <p className="text-green-800 dark:text-green-200 text-xs">
-                          <strong>✓ SSL/HTTPS:</strong> Vercel automatically SSL certificate সেট করে!
+                          <strong>✓ SSL/HTTPS:</strong> Vercel automatically sets up SSL certificates!
                         </p>
                       </div>
                     </AccordionContent>
@@ -465,19 +465,19 @@ export default function AllowedDomains() {
                 <Accordion type="single" collapsible className="w-full">
                   <AccordionItem value="vps-step1">
                     <AccordionTrigger className="text-sm font-medium">
-                      ধাপ ১: DNS Record যুক্ত করুন
+                      Step 1: Add DNS Record
                     </AccordionTrigger>
                     <AccordionContent className="space-y-3 text-sm">
                       <p className="text-muted-foreground">
-                        আপনার Domain Provider এর DNS Settings এ যান এবং নিচের record যুক্ত করুন:
+                        Go to your Domain Provider's DNS Settings and add the following record:
                       </p>
                       
                       <div className="bg-muted p-3 rounded-lg space-y-2 font-mono text-xs">
                         <div className="flex items-center justify-between gap-2">
                           <div>
                             <span className="text-muted-foreground">Type:</span> <strong>A</strong> | 
-                            <span className="text-muted-foreground ml-2">Host:</span> <strong>@</strong> বা <strong>subdomain</strong> | 
-                            <span className="text-muted-foreground ml-2">Value:</span> <strong>আপনার Server IP</strong>
+                            <span className="text-muted-foreground ml-2">Host:</span> <strong>@</strong> or <strong>subdomain</strong> | 
+                            <span className="text-muted-foreground ml-2">Value:</span> <strong>Your Server IP</strong>
                           </div>
                         </div>
                       </div>
@@ -486,11 +486,11 @@ export default function AllowedDomains() {
 
                   <AccordionItem value="vps-step2">
                     <AccordionTrigger className="text-sm font-medium">
-                      ধাপ ২: Server Configuration (Nginx)
+                      Step 2: Server Configuration (Nginx)
                     </AccordionTrigger>
                     <AccordionContent className="space-y-3 text-sm">
                       <p className="text-muted-foreground">
-                        আপনার Nginx configuration এ নতুন domain এর জন্য server block যুক্ত করুন:
+                        Add a server block for the new domain in your Nginx configuration:
                       </p>
                       
                       <div className="bg-muted p-3 rounded-lg font-mono text-xs overflow-x-auto">
@@ -528,11 +528,11 @@ export default function AllowedDomains() {
 
                   <AccordionItem value="vps-step3">
                     <AccordionTrigger className="text-sm font-medium">
-                      ধাপ ৩: SSL Certificate (HTTPS)
+                      Step 3: SSL Certificate (HTTPS)
                     </AccordionTrigger>
                     <AccordionContent className="space-y-3 text-sm">
                       <p className="text-muted-foreground">
-                        Certbot দিয়ে Free SSL certificate নিন:
+                        Get a free SSL certificate with Certbot:
                       </p>
                       
                       <div className="bg-muted p-3 rounded-lg font-mono text-xs space-y-1">
@@ -553,13 +553,13 @@ export default function AllowedDomains() {
 
                   <AccordionItem value="vps-step4">
                     <AccordionTrigger className="text-sm font-medium">
-                      ধাপ ৪: এখানে Domain Add করুন
+                      Step 4: Add Domain Here
                     </AccordionTrigger>
                     <AccordionContent className="space-y-3 text-sm">
                       <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
-                        <li>"Add Domain" বাটনে ক্লিক করুন</li>
-                        <li>Wildcard Mode enable করুন সব subdomain allow করতে</li>
-                        <li>অথবা specific subdomain add করুন</li>
+                        <li>Click the "Add Domain" button</li>
+                        <li>Enable Wildcard Mode to allow all subdomains</li>
+                        <li>Or add a specific subdomain</li>
                       </ol>
                       
                       <Button 
@@ -585,8 +585,8 @@ export default function AllowedDomains() {
           <CardContent className="py-4">
             <h4 className="font-semibold text-sm mb-2">How it works</h4>
             <ul className="text-sm text-muted-foreground space-y-1">
-              <li>• <strong>Wildcard (*.example.com)</strong> - সব subdomain automatically allowed</li>
-              <li>• <strong>Specific domain</strong> - শুধু ঐ domain allowed</li>
+              <li>• <strong>Wildcard (*.example.com)</strong> - All subdomains automatically allowed</li>
+              <li>• <strong>Specific domain</strong> - Only that domain is allowed</li>
               <li>• Disabled domains will show "Domain Not Authorized" page</li>
               <li>• Localhost, .lovable.app, .vercel.app automatically bypassed</li>
             </ul>
@@ -640,7 +640,7 @@ export default function AllowedDomains() {
                     Wildcard Mode
                   </Label>
                   <p className="text-xs text-muted-foreground">
-                    Enable all subdomains (*.example.com). যেকোনো subdomain automatic allow হবে।
+                    Enable all subdomains (*.example.com). Any subdomain will be automatically allowed.
                   </p>
                 </div>
               </div>

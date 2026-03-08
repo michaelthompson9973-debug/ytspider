@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { ArrowLeft, Mail, CheckCircle } from 'lucide-react';
 import { z } from 'zod';
 
-const emailSchema = z.string().trim().email('সঠিক ইমেইল দিন');
+const emailSchema = z.string().trim().email('Please enter a valid email');
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
@@ -19,7 +19,6 @@ export default function ForgotPassword() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate email
     const result = emailSchema.safeParse(email);
     if (!result.success) {
       toast.error(result.error.errors[0].message);
@@ -39,7 +38,7 @@ export default function ForgotPassword() {
 
       setEmailSent(true);
     } catch {
-      toast.error('কিছু সমস্যা হয়েছে, আবার চেষ্টা করুন');
+      toast.error('Something went wrong, please try again');
     } finally {
       setIsLoading(false);
     }
@@ -57,19 +56,19 @@ export default function ForgotPassword() {
             )}
           </div>
           <CardTitle className="text-2xl">
-            {emailSent ? 'ইমেইল পাঠানো হয়েছে' : 'পাসওয়ার্ড রিসেট'}
+            {emailSent ? 'Email Sent' : 'Reset Password'}
           </CardTitle>
           <CardDescription>
             {emailSent
-              ? 'আপনার ইমেইলে রিসেট লিংক পাঠানো হয়েছে। ইনবক্স এবং স্প্যাম ফোল্ডার চেক করুন।'
-              : 'আপনার অ্যাকাউন্টের ইমেইল দিন, আমরা রিসেট লিংক পাঠাবো।'}
+              ? 'A reset link has been sent to your email. Check your inbox and spam folder.'
+              : 'Enter your account email and we\'ll send you a reset link.'}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {emailSent ? (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground text-center">
-                <strong>{email}</strong> এ একটি রিসেট লিংক পাঠানো হয়েছে।
+                A reset link has been sent to <strong>{email}</strong>.
               </p>
               <Button
                 variant="outline"
@@ -79,13 +78,13 @@ export default function ForgotPassword() {
                   setEmail('');
                 }}
               >
-                আবার পাঠান
+                Send Again
               </Button>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">ইমেইল</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
                   type="email"
@@ -98,7 +97,7 @@ export default function ForgotPassword() {
                 />
               </div>
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'পাঠানো হচ্ছে...' : 'রিসেট লিংক পাঠান'}
+                {isLoading ? 'Sending...' : 'Send Reset Link'}
               </Button>
             </form>
           )}
@@ -109,7 +108,7 @@ export default function ForgotPassword() {
               className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
             >
               <ArrowLeft className="h-3 w-3" />
-              লগইনে ফিরে যান
+              Back to Login
             </Link>
           </div>
         </CardContent>

@@ -109,14 +109,14 @@ export function useCreatePricingPlan() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pricing-plans'] });
       toast({
-        title: 'প্ল্যান তৈরি হয়েছে',
-        description: 'নতুন প্রাইসিং প্ল্যান সফলভাবে তৈরি হয়েছে',
+        title: 'Plan Created',
+        description: 'New pricing plan has been created successfully',
       });
     },
     onError: (error) => {
       toast({
-        title: 'ত্রুটি',
-        description: 'প্ল্যান তৈরি করতে সমস্যা হয়েছে',
+        title: 'Error',
+        description: 'Failed to create pricing plan',
         variant: 'destructive',
       });
       console.error('Error creating plan:', error);
@@ -143,14 +143,14 @@ export function useUpdatePricingPlan() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pricing-plans'] });
       toast({
-        title: 'প্ল্যান আপডেট হয়েছে',
-        description: 'প্রাইসিং প্ল্যান সফলভাবে আপডেট হয়েছে',
+        title: 'Plan Updated',
+        description: 'Pricing plan has been updated successfully',
       });
     },
     onError: (error) => {
       toast({
-        title: 'ত্রুটি',
-        description: 'প্ল্যান আপডেট করতে সমস্যা হয়েছে',
+        title: 'Error',
+        description: 'Failed to update pricing plan',
         variant: 'destructive',
       });
       console.error('Error updating plan:', error);
@@ -174,14 +174,14 @@ export function useDeletePricingPlan() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pricing-plans'] });
       toast({
-        title: 'প্ল্যান ডিলিট হয়েছে',
-        description: 'প্রাইসিং প্ল্যান সফলভাবে ডিলিট হয়েছে',
+        title: 'Plan Deleted',
+        description: 'Pricing plan has been deleted successfully',
       });
     },
     onError: (error) => {
       toast({
-        title: 'ত্রুটি',
-        description: 'প্ল্যান ডিলিট করতে সমস্যা হয়েছে',
+        title: 'Error',
+        description: 'Failed to delete pricing plan',
         variant: 'destructive',
       });
       console.error('Error deleting plan:', error);
@@ -189,13 +189,11 @@ export function useDeletePricingPlan() {
   });
 }
 
-// Helper function to check if limit is "unlimited" (very large number)
 export function isUnlimited(value: number | null): boolean {
   return value === null || value >= 999999;
 }
 
-// Format limit for display
-export function formatLimit(value: number | null, unlimitedText = 'আনলিমিটেড'): string {
+export function formatLimit(value: number | null, unlimitedText = 'Unlimited'): string {
   if (isUnlimited(value)) return unlimitedText;
-  return value?.toLocaleString('bn-BD') || '0';
+  return value?.toLocaleString() || '0';
 }
