@@ -393,12 +393,6 @@ export default function AllShops() {
         onOpenChange={(open) => !open && setManageShop(null)}
       />
 
-      {/* Create Shop Dialog */}
-      <CreateShopForUserDialog
-        open={createDialogOpen}
-        onOpenChange={setCreateDialogOpen}
-        onSuccess={() => queryClient.invalidateQueries({ queryKey: ['admin-shops'] })}
-      />
 
       {/* Reset Credentials Dialog */}
       <ResetCredentialsDialog
