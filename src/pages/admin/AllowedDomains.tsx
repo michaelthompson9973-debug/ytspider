@@ -490,7 +490,7 @@ export default function AllowedDomains() {
                     </AccordionTrigger>
                     <AccordionContent className="space-y-3 text-sm">
                       <p className="text-muted-foreground">
-                        আপনার Nginx configuration এ নতুন domain এর জন্য server block যুক্ত করুন:
+                        Add a server block for the new domain in your Nginx configuration:
                       </p>
                       
                       <div className="bg-muted p-3 rounded-lg font-mono text-xs overflow-x-auto">
