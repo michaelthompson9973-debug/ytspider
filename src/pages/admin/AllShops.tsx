@@ -8,6 +8,7 @@ import AdminLayout from '@/components/admin/AdminLayout';
 import { CreateShopForUserDialog } from '@/components/admin/CreateShopForUserDialog';
 import { ShopManageModal, type ShopOverviewRow } from '@/components/admin/ShopManageModal';
 import { ResetCredentialsDialog } from '@/components/admin/ResetCredentialsDialog';
+// Note: CreateShopForUserDialog kept for backward compat but Create Shop now uses dedicated page
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
