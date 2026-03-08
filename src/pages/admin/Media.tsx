@@ -184,7 +184,7 @@ export default function Media() {
       }
     } catch (error) {
       console.error('Compression error:', error);
-      toast({ title: 'কম্প্রেশন ব্যর্থ', description: String(error), variant: 'destructive' });
+      toast({ title: 'Compression failed', description: String(error), variant: 'destructive' });
     } finally {
       setCompressingId(null);
     }
