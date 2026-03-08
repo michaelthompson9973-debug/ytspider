@@ -139,7 +139,7 @@ export default function AllShops() {
               </p>
             </div>
           </div>
-          <Button onClick={() => setCreateDialogOpen(true)}>
+          <Button onClick={() => navigate('/admin/business/shops/create')}>
             <Plus className="h-4 w-4 mr-2" />
             Create Shop
           </Button>
