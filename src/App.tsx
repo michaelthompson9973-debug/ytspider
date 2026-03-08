@@ -16,6 +16,8 @@ import { ShopGuard } from "@/components/admin/ShopGuard";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Register from "./pages/Register";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import ShopLogin from "./pages/shop/ShopLogin";
 
 // Super Admin pages (Platform Admin)
