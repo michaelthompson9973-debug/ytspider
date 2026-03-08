@@ -3,6 +3,8 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useShop } from '@/contexts/ShopContext';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ShopStatusGuard } from './ShopStatusGuard';
+import { GlobalAnnouncementBanner } from './GlobalAnnouncementBanner';
 
 interface ShopProtectedRouteProps {
   children: React.ReactNode;
@@ -57,5 +59,11 @@ export function ShopProtectedRoute({ children }: ShopProtectedRouteProps) {
     );
   }
 
-  return <>{children}</>;
+  // Wrap with status guard (handles grace period + suspended states)
+  return (
+    <ShopStatusGuard>
+      <GlobalAnnouncementBanner />
+      {children}
+    </ShopStatusGuard>
+  );
 }

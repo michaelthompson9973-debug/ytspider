@@ -6,6 +6,8 @@ export type ShopRole = 'owner' | 'admin' | 'manager' | 'editor' | 'support' | 'v
 export type ShopPlan = 'free' | 'pro' | 'enterprise';
 export type ShopType = 'physical' | 'digital';
 
+export type ShopStatus = 'active' | 'grace_period' | 'suspended' | 'cancelled';
+
 export interface Shop {
   id: string;
   name: string;
@@ -18,6 +20,9 @@ export interface Shop {
   onboarding_completed: boolean;
   settings: Record<string, unknown>;
   is_active: boolean;
+  status: ShopStatus;
+  grace_period_ends_at: string | null;
+  expires_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -109,6 +114,9 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
         onboarding_completed: shop.onboarding_completed as boolean ?? false,
         settings: (shop.settings || {}) as Record<string, unknown>,
         is_active: shop.is_active as boolean,
+        status: (shop.status as ShopStatus) || 'active',
+        grace_period_ends_at: shop.grace_period_ends_at as string | null,
+        expires_at: shop.expires_at as string | null,
         created_at: shop.created_at as string,
         updated_at: shop.updated_at as string,
       }));
@@ -249,6 +257,9 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
       onboarding_completed: shop.onboarding_completed ?? false,
       settings: (shop.settings || {}) as Record<string, unknown>,
       is_active: shop.is_active,
+      status: (shop.status as ShopStatus) || 'active',
+      grace_period_ends_at: shop.grace_period_ends_at ?? null,
+      expires_at: shop.expires_at ?? null,
       created_at: shop.created_at,
       updated_at: shop.updated_at,
     };
