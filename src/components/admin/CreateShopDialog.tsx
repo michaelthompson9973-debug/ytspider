@@ -53,7 +53,7 @@ export function CreateShopDialog({ open, onOpenChange, onSuccess }: CreateShopDi
 
   const handleNameChange = (value: string) => { step2Form.setValue('name', value); step2Form.setValue('slug', generateSlug(value)); };
   const handleTypeSelect = (type: ShopType) => { setSelectedType(type); step1Form.setValue('shopType', type); step1Form.clearErrors('shopType'); };
-  const handleStep1Submit = () => { if (!selectedType) { step1Form.setError('shopType', { message: 'প্রোডাক্ট টাইপ নির্বাচন করুন' }); return; } setStep(2); };
+  const handleStep1Submit = () => { if (!selectedType) { step1Form.setError('shopType', { message: 'Please select a product type' }); return; } setStep(2); };
 
   const handleStep2Submit = async (data: CreateShopStep2Input) => {
     if (!selectedType) { setStep(1); return; }
