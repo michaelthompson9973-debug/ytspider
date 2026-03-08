@@ -402,7 +402,7 @@ export default function AllowedDomains() {
                     </AccordionTrigger>
                     <AccordionContent className="space-y-3 text-sm">
                       <p className="text-muted-foreground">
-                        আপনার Domain Provider (Namecheap, GoDaddy ইত্যাদি) এর DNS Settings এ যান:
+                        Go to your Domain Provider's (Namecheap, GoDaddy, etc.) DNS Settings:
                       </p>
                       
                       <div className="space-y-3">
