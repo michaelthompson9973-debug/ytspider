@@ -44,8 +44,17 @@ export default function CreateShop() {
     const array = new Uint8Array(16);
     crypto.getRandomValues(array);
     const password = Array.from(array, (byte) => chars[byte % chars.length]).join('');
+    
+    // Generate random temp email username
+    const nameChars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    const nameArray = new Uint8Array(8);
+    crypto.getRandomValues(nameArray);
+    const randomName = 'user' + Array.from(nameArray, (byte) => nameChars[byte % nameChars.length]).join('');
+    const tempEmail = `${randomName}@temp.shop`;
+
+    form.setValue('ownerEmail', tempEmail);
     form.setValue('ownerPassword', password);
-    toast.success(language === 'bn' ? 'পাসওয়ার্ড জেনারেট হয়েছে!' : 'Password generated!');
+    toast.success(language === 'bn' ? 'ক্রেডেনশিয়াল জেনারেট হয়েছে!' : 'Credentials generated!');
   };
 
   const { data: plans, isLoading: plansLoading } = useQuery({
