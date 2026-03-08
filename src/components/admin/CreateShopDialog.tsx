@@ -102,12 +102,12 @@ export function CreateShopDialog({ open, onOpenChange, onSuccess }: CreateShopDi
                     <button type="button" onClick={() => handleTypeSelect('physical')} className={cn("relative flex flex-col items-center gap-3 p-5 rounded-xl border-2 transition-all hover:border-primary/50", selectedType === 'physical' ? "border-primary bg-primary/5 ring-2 ring-primary/20" : "border-border bg-card hover:bg-accent/50")}>
                       {selectedType === 'physical' && <div className="absolute top-2 right-2"><Check className="h-5 w-5 text-primary" /></div>}
                       <div className={cn("p-3 rounded-full", selectedType === 'physical' ? "bg-primary/10" : "bg-muted")}><Package className={cn("h-7 w-7", selectedType === 'physical' ? "text-primary" : "text-muted-foreground")} /></div>
-                      <div className="text-center"><p className="font-semibold text-sm">ফিজিক্যাল</p><p className="text-xs text-muted-foreground mt-1">পোশাক, গ্যাজেট</p></div>
-                    </button>
-                    <button type="button" onClick={() => handleTypeSelect('digital')} className={cn("relative flex flex-col items-center gap-3 p-5 rounded-xl border-2 transition-all hover:border-primary/50", selectedType === 'digital' ? "border-primary bg-primary/5 ring-2 ring-primary/20" : "border-border bg-card hover:bg-accent/50")}>
-                      {selectedType === 'digital' && <div className="absolute top-2 right-2"><Check className="h-5 w-5 text-primary" /></div>}
-                      <div className={cn("p-3 rounded-full", selectedType === 'digital' ? "bg-primary/10" : "bg-muted")}><Download className={cn("h-7 w-7", selectedType === 'digital' ? "text-primary" : "text-muted-foreground")} /></div>
-                      <div className="text-center"><p className="font-semibold text-sm">ডিজিটাল</p><p className="text-xs text-muted-foreground mt-1">সফটওয়্যার, কোর্স</p></div>
+                       <div className="text-center"><p className="font-semibold text-sm">Physical</p><p className="text-xs text-muted-foreground mt-1">Clothing, Gadgets</p></div>
+                     </button>
+                     <button type="button" onClick={() => handleTypeSelect('digital')} className={cn("relative flex flex-col items-center gap-3 p-5 rounded-xl border-2 transition-all hover:border-primary/50", selectedType === 'digital' ? "border-primary bg-primary/5 ring-2 ring-primary/20" : "border-border bg-card hover:bg-accent/50")}>
+                       {selectedType === 'digital' && <div className="absolute top-2 right-2"><Check className="h-5 w-5 text-primary" /></div>}
+                       <div className={cn("p-3 rounded-full", selectedType === 'digital' ? "bg-primary/10" : "bg-muted")}><Download className={cn("h-7 w-7", selectedType === 'digital' ? "text-primary" : "text-muted-foreground")} /></div>
+                       <div className="text-center"><p className="font-semibold text-sm">Digital</p><p className="text-xs text-muted-foreground mt-1">Software, Courses</p></div>
                     </button>
                   </div>
                   <FormMessage className="text-center mt-2" />
