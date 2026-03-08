@@ -390,7 +390,7 @@ export default function AllowedDomains() {
                       
                       <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-3 rounded-lg">
                         <p className="text-amber-800 dark:text-amber-200 text-xs">
-                          <strong>⚠️ Note:</strong> Wildcard domains (*.example.com) শুধু Vercel Pro plan এ available।
+                          <strong>⚠️ Note:</strong> Wildcard domains (*.example.com) are only available on Vercel Pro plan.
                         </p>
                       </div>
                     </AccordionContent>
