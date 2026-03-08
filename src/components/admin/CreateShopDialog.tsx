@@ -114,8 +114,8 @@ export function CreateShopDialog({ open, onOpenChange, onSuccess }: CreateShopDi
                 </FormItem>
               )} />
               <ResponsiveModalFooter className="pt-4">
-                <Button type="button" variant="outline" onClick={handleClose}>বাতিল</Button>
-                <Button type="submit" disabled={!selectedType} className="gap-2">পরবর্তী <ArrowRight className="h-4 w-4" /></Button>
+                <Button type="button" variant="outline" onClick={handleClose}>Cancel</Button>
+                <Button type="submit" disabled={!selectedType} className="gap-2">Next <ArrowRight className="h-4 w-4" /></Button>
               </ResponsiveModalFooter>
             </form>
           </Form>
