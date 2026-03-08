@@ -77,10 +77,10 @@ export function CreateShopDialog({ open, onOpenChange, onSuccess }: CreateShopDi
       <ResponsiveModalContent className="sm:max-w-[480px]">
         <ResponsiveModalHeader>
           <ResponsiveModalTitle className="flex items-center gap-2">
-            <Store className="h-5 w-5" /> নতুন শপ তৈরি করুন
+           <Store className="h-5 w-5" /> Create New Shop
           </ResponsiveModalTitle>
           <ResponsiveModalDescription>
-            {step === 1 ? 'কোন ধরনের প্রোডাক্ট বিক্রি করবেন?' : 'আপনার শপের নাম দিন'}
+            {step === 1 ? 'What type of product will you sell?' : 'Give your shop a name'}
           </ResponsiveModalDescription>
         </ResponsiveModalHeader>
 
