@@ -72,6 +72,7 @@ export default function AllShops() {
   const [statusFilter, setStatusFilter] = useState('');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [manageShop, setManageShop] = useState<ShopOverviewRow | null>(null);
+  const [resetTarget, setResetTarget] = useState<{ userId: string; email: string; name: string } | null>(null);
 
   // Debounced search
   const handleSearch = useCallback((value: string) => {
