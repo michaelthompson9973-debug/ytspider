@@ -220,6 +220,14 @@ export default function CreateShop() {
                     {language === 'bn' ? 'ক্রেডেনশিয়াল জেনারেট করুন' : 'Generate Credentials'}
                   </Button>
                 </CardContent>
+              </Card>
+
+              {/* Subscription */}
+              <Card>
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Package className="h-4 w-4 text-primary" />
+                    {language === 'bn' ? 'সাবস্ক্রিপশন' : 'Subscription'}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
