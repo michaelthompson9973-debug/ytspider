@@ -22,7 +22,7 @@ export default function ProtectedRoute({ children, requireAdmin = false }: Prote
   }
 
   if (!user) {
-    return <Navigate to="/auth" replace />;
+    return <Navigate to="/admin/login" replace />;
   }
 
   // For admin routes, require platform admin role
