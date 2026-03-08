@@ -75,7 +75,7 @@ export default function CreateShop() {
       const { data: sessionData } = await supabase.auth.getSession();
       if (!sessionData?.session?.access_token) throw new Error('Not authenticated');
       const response = await supabase.functions.invoke('provision-shop', {
-        body: { shopName: data.shopName, slug: data.slug, shopType: data.shopType, ownerEmail: data.ownerEmail.toLowerCase(), planId: data.planId, durationDays: parseInt(data.durationDays), sendCredentials: data.sendCredentials },
+        body: { shopName: data.shopName, slug: data.slug, shopType: data.shopType, ownerEmail: data.ownerEmail.toLowerCase(), ownerPassword: data.ownerPassword || undefined, planId: data.planId, durationDays: parseInt(data.durationDays), sendCredentials: data.sendCredentials },
       });
       if (response.error) throw new Error(response.error.message || 'Failed');
       if (!response.data.success) throw new Error(response.data.error || 'Failed');
