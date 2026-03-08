@@ -23,8 +23,8 @@ interface ComponentEditorProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   component?: LibraryComponent | null;
-  onSave: (data: { name: string; category: string; html: string }) => void;
-  onUpdate: (data: { id: string; name?: string; category?: string; html?: string }) => void;
+  onSave: (data: { name: string; category: string; html: string; min_plan_tier: string }) => void;
+  onUpdate: (data: { id: string; name?: string; category?: string; html?: string; min_plan_tier?: string }) => void;
   isSaving: boolean;
 }
 
