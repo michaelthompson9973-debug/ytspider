@@ -115,7 +115,7 @@ export default function ResetPassword() {
         <CardHeader className="text-center">
           <div className="mx-auto mb-3 h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
             {success ? (
-              <CheckCircle className="h-7 w-7 text-emerald-600" />
+              <CheckCircle className="h-7 w-7 text-primary" />
             ) : (
               <KeyRound className="h-7 w-7 text-primary" />
             )}

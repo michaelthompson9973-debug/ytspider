@@ -51,7 +51,7 @@ export default function ForgotPassword() {
         <CardHeader className="text-center">
           <div className="mx-auto mb-3 h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
             {emailSent ? (
-              <CheckCircle className="h-7 w-7 text-emerald-600" />
+              <CheckCircle className="h-7 w-7 text-primary" />
             ) : (
               <Mail className="h-7 w-7 text-primary" />
             )}
