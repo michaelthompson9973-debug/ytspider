@@ -6,3 +6,4 @@ export { UserMenu } from './UserMenu';
 export { ShopStatusGuard } from './ShopStatusGuard';
 export { GlobalAnnouncementBanner } from './GlobalAnnouncementBanner';
 export { QuotaGate } from './QuotaGate';
+export { QuotaUpsellBanner } from './QuotaUpsellBanner';
