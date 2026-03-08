@@ -102,7 +102,7 @@ export default function ShopLogin() {
         return;
       }
 
-      toast.success('লগইন সফল!');
+      toast.success('Login successful!');
     } catch (err) {
       toast.error('লগইন করতে সমস্যা হয়েছে');
     } finally {
