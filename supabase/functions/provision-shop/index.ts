@@ -7,6 +7,7 @@ interface ProvisionShopRequest {
   slug: string;
   shopType?: 'physical' | 'digital';
   ownerEmail: string;
+  ownerPassword?: string;
   planId: string;
   durationDays: number;
   sendCredentials: boolean;
@@ -34,7 +35,7 @@ Deno.serve(async (req) => {
 
   try {
     const body: ProvisionShopRequest = await req.json();
-    const { shopName, slug, shopType = 'physical', ownerEmail, planId, durationDays, sendCredentials } = body;
+    const { shopName, slug, shopType = 'physical', ownerEmail, ownerPassword, planId, durationDays, sendCredentials } = body;
 
     // Validate required fields
     if (!shopName || !slug || !ownerEmail || !planId) {
@@ -106,7 +107,7 @@ Deno.serve(async (req) => {
     } else {
       // Create new user
       isNewUser = true;
-      generatedPassword = generateSecurePassword(16);
+      generatedPassword = ownerPassword || generateSecurePassword(16);
 
       const { data: newUser, error: createUserError } = await supabaseAdmin.auth.admin.createUser({
         email: ownerEmail.toLowerCase(),

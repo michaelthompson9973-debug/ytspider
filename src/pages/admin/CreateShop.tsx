@@ -16,7 +16,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Loader2, Store, User, Package, Mail, Download, ArrowLeft, Check, Copy, AlertTriangle } from 'lucide-react';
+import { Loader2, Store, User, Package, Mail, Download, ArrowLeft, Check, Copy, AlertTriangle, KeyRound, RefreshCw } from 'lucide-react';
 
 interface PricingPlan {
   id: string;
@@ -36,8 +36,17 @@ export default function CreateShop() {
 
   const form = useForm<CreateShopForUserInput>({
     resolver: zodResolver(createShopForUserSchema),
-    defaultValues: { shopName: '', slug: '', shopType: 'physical', ownerEmail: '', planId: '', durationDays: '30', sendCredentials: true },
+    defaultValues: { shopName: '', slug: '', shopType: 'physical', ownerEmail: '', ownerPassword: '', planId: '', durationDays: '30', sendCredentials: true },
   });
+
+  const generateCredentials = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+    const array = new Uint8Array(16);
+    crypto.getRandomValues(array);
+    const password = Array.from(array, (byte) => chars[byte % chars.length]).join('');
+    form.setValue('ownerPassword', password);
+    toast.success(language === 'bn' ? 'পাসওয়ার্ড জেনারেট হয়েছে!' : 'Password generated!');
+  };
 
   const { data: plans, isLoading: plansLoading } = useQuery({
     queryKey: ['pricing-plans-active'],
@@ -66,7 +75,7 @@ export default function CreateShop() {
       const { data: sessionData } = await supabase.auth.getSession();
       if (!sessionData?.session?.access_token) throw new Error('Not authenticated');
       const response = await supabase.functions.invoke('provision-shop', {
-        body: { shopName: data.shopName, slug: data.slug, shopType: data.shopType, ownerEmail: data.ownerEmail.toLowerCase(), planId: data.planId, durationDays: parseInt(data.durationDays), sendCredentials: data.sendCredentials },
+        body: { shopName: data.shopName, slug: data.slug, shopType: data.shopType, ownerEmail: data.ownerEmail.toLowerCase(), ownerPassword: data.ownerPassword || undefined, planId: data.planId, durationDays: parseInt(data.durationDays), sendCredentials: data.sendCredentials },
       });
       if (response.error) throw new Error(response.error.message || 'Failed');
       if (!response.data.success) throw new Error(response.data.error || 'Failed');
@@ -181,7 +190,7 @@ export default function CreateShop() {
                   </CardTitle>
                   <CardDescription>{language === 'bn' ? 'বিদ্যমান ইউজার হলে শপ অ্যাসাইন হবে, নতুন হলে অ্যাকাউন্ট তৈরি হবে' : 'Existing users get the shop assigned, new users get an account created'}</CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-4">
                   <FormField control={form.control} name="ownerEmail" render={({ field }) => (
                     <FormItem>
                       <FormLabel>{language === 'bn' ? 'ওনারের ইমেইল' : 'Owner Email'} *</FormLabel>
@@ -189,6 +198,27 @@ export default function CreateShop() {
                       <FormMessage />
                     </FormItem>
                   )} />
+
+                  <FormField control={form.control} name="ownerPassword" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{language === 'bn' ? 'পাসওয়ার্ড' : 'Password'}</FormLabel>
+                      <div className="flex gap-2">
+                        <FormControl><Input type="text" placeholder={language === 'bn' ? 'জেনারেট করুন বা নিজে লিখুন' : 'Generate or type manually'} {...field} /></FormControl>
+                        <Button type="button" variant="outline" size="icon" onClick={generateCredentials} title={language === 'bn' ? 'পাসওয়ার্ড জেনারেট করুন' : 'Generate Password'}>
+                          <RefreshCw className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {language === 'bn' ? 'খালি রাখলে সিস্টেম অটো জেনারেট করবে। ওনার পরে পরিবর্তন করতে পারবেন।' : 'Leave empty for auto-generation. Owner can change later.'}
+                      </p>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+
+                  <Button type="button" variant="secondary" onClick={generateCredentials} className="gap-2">
+                    <KeyRound className="h-4 w-4" />
+                    {language === 'bn' ? 'ক্রেডেনশিয়াল জেনারেট করুন' : 'Generate Credentials'}
+                  </Button>
                 </CardContent>
               </Card>
 

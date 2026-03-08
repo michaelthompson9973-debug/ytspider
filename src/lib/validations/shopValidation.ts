@@ -38,6 +38,7 @@ export const createShopForUserSchema = z.object({
   slug: shopSlugSchema,
   shopType: shopTypeSchema,
   ownerEmail: emailSchema,
+  ownerPassword: z.string().min(8, 'Password must be at least 8 characters').max(64).optional().or(z.literal('')),
   planId: z.string().min(1, 'Please select a plan'),
   durationDays: z.string().refine(
     (val) => ['30', '90', '180', '365'].includes(val),
