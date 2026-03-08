@@ -101,6 +101,8 @@ const App = () => (
                 <Route path="/register" element={<Navigate to="/shop/register" replace />} />
                 <Route path="/shop/login" element={<ShopLogin />} />
                 <Route path="/login" element={<Navigate to="/shop/login" replace />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
                 
                 {/* ================================== */}
                 {/* SHOP OWNER AREA (/shop/*) */}
