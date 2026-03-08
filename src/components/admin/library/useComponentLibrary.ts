@@ -27,7 +27,7 @@ export function useComponentLibrary() {
   });
 
   const createMutation = useMutation({
-    mutationFn: async (component: { name: string; category: string; html: string }) => {
+    mutationFn: async (component: { name: string; category: string; html: string; min_plan_tier?: string }) => {
       const { data: userData } = await supabase.auth.getUser();
       const { data, error } = await supabase
         .from('component_library')
@@ -35,6 +35,7 @@ export function useComponentLibrary() {
           name: component.name,
           category: component.category,
           html: component.html,
+          min_plan_tier: component.min_plan_tier || 'free',
           created_by: userData.user?.id,
         })
         .select()
