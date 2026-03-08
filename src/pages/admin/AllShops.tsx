@@ -310,7 +310,7 @@ export default function AllShops() {
                                   statusMutation.mutate({ id: shop.id, status: 'active' })
                                 }
                               >
-                                <ShieldCheck className="h-4 w-4 mr-2 text-emerald-500" />
+                                <ShieldCheck className="h-4 w-4 mr-2 text-primary" />
                                 Set Active
                               </DropdownMenuItem>
                             )}
