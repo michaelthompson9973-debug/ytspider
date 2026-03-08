@@ -291,7 +291,7 @@ export default function Orders() {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       queryClient.invalidateQueries({ queryKey: ['order-counts'] });
       setOrderToDelete(null);
-      toast({ title: 'অর্ডার ডিলিট হয়েছে' });
+      toast({ title: 'Order deleted' });
     },
     onError: (error) => {
       toast({ title: 'এরর', description: error.message, variant: 'destructive' });
