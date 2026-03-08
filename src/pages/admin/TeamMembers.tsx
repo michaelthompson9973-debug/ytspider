@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
-import { useShop } from '@/contexts/ShopContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,25 +30,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { 
-  Users, 
-  UserPlus, 
-  Mail, 
-  Loader2, 
-  MoreVertical,
-  Trash2,
-  Shield,
-  Crown,
-  Edit,
-  Eye,
-  Briefcase,
-  Headphones,
-  Clock,
-  RefreshCw,
-  X,
-} from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -56,248 +37,155 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { useShopInvitations, ShopInvitation } from '@/hooks/useShopInvitations';
-import { useShopPermissions, ExtendedShopRole, roleLabels, roleDescriptions } from '@/hooks/useShopPermissions';
-import { useActivityLog } from '@/hooks/useActivityLog';
-import { formatDistanceToNow } from 'date-fns';
+import {
+  Users,
+  UserPlus,
+  Shield,
+  ShieldCheck,
+  Crown,
+  Headphones,
+  MoreVertical,
+  Loader2,
+  Trash2,
+  ArrowUpDown,
+} from 'lucide-react';
 
-type ResendingState = { [key: string]: boolean };
-
-interface ShopMember {
-  id: string;
-  shop_id: string;
+interface StaffMember {
+  role_id: string;
   user_id: string;
-  role: ExtendedShopRole;
-  invited_by: string | null;
-  invited_at: string;
-  accepted_at: string | null;
+  role: string;
+  granted_at: string;
+  user_name: string | null;
+  user_email: string | null;
+  avatar_url: string | null;
 }
 
-const roleIcons: Record<ExtendedShopRole, React.ReactNode> = {
-  owner: <Crown className="h-4 w-4" />,
-  admin: <Shield className="h-4 w-4" />,
-  manager: <Briefcase className="h-4 w-4" />,
-  editor: <Edit className="h-4 w-4" />,
-  support: <Headphones className="h-4 w-4" />,
-  viewer: <Eye className="h-4 w-4" />,
+const ROLE_CONFIG: Record<string, { label: string; icon: typeof Crown; variant: 'default' | 'secondary' | 'outline'; description: string }> = {
+  super_admin: {
+    label: 'Founder',
+    icon: Crown,
+    variant: 'default',
+    description: 'Immutable platform owner with full control',
+  },
+  admin: {
+    label: 'Admin',
+    icon: ShieldCheck,
+    variant: 'secondary',
+    description: 'Full platform management (cannot modify founder)',
+  },
+  support: {
+    label: 'Support',
+    icon: Headphones,
+    variant: 'outline',
+    description: 'Read-only access for customer support operations',
+  },
 };
-
-const roleBadgeVariants: Record<ExtendedShopRole, 'default' | 'secondary' | 'outline'> = {
-  owner: 'default',
-  admin: 'secondary',
-  manager: 'secondary',
-  editor: 'outline',
-  support: 'outline',
-  viewer: 'outline',
-};
-
-const assignableRoles: ExtendedShopRole[] = ['admin', 'manager', 'editor', 'support', 'viewer'];
 
 export default function TeamMembers() {
-  const { currentShop } = useShop();
-  const { hasPermission } = useShopPermissions();
-  const { logActivity } = useActivityLog();
+  const { isSuperAdmin, platformRole, user } = useAuth();
   const queryClient = useQueryClient();
-  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteRole, setInviteRole] = useState<ExtendedShopRole>('editor');
-  const [resendingInvites, setResendingInvites] = useState<ResendingState>({});
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [addEmail, setAddEmail] = useState('');
+  const [addRole, setAddRole] = useState('support');
+  const [removeTarget, setRemoveTarget] = useState<StaffMember | null>(null);
 
-  const canManageTeam = hasPermission('team.manage');
-
-  const { 
-    invitations, 
-    isLoading: invitationsLoading, 
-    createInvitation, 
-    isCreating,
-    cancelInvitation,
-    resendInvitation,
-  } = useShopInvitations();
-
-  // Fetch team members
-  const { data: members = [], isLoading } = useQuery({
-    queryKey: ['shop-members', currentShop?.id],
+  // Fetch platform staff
+  const { data: staff = [], isLoading } = useQuery({
+    queryKey: ['platform-staff'],
     queryFn: async () => {
-      if (!currentShop) return [];
-      
-      const { data: membersData, error: membersError } = await supabase
-        .from('shop_members')
-        .select('*')
-        .eq('shop_id', currentShop.id)
-        .order('role');
-
-      if (membersError) throw membersError;
-      
-      // Fetch profiles for all members
-      const userIds = membersData.map(m => m.user_id);
-      const { data: profilesData } = await supabase
-        .from('profiles')
-        .select('id, email, full_name, avatar_url')
-        .in('id', userIds);
-
-      // Map profiles to members
-      const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
-      
-      return membersData.map(member => ({
-        ...member,
-        profile: profilesMap.get(member.user_id) || null,
-      })) as (ShopMember & { 
-        profile: { id: string; email: string; full_name: string | null; avatar_url: string | null } | null 
-      })[];
-    },
-    enabled: !!currentShop,
-  });
-
-  // Remove member mutation
-  const removeMemberMutation = useMutation({
-    mutationFn: async (memberId: string) => {
-      const member = members.find(m => m.id === memberId);
-      const { error } = await supabase
-        .from('shop_members')
-        .delete()
-        .eq('id', memberId);
-      
+      const { data, error } = await supabase.rpc('get_platform_staff');
       if (error) throw error;
-      return member;
-    },
-    onSuccess: (member) => {
-      queryClient.invalidateQueries({ queryKey: ['shop-members', currentShop?.id] });
-      toast.success('মেম্বার রিমুভ করা হয়েছে');
-      if (member) {
-        logActivity({
-          action: 'delete',
-          entityType: 'team_member',
-          entityId: member.id,
-          oldData: { user_id: member.user_id, role: member.role },
-        });
-      }
-    },
-    onError: () => {
-      toast.error('মেম্বার রিমুভ করতে সমস্যা হয়েছে');
+      return data as StaffMember[];
     },
   });
 
-  // Update role mutation
-  const updateRoleMutation = useMutation({
-    mutationFn: async ({ memberId, newRole }: { memberId: string; newRole: ExtendedShopRole }) => {
-      const member = members.find(m => m.id === memberId);
-      const oldRole = member?.role;
-      
-      const { error } = await supabase
-        .from('shop_members')
-        .update({ role: newRole })
-        .eq('id', memberId);
-      
-      if (error) throw error;
-      return { member, oldRole, newRole };
-    },
-    onSuccess: ({ member, oldRole, newRole }) => {
-      queryClient.invalidateQueries({ queryKey: ['shop-members', currentShop?.id] });
-      toast.success('রোল আপডেট করা হয়েছে');
-      if (member) {
-        logActivity({
-          action: 'role_change',
-          entityType: 'team_member',
-          entityId: member.id,
-          oldData: { role: oldRole },
-          newData: { role: newRole },
-        });
-      }
-    },
-    onError: () => {
-      toast.error('রোল আপডেট করতে সমস্যা হয়েছে');
-    },
-  });
-
-  const buildInviteUrl = (token: string) => {
-    const origin = window.location.origin.replace(/\/$/, '');
-    return `${origin}/accept-invite?token=${token}`;
-  };
-
-  const copyInviteLink = async (token: string) => {
-    const url = buildInviteUrl(token);
-    try {
-      await navigator.clipboard.writeText(url);
-      toast.success('ইনভাইট লিংক কপি হয়েছে');
-    } catch {
-      toast('ইনভাইট লিংক', { description: url });
-    }
-  };
-
-  const handleInvite = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    try {
-      const result = await createInvitation({ email: inviteEmail, role: inviteRole });
-
-      if (result.emailSent) {
-        toast.success('ইনভাইট পাঠানো হয়েছে');
-      } else {
-        toast('ইমেইল পাঠানো যায়নি', {
-          description: 'ইনভাইট লিংক কপি করে ম্যানুয়ালি পাঠাতে পারেন',
-          action: {
-            label: 'কপি লিংক',
-            onClick: () => void copyInviteLink(result.invitation.token),
-          },
-        });
-      }
-
-      logActivity({
-        action: 'invite',
-        entityType: 'invitation',
-        newData: { email: inviteEmail, role: inviteRole },
+  // Add staff mutation
+  const addMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.rpc('add_platform_staff', {
+        _email: addEmail,
+        _role: addRole,
       });
-
-      setInviteDialogOpen(false);
-      setInviteEmail('');
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'ইনভাইট পাঠাতে সমস্যা হয়েছে');
-    }
-  };
-
-  const handleCancelInvite = async (id: string) => {
-    try {
-      await cancelInvitation(id);
-      toast.success('ইনভাইট বাতিল হয়েছে');
-    } catch {
-      toast.error('ইনভাইট বাতিল করতে সমস্যা হয়েছে');
-    }
-  };
-
-  const handleResendInvite = async (id: string) => {
-    setResendingInvites(prev => ({ ...prev, [id]: true }));
-    try {
-      const result = await resendInvitation(id);
-
-      if (result.emailSent) {
-        toast.success('ইনভাইট আবার পাঠানো হয়েছে');
-      } else {
-        toast('ইমেইল পাঠানো যায়নি', {
-          description: 'ইনভাইট লিংক কপি করে ম্যানুয়ালি পাঠাতে পারেন',
-          action: {
-            label: 'কপি লিংক',
-            onClick: () => void copyInviteLink(result.token),
-          },
-        });
+      if (error) throw error;
+      const result = data as { success: boolean; error?: string; message?: string };
+      if (!result.success) {
+        throw new Error(result.message || result.error || 'Failed to add staff');
       }
-    } catch {
-      toast.error('ইনভাইট পাঠাতে সমস্যা হয়েছে');
-    } finally {
-      setResendingInvites(prev => ({ ...prev, [id]: false }));
-    }
-  };
+      return result;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['platform-staff'] });
+      toast.success('Staff member added successfully');
+      setAddDialogOpen(false);
+      setAddEmail('');
+      setAddRole('support');
+    },
+    onError: (err) => toast.error((err as Error).message),
+  });
 
+  // Remove staff mutation
+  const removeMutation = useMutation({
+    mutationFn: async (roleId: string) => {
+      const { data, error } = await supabase.rpc('remove_platform_staff', {
+        _role_id: roleId,
+      });
+      if (error) throw error;
+      const result = data as { success: boolean; error?: string; message?: string };
+      if (!result.success) {
+        throw new Error(result.message || result.error || 'Failed to remove staff');
+      }
+      return result;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['platform-staff'] });
+      toast.success('Staff member removed');
+      setRemoveTarget(null);
+    },
+    onError: (err) => toast.error((err as Error).message),
+  });
 
-  if (!currentShop) {
-    return (
-      <AdminLayout>
-        <div className="flex items-center justify-center h-[50vh]">
-          <p className="text-muted-foreground">কোনো শপ সিলেক্ট করা হয়নি</p>
-        </div>
-      </AdminLayout>
-    );
-  }
+  // Change role mutation
+  const changeRoleMutation = useMutation({
+    mutationFn: async ({ roleId, newRole }: { roleId: string; newRole: string }) => {
+      const { data, error } = await supabase.rpc('change_platform_staff_role', {
+        _role_id: roleId,
+        _new_role: newRole,
+      });
+      if (error) throw error;
+      const result = data as { success: boolean; error?: string; message?: string };
+      if (!result.success) {
+        throw new Error(result.message || result.error || 'Failed to change role');
+      }
+      return result;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['platform-staff'] });
+      toast.success('Role updated');
+    },
+    onError: (err) => toast.error((err as Error).message),
+  });
+
+  // Determine assignable roles based on caller's role
+  const assignableRoles = isSuperAdmin
+    ? ['admin', 'support']
+    : platformRole === 'admin'
+      ? ['support']
+      : [];
+
+  const canManageStaff = isSuperAdmin || platformRole === 'admin';
 
   return (
     <AdminLayout>
@@ -306,101 +194,52 @@ export default function TeamMembers() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-              <Users className="h-6 w-6" />
-              টিম মেম্বার
+              <Shield className="h-6 w-6 text-primary" />
+              Platform Staff
             </h1>
-            <p className="text-muted-foreground text-sm">
-              {currentShop.name} এর টিম মেম্বার ম্যানেজ করুন
+            <p className="text-sm text-muted-foreground">
+              Manage internal platform team members and access control
             </p>
           </div>
-
-          {canManageTeam && (
-            <Button onClick={() => setInviteDialogOpen(true)} className="gap-2">
+          {canManageStaff && (
+            <Button onClick={() => setAddDialogOpen(true)} className="gap-2">
               <UserPlus className="h-4 w-4" />
-              মেম্বার যোগ করুন
+              Add Staff Member
             </Button>
           )}
         </div>
 
         {/* Role Legend */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-          {(['owner', 'admin', 'manager', 'editor', 'support', 'viewer'] as ExtendedShopRole[]).map((role) => (
-            <Card key={role} className="bg-muted/30">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-1">
-                  {roleIcons[role]}
-                  <span className="font-medium text-sm">{roleLabels[role]}</span>
-                </div>
-                <p className="text-xs text-muted-foreground line-clamp-2">{roleDescriptions[role]}</p>
-              </CardContent>
-            </Card>
-          ))}
+        <div className="grid gap-4 sm:grid-cols-3">
+          {Object.entries(ROLE_CONFIG).map(([key, cfg]) => {
+            const Icon = cfg.icon;
+            const count = staff.filter((s) => s.role === key).length;
+            return (
+              <Card key={key} className="bg-muted/30">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <Icon className="h-4 w-4 text-primary" />
+                      <span className="font-medium text-sm">{cfg.label}</span>
+                    </div>
+                    <Badge variant={cfg.variant} className="font-digit">{count}</Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{cfg.description}</p>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
 
-        {/* Pending Invitations */}
-        {canManageTeam && invitations.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5" />
-                পেন্ডিং ইনভাইট
-              </CardTitle>
-              <CardDescription>
-                {invitations.length} টি ইনভাইট গ্রহণের অপেক্ষায়
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {invitations.map((invite) => (
-                  <div key={invite.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <Mail className="h-4 w-4 text-muted-foreground" />
-                      <div>
-                        <p className="font-medium text-sm">{invite.email}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {roleLabels[invite.role]} • মেয়াদ: {formatDistanceToNow(new Date(invite.expires_at))}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleResendInvite(invite.id)}
-                        disabled={resendingInvites[invite.id]}
-                        className="gap-1.5"
-                      >
-                        {resendingInvites[invite.id] ? (
-                          <>
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            <span className="text-xs">পাঠাচ্ছে...</span>
-                          </>
-                        ) : (
-                          <RefreshCw className="h-4 w-4" />
-                        )}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleCancelInvite(invite.id)}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Members Table */}
+        {/* Staff Table */}
         <Card>
           <CardHeader>
-            <CardTitle>মেম্বার তালিকা</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Staff Members
+            </CardTitle>
             <CardDescription>
-              {members.length} জন মেম্বার এই শপে এক্সেস আছে
+              {staff.length} platform staff member{staff.length !== 1 ? 's' : ''}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -408,91 +247,111 @@ export default function TeamMembers() {
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
-            ) : members.length === 0 ? (
+            ) : staff.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                কোনো মেম্বার নেই
+                No platform staff found
               </div>
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>মেম্বার</TableHead>
-                    <TableHead>রোল</TableHead>
-                    <TableHead>যোগ হয়েছে</TableHead>
-                    <TableHead className="w-[50px]"></TableHead>
+                    <TableHead>Member</TableHead>
+                    <TableHead>Platform Role</TableHead>
+                    <TableHead>Granted</TableHead>
+                    <TableHead className="w-[50px]" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {members.map((member) => (
-                    <TableRow key={member.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-8 w-8">
-                            <AvatarFallback className="text-xs">
-                              {member.profile?.full_name 
-                                ? member.profile.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-                                : member.profile?.email?.substring(0, 2).toUpperCase() 
-                                || member.user_id.substring(0, 2).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="font-medium text-sm">
-                              {member.profile?.full_name || member.profile?.email || `User ${member.user_id.substring(0, 8)}...`}
-                            </p>
-                            {member.profile?.email && member.profile?.full_name && (
-                              <p className="text-xs text-muted-foreground">{member.profile.email}</p>
-                            )}
-                            {!member.accepted_at && (
-                              <p className="text-xs text-muted-foreground">পেন্ডিং ইনভাইট</p>
-                            )}
+                  {staff.map((member) => {
+                    const cfg = ROLE_CONFIG[member.role] || ROLE_CONFIG.support;
+                    const Icon = cfg.icon;
+                    const isFounder = member.role === 'super_admin';
+                    const isSelf = member.user_id === user?.id;
+
+                    return (
+                      <TableRow key={member.role_id}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-8 w-8">
+                              <AvatarFallback className="text-xs">
+                                {member.user_name
+                                  ? member.user_name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
+                                  : member.user_email?.substring(0, 2).toUpperCase() || '??'}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-medium text-sm">
+                                {member.user_name || member.user_email || 'Unknown'}
+                                {isSelf && (
+                                  <span className="text-xs text-muted-foreground ml-2">(You)</span>
+                                )}
+                              </p>
+                              {member.user_name && member.user_email && (
+                                <p className="text-xs text-muted-foreground">{member.user_email}</p>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={roleBadgeVariants[member.role]} className="gap-1">
-                          {roleIcons[member.role]}
-                          {roleLabels[member.role]}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {new Date(member.invited_at).toLocaleDateString('bn-BD')}
-                      </TableCell>
-                      <TableCell>
-                        {canManageTeam && member.role !== 'owner' && (
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              {assignableRoles.map((role) => (
-                                <DropdownMenuItem
-                                  key={role}
-                                  onClick={() => updateRoleMutation.mutate({ 
-                                    memberId: member.id, 
-                                    newRole: role 
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={cfg.variant} className="gap-1">
+                            <Icon className="h-3 w-3" />
+                            {cfg.label}
+                          </Badge>
+                          {isFounder && (
+                            <span className="ml-2 text-xs text-muted-foreground">(Protected)</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground font-digit">
+                          {new Date(member.granted_at).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>
+                          {canManageStaff && !isFounder && !isSelf && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                {/* Role change options */}
+                                {assignableRoles
+                                  .filter((r) => r !== member.role)
+                                  .map((role) => {
+                                    const rc = ROLE_CONFIG[role];
+                                    const RIcon = rc?.icon || Shield;
+                                    return (
+                                      <DropdownMenuItem
+                                        key={role}
+                                        onClick={() =>
+                                          changeRoleMutation.mutate({
+                                            roleId: member.role_id,
+                                            newRole: role,
+                                          })
+                                        }
+                                      >
+                                        <ArrowUpDown className="h-4 w-4 mr-2" />
+                                        Change to {rc?.label || role}
+                                      </DropdownMenuItem>
+                                    );
                                   })}
-                                  disabled={member.role === role}
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={() => setRemoveTarget(member)}
+                                  className="text-destructive focus:text-destructive"
                                 >
-                                  {roleIcons[role]}
-                                  <span className="ml-2">{roleLabels[role]}</span>
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Remove Access
                                 </DropdownMenuItem>
-                              ))}
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                onClick={() => removeMemberMutation.mutate(member.id)}
-                                className="text-destructive focus:text-destructive"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                রিমুভ করুন
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
+                          {isFounder && (
+                            <Crown className="h-4 w-4 text-primary mx-auto" />
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             )}
@@ -500,69 +359,93 @@ export default function TeamMembers() {
         </Card>
       </div>
 
-      {/* Invite Dialog */}
-      <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
+      {/* Add Staff Dialog */}
+      <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
         <DialogContent>
-          <form onSubmit={handleInvite}>
+          <form onSubmit={(e) => { e.preventDefault(); addMutation.mutate(); }}>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <Mail className="h-5 w-5" />
-                মেম্বার ইনভাইট করুন
+                <UserPlus className="h-5 w-5 text-primary" />
+                Add Platform Staff
               </DialogTitle>
               <DialogDescription>
-                নতুন টিম মেম্বারকে ইনভাইট লিংক তৈরি করুন (৭ দিনের মেয়াদ)
+                The user must have an existing account. They will gain platform access immediately.
               </DialogDescription>
             </DialogHeader>
-
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label htmlFor="email">ইমেইল</Label>
+                <Label htmlFor="staff-email">Email Address</Label>
                 <Input
-                  id="email"
+                  id="staff-email"
                   type="email"
-                  placeholder="member@example.com"
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
+                  placeholder="user@example.com"
+                  value={addEmail}
+                  onChange={(e) => setAddEmail(e.target.value)}
                   required
                 />
               </div>
-
               <div className="grid gap-2">
-                <Label htmlFor="role">রোল</Label>
-                <Select value={inviteRole} onValueChange={(v) => setInviteRole(v as ExtendedShopRole)}>
+                <Label>Platform Role</Label>
+                <Select value={addRole} onValueChange={setAddRole}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {assignableRoles.map((role) => (
-                      <SelectItem key={role} value={role}>
-                        <div className="flex items-center gap-2">
-                          {roleIcons[role]}
-                          <span>{roleLabels[role]}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
+                    {assignableRoles.map((role) => {
+                      const cfg = ROLE_CONFIG[role];
+                      const Icon = cfg?.icon || Shield;
+                      return (
+                        <SelectItem key={role} value={role}>
+                          <div className="flex items-center gap-2">
+                            <Icon className="h-4 w-4" />
+                            <span>{cfg?.label || role}</span>
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">
-                  {roleDescriptions[inviteRole]}
-                </p>
+                {ROLE_CONFIG[addRole] && (
+                  <p className="text-xs text-muted-foreground">
+                    {ROLE_CONFIG[addRole].description}
+                  </p>
+                )}
               </div>
             </div>
-
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setInviteDialogOpen(false)}>
-                বাতিল
+              <Button type="button" variant="outline" onClick={() => setAddDialogOpen(false)}>
+                Cancel
               </Button>
-              <Button type="submit" disabled={isCreating}>
-                {isCreating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                <Mail className="h-4 w-4 mr-2" />
-                ইনভাইট তৈরি করুন
+              <Button type="submit" disabled={addMutation.isPending || !addEmail}>
+                {addMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Add Staff Member
               </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Remove Confirmation */}
+      <AlertDialog open={!!removeTarget} onOpenChange={() => setRemoveTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Platform Access</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove <strong>{removeTarget?.user_name || removeTarget?.user_email}</strong> from
+              platform staff. They will lose all admin access immediately.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => removeTarget && removeMutation.mutate(removeTarget.role_id)}
+            >
+              {removeMutation.isPending ? 'Removing...' : 'Remove Access'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminLayout>
   );
 }
