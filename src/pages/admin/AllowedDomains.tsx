@@ -398,7 +398,7 @@ export default function AllowedDomains() {
 
                   <AccordionItem value="vercel-step2">
                     <AccordionTrigger className="text-sm font-medium">
-                      ধাপ ২: DNS Records সেট করুন
+                      Step 2: Set Up DNS Records
                     </AccordionTrigger>
                     <AccordionContent className="space-y-3 text-sm">
                       <p className="text-muted-foreground">
