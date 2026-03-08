@@ -445,10 +445,10 @@ export default function AllowedDomains() {
                     </AccordionTrigger>
                     <AccordionContent className="space-y-3 text-sm">
                       <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
-                        <li>"Add Domain" বাটনে ক্লিক করুন</li>
-                        <li>আপনার base domain লিখুন (যেমন: example.com)</li>
-                        <li><strong>Wildcard Mode</strong> check করুন সব subdomain allow করতে</li>
-                        <li>অথবা specific subdomain লিখুন</li>
+                        <li>Click the "Add Domain" button</li>
+                        <li>Enter your base domain (e.g., example.com)</li>
+                        <li>Check <strong>Wildcard Mode</strong> to allow all subdomains</li>
+                        <li>Or enter a specific subdomain</li>
                       </ol>
                       
                       <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 p-3 rounded-lg">
