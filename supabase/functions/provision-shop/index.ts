@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
 
   try {
     const body: ProvisionShopRequest = await req.json();
-    const { shopName, slug, shopType = 'physical', ownerEmail, planId, durationDays, sendCredentials } = body;
+    const { shopName, slug, shopType = 'physical', ownerEmail, ownerPassword, planId, durationDays, sendCredentials } = body;
 
     // Validate required fields
     if (!shopName || !slug || !ownerEmail || !planId) {
