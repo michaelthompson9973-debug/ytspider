@@ -397,6 +397,15 @@ export default function AllShops() {
         onOpenChange={setCreateDialogOpen}
         onSuccess={() => queryClient.invalidateQueries({ queryKey: ['admin-shops'] })}
       />
+
+      {/* Reset Credentials Dialog */}
+      <ResetCredentialsDialog
+        open={!!resetTarget}
+        onOpenChange={(open) => !open && setResetTarget(null)}
+        userId={resetTarget?.userId ?? null}
+        userEmail={resetTarget?.email ?? null}
+        userName={resetTarget?.name ?? null}
+      />
     </AdminLayout>
   );
 }
