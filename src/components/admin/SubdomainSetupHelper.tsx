@@ -136,7 +136,7 @@ export function SubdomainSetupHelper({
             <StepIcon step={2} />
             <div className="flex-1 space-y-2">
               <p className="font-medium text-sm">
-                Step 2: Vercel এ Domain Add করুন
+                Step 2: Add Domain to Vercel
               </p>
               
               <div className="bg-muted rounded-lg p-3 space-y-2">
