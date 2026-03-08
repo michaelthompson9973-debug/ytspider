@@ -190,7 +190,7 @@ export default function CreateShop() {
                   </CardTitle>
                   <CardDescription>{language === 'bn' ? 'বিদ্যমান ইউজার হলে শপ অ্যাসাইন হবে, নতুন হলে অ্যাকাউন্ট তৈরি হবে' : 'Existing users get the shop assigned, new users get an account created'}</CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-4">
                   <FormField control={form.control} name="ownerEmail" render={({ field }) => (
                     <FormItem>
                       <FormLabel>{language === 'bn' ? 'ওনারের ইমেইল' : 'Owner Email'} *</FormLabel>
@@ -198,15 +198,28 @@ export default function CreateShop() {
                       <FormMessage />
                     </FormItem>
                   )} />
-                </CardContent>
-              </Card>
 
-              {/* Subscription */}
-              <Card>
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Package className="h-4 w-4 text-primary" />
-                    {language === 'bn' ? 'সাবস্ক্রিপশন' : 'Subscription'}
+                  <FormField control={form.control} name="ownerPassword" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{language === 'bn' ? 'পাসওয়ার্ড' : 'Password'}</FormLabel>
+                      <div className="flex gap-2">
+                        <FormControl><Input type="text" placeholder={language === 'bn' ? 'জেনারেট করুন বা নিজে লিখুন' : 'Generate or type manually'} {...field} /></FormControl>
+                        <Button type="button" variant="outline" size="icon" onClick={generateCredentials} title={language === 'bn' ? 'পাসওয়ার্ড জেনারেট করুন' : 'Generate Password'}>
+                          <RefreshCw className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {language === 'bn' ? 'খালি রাখলে সিস্টেম অটো জেনারেট করবে। ওনার পরে পরিবর্তন করতে পারবেন।' : 'Leave empty for auto-generation. Owner can change later.'}
+                      </p>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+
+                  <Button type="button" variant="secondary" onClick={generateCredentials} className="gap-2">
+                    <KeyRound className="h-4 w-4" />
+                    {language === 'bn' ? 'ক্রেডেনশিয়াল জেনারেট করুন' : 'Generate Credentials'}
+                  </Button>
+                </CardContent>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
