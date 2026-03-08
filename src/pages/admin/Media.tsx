@@ -139,7 +139,7 @@ export default function Media() {
     onSuccess: (count) => {
       queryClient.invalidateQueries({ queryKey: ['media'] });
       clearSelection();
-      toast({ title: `${count}টি ফাইল ডিলিট হয়েছে` });
+      toast({ title: `${count} files deleted` });
     },
     onError: (error) => {
       toast({ title: 'Bulk delete failed', description: error.message, variant: 'destructive' });
@@ -178,13 +178,13 @@ export default function Media() {
         
         const savedKB = ((result.originalSize - result.compressedSize) / 1024).toFixed(1);
         toast({ 
-          title: 'ইমেজ কম্প্রেস হয়েছে ⚡', 
-          description: `${savedKB} KB সেভ হয়েছে (${result.reductionPercent.toFixed(0)}% কম)` 
+          title: 'Image compressed ⚡', 
+          description: `${savedKB} KB saved (${result.reductionPercent.toFixed(0)}% less)` 
         });
       }
     } catch (error) {
       console.error('Compression error:', error);
-      toast({ title: 'কম্প্রেশন ব্যর্থ', description: String(error), variant: 'destructive' });
+      toast({ title: 'Compression failed', description: String(error), variant: 'destructive' });
     } finally {
       setCompressingId(null);
     }
@@ -245,7 +245,7 @@ export default function Media() {
         {/* Optimization info banner */}
         <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
           <Zap className="h-4 w-4 text-primary" />
-          <span>ইমেজ অটোমেটিক অপটিমাইজ হয় - ফাইল সাইজ কমে, কোয়ালিটি থাকে!</span>
+          <span>Images are automatically optimized — file size reduced, quality preserved!</span>
         </div>
 
         <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -271,11 +271,11 @@ export default function Media() {
               {selectedIds.size > 0 ? (
                 <>
                   <span className="text-sm text-muted-foreground">
-                    {selectedIds.size}টি সিলেক্ট
+                    {selectedIds.size} selected
                   </span>
                   <Button variant="outline" size="sm" onClick={clearSelection}>
                     <X className="mr-1 h-3 w-3" />
-                    বাতিল
+                    Cancel
                   </Button>
                   <Button 
                     variant="destructive" 
@@ -283,13 +283,13 @@ export default function Media() {
                     onClick={() => setBulkDeleteOpen(true)}
                   >
                     <Trash2 className="mr-1 h-3 w-3" />
-                    ডিলিট করুন
+                    Delete
                   </Button>
                 </>
               ) : (
                 <Button variant="outline" size="sm" onClick={selectAll}>
                   <CheckSquare className="mr-1 h-3 w-3" />
-                  সব সিলেক্ট
+                  Select All
                 </Button>
               )}
             </div>
@@ -354,7 +354,7 @@ export default function Media() {
                           size="sm"
                           onClick={() => handleCompress(item)}
                           disabled={compressingId === item.id}
-                          title="কম্প্রেস করুন"
+                          title="Compress"
                         >
                           {compressingId === item.id ? (
                             <Loader2 className="h-3 w-3 animate-spin" />
@@ -367,7 +367,7 @@ export default function Media() {
                         variant="outline"
                         size="sm"
                         onClick={() => setDeleteItem(item)}
-                        title="ডিলিট করুন"
+                        title="Delete"
                       >
                         <Trash2 className="h-3 w-3 text-destructive" />
                       </Button>
@@ -405,9 +405,9 @@ export default function Media() {
         <Dialog open={!!deleteItem} onOpenChange={(open) => !open && setDeleteItem(null)}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>ফাইল ডিলিট করুন?</DialogTitle>
+              <DialogTitle>Delete File?</DialogTitle>
               <DialogDescription>
-                আপনি কি নিশ্চিত যে "{deleteItem?.file_name}" ফাইলটি ডিলিট করতে চান? এই কাজটি আর ফেরানো যাবে না।
+                Are you sure you want to delete "{deleteItem?.file_name}"? This action cannot be undone.
               </DialogDescription>
             </DialogHeader>
             {deleteItem && (
@@ -425,7 +425,7 @@ export default function Media() {
             )}
             <DialogFooter className="gap-2 sm:gap-0">
               <Button variant="outline" onClick={() => setDeleteItem(null)}>
-                বাতিল
+                Cancel
               </Button>
               <Button
                 variant="destructive"
@@ -442,7 +442,7 @@ export default function Media() {
                 ) : (
                   <Trash2 className="mr-2 h-4 w-4" />
                 )}
-                ডিলিট করুন
+                Delete
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -452,9 +452,9 @@ export default function Media() {
         <Dialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>বাল্ক ডিলিট করুন?</DialogTitle>
+              <DialogTitle>Bulk Delete?</DialogTitle>
               <DialogDescription>
-                আপনি কি নিশ্চিত যে {selectedIds.size}টি ফাইল ডিলিট করতে চান? এই কাজটি আর ফেরানো যাবে না।
+                Are you sure you want to delete {selectedIds.size} files? This action cannot be undone.
               </DialogDescription>
             </DialogHeader>
             <div className="grid grid-cols-4 gap-2 max-h-40 overflow-y-auto py-4">
@@ -477,7 +477,7 @@ export default function Media() {
             </div>
             <DialogFooter className="gap-2 sm:gap-0">
               <Button variant="outline" onClick={() => setBulkDeleteOpen(false)}>
-                বাতিল
+                Cancel
               </Button>
               <Button
                 variant="destructive"
@@ -492,7 +492,7 @@ export default function Media() {
                 ) : (
                   <Trash2 className="mr-2 h-4 w-4" />
                 )}
-                {selectedIds.size}টি ডিলিট করুন
+                Delete {selectedIds.size} Files
               </Button>
             </DialogFooter>
           </DialogContent>

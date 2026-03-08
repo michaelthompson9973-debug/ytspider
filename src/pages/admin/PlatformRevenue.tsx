@@ -24,38 +24,25 @@ import { Badge } from '@/components/ui/badge';
 export default function PlatformRevenue() {
   const { t } = useLanguage();
 
-  // Fetch subscription/purchase data
   const { data: purchases, isLoading } = useQuery({
     queryKey: ['platform-revenue'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('purchases')
-        .select(`
-          id,
-          amount,
-          currency,
-          payment_status,
-          created_at,
-          completed_at,
-          shop_name,
-          plan_snapshot
-        `)
+        .select(`id, amount, currency, payment_status, created_at, completed_at, shop_name, plan_snapshot`)
         .order('created_at', { ascending: false });
-
       if (error) throw error;
       return data || [];
     },
   });
 
-  // Calculate stats
   const completedPurchases = purchases?.filter(p => p.payment_status === 'completed') || [];
   const totalRevenue = completedPurchases.reduce((sum, p) => sum + (p.amount || 0), 0);
   const thisMonthRevenue = completedPurchases
     .filter(p => {
       const purchaseDate = new Date(p.completed_at || p.created_at);
       const now = new Date();
-      return purchaseDate.getMonth() === now.getMonth() && 
-             purchaseDate.getFullYear() === now.getFullYear();
+      return purchaseDate.getMonth() === now.getMonth() && purchaseDate.getFullYear() === now.getFullYear();
     })
     .reduce((sum, p) => sum + (p.amount || 0), 0);
 
@@ -63,7 +50,7 @@ export default function PlatformRevenue() {
     `${currency === 'BDT' ? '৳' : '$'}${price.toLocaleString()}`;
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('bn-BD', {
+    return new Date(dateStr).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -73,19 +60,17 @@ export default function PlatformRevenue() {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        {/* Header */}
         <div>
           <h1 className="text-2xl font-bold">{t('sidebar.revenueReport')}</h1>
-          <p className="text-muted-foreground">সাবস্ক্রিপশন রেভিনিউ এবং পেমেন্ট হিস্ট্রি</p>
+          <p className="text-muted-foreground">Subscription revenue and payment history</p>
         </div>
 
-        {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card>
             <CardContent className="pt-4">
               <div className="flex items-center gap-2">
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">মোট রেভিনিউ</span>
+                <span className="text-sm text-muted-foreground">Total Revenue</span>
               </div>
               <p className="text-2xl font-bold mt-1">{formatPrice(totalRevenue)}</p>
             </CardContent>
@@ -94,7 +79,7 @@ export default function PlatformRevenue() {
             <CardContent className="pt-4">
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-green-600" />
-                <span className="text-sm text-muted-foreground">এই মাসে</span>
+                <span className="text-sm text-muted-foreground">This Month</span>
               </div>
               <p className="text-2xl font-bold mt-1">{formatPrice(thisMonthRevenue)}</p>
             </CardContent>
@@ -103,7 +88,7 @@ export default function PlatformRevenue() {
             <CardContent className="pt-4">
               <div className="flex items-center gap-2">
                 <CreditCard className="h-4 w-4 text-blue-500" />
-                <span className="text-sm text-muted-foreground">সফল পেমেন্ট</span>
+                <span className="text-sm text-muted-foreground">Successful Payments</span>
               </div>
               <p className="text-2xl font-bold mt-1">{completedPurchases.length}</p>
             </CardContent>
@@ -112,17 +97,16 @@ export default function PlatformRevenue() {
             <CardContent className="pt-4">
               <div className="flex items-center gap-2">
                 <Store className="h-4 w-4 text-purple-500" />
-                <span className="text-sm text-muted-foreground">মোট ট্রানজ্যাকশন</span>
+                <span className="text-sm text-muted-foreground">Total Transactions</span>
               </div>
               <p className="text-2xl font-bold mt-1">{purchases?.length || 0}</p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Transactions Table */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">পেমেন্ট হিস্ট্রি</CardTitle>
+            <CardTitle className="text-lg">Payment History</CardTitle>
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -135,11 +119,11 @@ export default function PlatformRevenue() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>তারিখ</TableHead>
-                    <TableHead>শপ</TableHead>
-                    <TableHead>প্ল্যান</TableHead>
-                    <TableHead className="text-right">পরিমাণ</TableHead>
-                    <TableHead>স্ট্যাটাস</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Shop</TableHead>
+                    <TableHead>Plan</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -147,30 +131,24 @@ export default function PlatformRevenue() {
                     const planName = (purchase.plan_snapshot as any)?.name || 'Unknown';
                     return (
                       <TableRow key={purchase.id}>
-                        <TableCell className="text-sm">
-                          {formatDate(purchase.created_at)}
-                        </TableCell>
+                        <TableCell className="text-sm">{formatDate(purchase.created_at)}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1.5">
                             <Store className="h-3.5 w-3.5 text-muted-foreground" />
                             {purchase.shop_name}
                           </div>
                         </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{planName}</Badge>
-                        </TableCell>
+                        <TableCell><Badge variant="outline">{planName}</Badge></TableCell>
                         <TableCell className="text-right font-medium">
                           {formatPrice(purchase.amount, purchase.currency || 'BDT')}
                         </TableCell>
                         <TableCell>
-                          <Badge 
-                            variant={
-                              purchase.payment_status === 'completed' ? 'default' :
-                              purchase.payment_status === 'pending' ? 'secondary' : 'destructive'
-                            }
-                          >
-                            {purchase.payment_status === 'completed' ? 'সম্পন্ন' :
-                             purchase.payment_status === 'pending' ? 'পেন্ডিং' : 'ব্যর্থ'}
+                          <Badge variant={
+                            purchase.payment_status === 'completed' ? 'default' :
+                            purchase.payment_status === 'pending' ? 'secondary' : 'destructive'
+                          }>
+                            {purchase.payment_status === 'completed' ? 'Completed' :
+                             purchase.payment_status === 'pending' ? 'Pending' : 'Failed'}
                           </Badge>
                         </TableCell>
                       </TableRow>
@@ -179,7 +157,7 @@ export default function PlatformRevenue() {
                   {(!purchases || purchases.length === 0) && (
                     <TableRow>
                       <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                        কোনো পেমেন্ট রেকর্ড নেই
+                        No payment records found
                       </TableCell>
                     </TableRow>
                   )}
