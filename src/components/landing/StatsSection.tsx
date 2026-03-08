@@ -1,10 +1,10 @@
 import { Store, ShoppingCart, Clock, Headphones } from "lucide-react";
 
 const stats = [
-  { icon: Store, value: "১,০০০+", label: "অ্যাক্টিভ শপ" },
-  { icon: ShoppingCart, value: "৫০,০০০+", label: "প্রসেসড অর্ডার" },
-  { icon: Clock, value: "৯৯.৯%", label: "আপটাইম" },
-  { icon: Headphones, value: "২৪/৭", label: "সাপোর্ট" },
+  { icon: Store, value: "1,000+", label: "Active Shops" },
+  { icon: ShoppingCart, value: "50,000+", label: "Orders Processed" },
+  { icon: Clock, value: "99.9%", label: "Uptime" },
+  { icon: Headphones, value: "24/7", label: "Support" },
 ];
 
 const StatsSection = () => (
