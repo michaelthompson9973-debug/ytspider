@@ -310,7 +310,8 @@ export default function AllShops() {
                               <DropdownMenuItem onClick={() => setResetTarget({ userId: shop.owner_id!, email: shop.owner_email || '', name: shop.owner_name || '' })}>
                                 <KeyRound className="h-4 w-4 mr-2" />
                                 Reset Password
-                            </DropdownMenuItem>
+                              </DropdownMenuItem>
+                            )}
                             <DropdownMenuSeparator />
                             {shop.status !== 'active' && (
                               <DropdownMenuItem
