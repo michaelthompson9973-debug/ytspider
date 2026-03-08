@@ -486,7 +486,7 @@ export default function AllowedDomains() {
 
                   <AccordionItem value="vps-step2">
                     <AccordionTrigger className="text-sm font-medium">
-                      ধাপ ২: Server Configuration (Nginx)
+                      Step 2: Server Configuration (Nginx)
                     </AccordionTrigger>
                     <AccordionContent className="space-y-3 text-sm">
                       <p className="text-muted-foreground">
