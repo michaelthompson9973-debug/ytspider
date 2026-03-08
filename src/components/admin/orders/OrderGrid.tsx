@@ -67,7 +67,7 @@ export const OrderGrid = React.forwardRef<HTMLDivElement, OrderGridProps>(
     if (orders.length === 0) {
       return (
         <div ref={ref} className="text-center py-12">
-          <p className="text-muted-foreground">কোনো অর্ডার পাওয়া যায়নি</p>
+          <p className="text-muted-foreground">No orders found</p>
         </div>
       );
     }
