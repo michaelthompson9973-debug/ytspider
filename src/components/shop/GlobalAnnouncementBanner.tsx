@@ -20,7 +20,7 @@ export function GlobalAnnouncementBanner() {
         <div className="flex items-center justify-center gap-2 text-destructive">
           <AlertOctagon className="h-4 w-4" />
           <span className="text-sm font-medium">
-            {settings?.maintenance_message || 'সিস্টেম মেইনটেনেন্সে আছে। কিছুক্ষণ পর আবার চেষ্টা করুন।'}
+            {settings?.maintenance_message || 'System is under maintenance. Please try again later.'}
           </span>
         </div>
       </div>

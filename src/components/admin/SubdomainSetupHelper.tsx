@@ -227,7 +227,7 @@ export function SubdomainSetupHelper({
             <StepIcon step={4} />
             <div className="flex-1 space-y-2">
               <p className="font-medium text-sm">
-                Step 4: DNS Propagation Check করুন
+                Step 4: Check DNS Propagation
               </p>
               <div className="flex flex-wrap gap-2">
                 <Button variant="outline" size="sm" asChild>

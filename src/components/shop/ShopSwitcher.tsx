@@ -73,7 +73,7 @@ export function ShopSwitcher() {
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => setCreateOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
-            নতুন শপ তৈরি করুন
+            Create New Shop
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

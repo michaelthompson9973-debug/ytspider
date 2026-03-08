@@ -150,8 +150,8 @@ export default function ShopLogin() {
               </Button>
             </form>
             <div className="mt-6 text-center text-sm text-muted-foreground space-y-2">
-              <Link to="/forgot-password" className="hover:underline block">পাসওয়ার্ড ভুলে গেছেন?</Link>
-              <p>নতুন অ্যাকাউন্ট দরকার?{" "}<Link to="/register" className="text-primary font-medium hover:underline">রেজিস্ট্রেশন করুন</Link></p>
+              <Link to="/forgot-password" className="hover:underline block">Forgot password?</Link>
+              <p>Need a new account?{" "}<Link to="/register" className="text-primary font-medium hover:underline">Register</Link></p>
             </div>
             <div className="mt-4 text-center text-xs text-muted-foreground">
               Powered by{' '}<a href="https://ytspider.com" className="hover:underline" target="_blank" rel="noopener">YTSpider</a>
