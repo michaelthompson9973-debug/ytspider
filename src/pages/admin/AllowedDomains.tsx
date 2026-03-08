@@ -476,8 +476,8 @@ export default function AllowedDomains() {
                         <div className="flex items-center justify-between gap-2">
                           <div>
                             <span className="text-muted-foreground">Type:</span> <strong>A</strong> | 
-                            <span className="text-muted-foreground ml-2">Host:</span> <strong>@</strong> বা <strong>subdomain</strong> | 
-                            <span className="text-muted-foreground ml-2">Value:</span> <strong>আপনার Server IP</strong>
+                            <span className="text-muted-foreground ml-2">Host:</span> <strong>@</strong> or <strong>subdomain</strong> | 
+                            <span className="text-muted-foreground ml-2">Value:</span> <strong>Your Server IP</strong>
                           </div>
                         </div>
                       </div>
