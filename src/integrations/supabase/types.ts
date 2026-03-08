@@ -2085,6 +2085,45 @@ export type Database = {
           },
         ]
       }
+      platform_settings: {
+        Row: {
+          announcement_active: boolean
+          announcement_type: string | null
+          config: Json | null
+          created_at: string
+          default_theme: Json | null
+          global_announcement: string | null
+          id: string
+          maintenance_message: string | null
+          maintenance_mode: boolean
+          updated_at: string
+        }
+        Insert: {
+          announcement_active?: boolean
+          announcement_type?: string | null
+          config?: Json | null
+          created_at?: string
+          default_theme?: Json | null
+          global_announcement?: string | null
+          id?: string
+          maintenance_message?: string | null
+          maintenance_mode?: boolean
+          updated_at?: string
+        }
+        Update: {
+          announcement_active?: boolean
+          announcement_type?: string | null
+          config?: Json | null
+          created_at?: string
+          default_theme?: Json | null
+          global_announcement?: string | null
+          id?: string
+          maintenance_message?: string | null
+          maintenance_mode?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pricing_plans: {
         Row: {
           created_at: string | null
@@ -2615,6 +2654,7 @@ export type Database = {
           business_category: string | null
           created_at: string
           expires_at: string | null
+          grace_period_ends_at: string | null
           id: string
           is_active: boolean
           logo_url: string | null
@@ -2625,6 +2665,7 @@ export type Database = {
           settings: Json
           shop_type: Database["public"]["Enums"]["shop_type"]
           slug: string
+          status: Database["public"]["Enums"]["shop_status"]
           subscription_id: string | null
           updated_at: string
         }
@@ -2632,6 +2673,7 @@ export type Database = {
           business_category?: string | null
           created_at?: string
           expires_at?: string | null
+          grace_period_ends_at?: string | null
           id?: string
           is_active?: boolean
           logo_url?: string | null
@@ -2642,6 +2684,7 @@ export type Database = {
           settings?: Json
           shop_type?: Database["public"]["Enums"]["shop_type"]
           slug: string
+          status?: Database["public"]["Enums"]["shop_status"]
           subscription_id?: string | null
           updated_at?: string
         }
@@ -2649,6 +2692,7 @@ export type Database = {
           business_category?: string | null
           created_at?: string
           expires_at?: string | null
+          grace_period_ends_at?: string | null
           id?: string
           is_active?: boolean
           logo_url?: string | null
@@ -2659,6 +2703,7 @@ export type Database = {
           settings?: Json
           shop_type?: Database["public"]["Enums"]["shop_type"]
           slug?: string
+          status?: Database["public"]["Enums"]["shop_status"]
           subscription_id?: string | null
           updated_at?: string
         }
@@ -2972,6 +3017,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_plan_quota: {
+        Args: { _resource_type: string; _shop_id: string }
+        Returns: boolean
+      }
       get_user_shop_role: { Args: { _shop_id: string }; Returns: string }
       get_user_shops: {
         Args: never
@@ -2979,6 +3028,7 @@ export type Database = {
           business_category: string | null
           created_at: string
           expires_at: string | null
+          grace_period_ends_at: string | null
           id: string
           is_active: boolean
           logo_url: string | null
@@ -2989,6 +3039,7 @@ export type Database = {
           settings: Json
           shop_type: Database["public"]["Enums"]["shop_type"]
           slug: string
+          status: Database["public"]["Enums"]["shop_status"]
           subscription_id: string | null
           updated_at: string
         }[]
@@ -3011,6 +3062,7 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      is_shop_active: { Args: { _shop_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin"
@@ -3069,6 +3121,7 @@ export type Database = {
         | "unsubscribed"
       shop_plan: "free" | "pro" | "enterprise"
       shop_role: "owner" | "admin" | "manager" | "editor" | "support" | "viewer"
+      shop_status: "active" | "grace_period" | "suspended" | "cancelled"
       shop_type: "physical" | "digital"
       transaction_status:
         | "pending"
@@ -3267,6 +3320,7 @@ export const Constants = {
       ],
       shop_plan: ["free", "pro", "enterprise"],
       shop_role: ["owner", "admin", "manager", "editor", "support", "viewer"],
+      shop_status: ["active", "grace_period", "suspended", "cancelled"],
       shop_type: ["physical", "digital"],
       transaction_status: [
         "pending",
