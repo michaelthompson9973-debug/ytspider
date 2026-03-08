@@ -425,7 +425,7 @@ export default function Media() {
             )}
             <DialogFooter className="gap-2 sm:gap-0">
               <Button variant="outline" onClick={() => setDeleteItem(null)}>
-                বাতিল
+                Cancel
               </Button>
               <Button
                 variant="destructive"
