@@ -48,7 +48,7 @@ export const BulkActionsBar = React.forwardRef<HTMLDivElement, BulkActionsBarPro
         {/* Bulk Status Change */}
         <Select onValueChange={(status: OrderStatus) => onBulkStatusChange(status)} disabled={isProcessing}>
           <SelectTrigger className="w-36">
-            <SelectValue placeholder="স্ট্যাটাস পরিবর্তন" />
+            <SelectValue placeholder="Change Status" />
           </SelectTrigger>
           <SelectContent>
             {Object.entries(STATUS_CONFIG).map(([value, config]) => (
