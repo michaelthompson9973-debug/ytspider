@@ -252,10 +252,10 @@ export default function Orders() {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       queryClient.invalidateQueries({ queryKey: ['order-counts'] });
       queryClient.invalidateQueries({ queryKey: ['order-status-history'] });
-      toast({ title: 'স্ট্যাটাস আপডেট হয়েছে' });
+      toast({ title: 'Status updated' });
     },
     onError: (error) => {
-      toast({ title: 'এরর', description: error.message, variant: 'destructive' });
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
     },
   });
 
@@ -271,10 +271,10 @@ export default function Orders() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       setOrderToEdit(null);
-      toast({ title: 'অর্ডার আপডেট হয়েছে' });
+      toast({ title: 'Order updated' });
     },
     onError: (error) => {
-      toast({ title: 'এরর', description: error.message, variant: 'destructive' });
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
     },
   });
 
@@ -291,10 +291,10 @@ export default function Orders() {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       queryClient.invalidateQueries({ queryKey: ['order-counts'] });
       setOrderToDelete(null);
-      toast({ title: 'অর্ডার ডিলিট হয়েছে' });
+      toast({ title: 'Order deleted' });
     },
     onError: (error) => {
-      toast({ title: 'এরর', description: error.message, variant: 'destructive' });
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
     },
   });
 
@@ -313,17 +313,17 @@ export default function Orders() {
       await new Promise(resolve => setTimeout(resolve, 500));
       await queryClient.invalidateQueries({ queryKey: ['courier-history'] });
       await queryClient.refetchQueries({ queryKey: ['courier-history', phones] });
-      toast({ title: 'ফ্রড চেক সম্পন্ন' });
+      toast({ title: 'Fraud check completed' });
     },
     onError: (error) => {
-      toast({ title: 'এরর', description: error.message, variant: 'destructive' });
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
     },
   });
 
   // Export CSV
   const exportCSV = useCallback(() => {
     if (orders.length === 0) {
-      toast({ title: 'কোনো অর্ডার নেই', variant: 'destructive' });
+      toast({ title: 'No orders to export', variant: 'destructive' });
       return;
     }
 
