@@ -640,7 +640,7 @@ export default function AllowedDomains() {
                     Wildcard Mode
                   </Label>
                   <p className="text-xs text-muted-foreground">
-                    Enable all subdomains (*.example.com). যেকোনো subdomain automatic allow হবে।
+                    Enable all subdomains (*.example.com). Any subdomain will be automatically allowed.
                   </p>
                 </div>
               </div>
