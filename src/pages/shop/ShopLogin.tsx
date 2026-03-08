@@ -95,7 +95,7 @@ export default function ShopLogin() {
         if (error.message.includes('Invalid login credentials')) {
           toast.error('Invalid email or password');
         } else if (error.message.includes('Email not confirmed')) {
-          toast.error('আপনার ইমেইল ভেরিফাই করুন');
+          toast.error('Please verify your email');
         } else {
           toast.error(error.message);
         }
