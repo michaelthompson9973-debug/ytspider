@@ -245,7 +245,7 @@ export default function Media() {
         {/* Optimization info banner */}
         <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
           <Zap className="h-4 w-4 text-primary" />
-          <span>ইমেজ অটোমেটিক অপটিমাইজ হয় - ফাইল সাইজ কমে, কোয়ালিটি থাকে!</span>
+          <span>Images are automatically optimized — file size reduced, quality preserved!</span>
         </div>
 
         <div className="flex items-center justify-between gap-4 flex-wrap">
