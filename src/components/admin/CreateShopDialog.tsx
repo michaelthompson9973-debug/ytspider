@@ -129,8 +129,8 @@ export function CreateShopDialog({ open, onOpenChange, onSuccess }: CreateShopDi
               </div>
               <FormField control={step2Form.control} name="name" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>শপের নাম *</FormLabel>
-                  <FormControl><Input placeholder="যেমন: My Store" {...field} onChange={(e) => handleNameChange(e.target.value)} disabled={isCreating} autoFocus /></FormControl>
+                   <FormLabel>Shop Name *</FormLabel>
+                   <FormControl><Input placeholder="e.g. My Store" {...field} onChange={(e) => handleNameChange(e.target.value)} disabled={isCreating} autoFocus /></FormControl>
                   <FormMessage />
                 </FormItem>
               )} />
