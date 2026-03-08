@@ -43,6 +43,7 @@ import InboxWhatsapp from "./pages/admin/InboxWhatsapp";
 import Settings from "./pages/admin/Settings";
 import TeamMembers from "./pages/admin/TeamMembers";
 import AllShops from "./pages/admin/AllShops";
+import CreateShop from "./pages/admin/CreateShop";
 import ShopSubscription from "./pages/admin/ShopSubscription";
 import ShopSecurity from "./pages/admin/ShopSecurity";
 import ShopAnalytics from "./pages/admin/ShopAnalytics";
@@ -164,6 +165,7 @@ const App = () => (
                 {/* Business Management (Platform Admin) */}
                 <Route path="/admin/business" element={<Navigate to="/admin/business/shops" replace />} />
                 <Route path="/admin/business/shops" element={<ProtectedRoute requireAdmin><AllShops /></ProtectedRoute>} />
+                <Route path="/admin/business/shops/create" element={<ProtectedRoute requireAdmin><CreateShop /></ProtectedRoute>} />
                 <Route path="/admin/business/team" element={<ProtectedRoute requireAdmin><TeamMembers /></ProtectedRoute>} />
                 <Route path="/admin/business/subscription" element={<ProtectedRoute requireAdmin><ShopSubscription /></ProtectedRoute>} />
                 <Route path="/admin/business/security" element={<ProtectedRoute requireAdmin><ShopSecurity /></ProtectedRoute>} />

@@ -1,10 +1,10 @@
 import { useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import AdminLayout from '@/components/admin/AdminLayout';
-import { CreateShopForUserDialog } from '@/components/admin/CreateShopForUserDialog';
 import { ShopManageModal, type ShopOverviewRow } from '@/components/admin/ShopManageModal';
 import { ResetCredentialsDialog } from '@/components/admin/ResetCredentialsDialog';
 import { Card, CardContent } from '@/components/ui/card';
@@ -65,12 +65,12 @@ const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secon
 export default function AllShops() {
   const { t } = useLanguage();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const [page, setPage] = useState(0);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [manageShop, setManageShop] = useState<ShopOverviewRow | null>(null);
   const [resetTarget, setResetTarget] = useState<{ userId: string; email: string; name: string } | null>(null);
 
@@ -137,7 +137,7 @@ export default function AllShops() {
               </p>
             </div>
           </div>
-          <Button onClick={() => setCreateDialogOpen(true)}>
+          <Button onClick={() => navigate('/admin/business/shops/create')}>
             <Plus className="h-4 w-4 mr-2" />
             Create Shop
           </Button>
@@ -197,7 +197,7 @@ export default function AllShops() {
                   : 'Create your first shop to get started'}
               </p>
               {!debouncedSearch && !statusFilter && (
-                <Button onClick={() => setCreateDialogOpen(true)}>
+                <Button onClick={() => navigate('/admin/business/shops/create')}>
                   <Plus className="h-4 w-4 mr-2" />
                   Create Shop
                 </Button>
@@ -391,12 +391,6 @@ export default function AllShops() {
         onOpenChange={(open) => !open && setManageShop(null)}
       />
 
-      {/* Create Shop Dialog */}
-      <CreateShopForUserDialog
-        open={createDialogOpen}
-        onOpenChange={setCreateDialogOpen}
-        onSuccess={() => queryClient.invalidateQueries({ queryKey: ['admin-shops'] })}
-      />
 
       {/* Reset Credentials Dialog */}
       <ResetCredentialsDialog
