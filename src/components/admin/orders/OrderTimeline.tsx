@@ -25,7 +25,7 @@ export const OrderTimeline = React.forwardRef<HTMLDivElement, OrderTimelineProps
     if (history.length === 0) {
       return (
         <div ref={ref} className="text-center py-4 text-sm text-muted-foreground">
-          কোনো স্ট্যাটাস পরিবর্তনের ইতিহাস নেই
+          No status change history
         </div>
       );
     }
