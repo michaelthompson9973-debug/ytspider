@@ -200,26 +200,26 @@ export function ShopSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="border-b p-4">
+      <SidebarHeader className="border-b border-sidebar-border p-4">
         <div className="flex items-center gap-3">
           {currentShop?.logo_url ? (
             <img
               src={currentShop.logo_url}
               alt={currentShop.name}
-              className="h-8 w-8 rounded-md object-cover"
+              className="h-8 w-8 rounded-md object-cover ring-2 ring-white/20"
             />
           ) : (
-            <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center text-primary-foreground font-bold">
+            <div className="h-8 w-8 rounded-md bg-white/20 flex items-center justify-center text-white font-bold text-sm">
               {currentShop?.name?.charAt(0) || 'S'}
             </div>
           )}
           {!isCollapsed && (
             <div className="flex flex-col">
-              <span className="font-semibold text-sm truncate max-w-[140px]">
+              <span className="font-semibold text-sm truncate max-w-[140px] text-white">
                 {currentShop?.name || 'Shop'}
               </span>
-              <span className="text-xs text-muted-foreground capitalize">
-                {shopType === 'digital' ? 'ডিজিটাল' : 'ফিজিক্যাল'} • {currentShop?.plan || 'free'}
+              <span className="text-xs text-sidebar-foreground/70 capitalize">
+                {shopType === 'digital' ? 'Digital' : 'Physical'} • {currentShop?.plan || 'free'}
               </span>
             </div>
           )}
@@ -241,8 +241,8 @@ export function ShopSidebar() {
         ))}
       </SidebarContent>
 
-      <SidebarFooter className="border-t p-2">
-        <div className="text-xs text-muted-foreground text-center">
+      <SidebarFooter className="border-t border-sidebar-border p-2">
+        <div className="text-xs text-sidebar-foreground/50 text-center">
           Powered by YTSpider
         </div>
       </SidebarFooter>

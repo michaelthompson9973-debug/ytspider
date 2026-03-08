@@ -308,6 +308,73 @@
 }
 
 /* =============================================
+ * SHOP GROWTH WORKSPACE THEME
+ * Scoped exclusively to .shop-growth-workspace
+ * Vibrant Indigo + Emerald Green + Soft Gray palette
+ * ============================================= */
+.shop-growth-workspace {
+  /* Shop-specific semantic tokens (HSL values) */
+  --shop-primary: 239 84% 67%;              /* #4F46E5 Vibrant Indigo */
+  --shop-primary-foreground: 0 0% 100%;
+  --shop-accent: 160 84% 39%;               /* #10B981 Emerald Green */
+  --shop-accent-foreground: 0 0% 100%;
+  --shop-bg: 220 14% 96%;                   /* #F3F4F6 Soft Gray */
+  --shop-text: 215 28% 17%;                 /* #1F2937 Dark Charcoal */
+  --shop-text-muted: 218 11% 45%;
+  --shop-border: 220 13% 91%;
+  --shop-card: 0 0% 100%;
+  --shop-card-foreground: 215 28% 17%;
+
+  /* Override base tokens within shop scope */
+  --background: var(--shop-bg);
+  --foreground: var(--shop-text);
+  --card: var(--shop-card);
+  --card-foreground: var(--shop-card-foreground);
+  --muted-foreground: var(--shop-text-muted);
+  --border: var(--shop-border);
+  --input: var(--shop-border);
+
+  /* Sidebar overrides for Growth Workspace */
+  --sidebar-background: var(--shop-primary);
+  --sidebar-foreground: 226 100% 94%;        /* Light indigo-tinted text */
+  --sidebar-primary: 0 0% 100%;
+  --sidebar-primary-foreground: var(--shop-primary);
+  --sidebar-accent: 239 84% 60%;             /* Slightly lighter indigo */
+  --sidebar-accent-foreground: 0 0% 100%;
+  --sidebar-border: 239 84% 60%;
+  --sidebar-ring: var(--shop-accent);
+
+  /* Primary action = Vibrant Indigo */
+  --primary: var(--shop-primary);
+  --primary-foreground: var(--shop-primary-foreground);
+
+  /* Accent = Emerald success */
+  --accent: 160 84% 39%;
+  --accent-foreground: 0 0% 100%;
+}
+
+.shop-growth-workspace.dark {
+  --shop-bg: 224 71% 4%;
+  --shop-text: 210 40% 98%;
+  --shop-text-muted: 218 11% 65%;
+  --shop-border: 215 28% 17%;
+  --shop-card: 224 71% 7%;
+  --shop-card-foreground: 210 40% 98%;
+
+  --background: var(--shop-bg);
+  --foreground: var(--shop-text);
+  --card: var(--shop-card);
+  --card-foreground: var(--shop-card-foreground);
+  --muted-foreground: var(--shop-text-muted);
+  --border: var(--shop-border);
+  --input: var(--shop-border);
+
+  --sidebar-background: 239 84% 15%;
+  --sidebar-accent: 239 84% 22%;
+  --sidebar-border: 239 84% 22%;
+}
+
+/* =============================================
  * ADMIN COMMAND CENTER THEME
  * Scoped exclusively to .admin-command-center
  * Deep Navy + Electric Blue + Light Slate palette
