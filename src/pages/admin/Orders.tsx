@@ -252,7 +252,7 @@ export default function Orders() {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       queryClient.invalidateQueries({ queryKey: ['order-counts'] });
       queryClient.invalidateQueries({ queryKey: ['order-status-history'] });
-      toast({ title: 'স্ট্যাটাস আপডেট হয়েছে' });
+      toast({ title: 'Status updated' });
     },
     onError: (error) => {
       toast({ title: 'এরর', description: error.message, variant: 'destructive' });
