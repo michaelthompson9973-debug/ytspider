@@ -43,7 +43,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     } catch (e) {
       console.error('Failed to read language from storage:', e);
     }
-    return 'bn'; // Default to Bengali
+    return 'en'; // Default to English
   });
 
   const setLanguage = useCallback((lang: Language) => {

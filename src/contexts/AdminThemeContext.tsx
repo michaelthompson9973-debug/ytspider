@@ -37,16 +37,17 @@ interface AdminThemeContextType {
 // Theme presets with HSL values
 export const themePresets: Record<Exclude<ThemePreset, 'custom'>, ThemeColors> = {
   default: {
-    primary: '222.2 47.4% 11.2%',
-    primaryForeground: '210 40% 98%',
-    sidebarBg: '0 0% 98%',
-    sidebarFg: '240 5.3% 26.1%',
-    sidebarAccent: '240 4.8% 95.9%',
-    sidebarAccentFg: '240 5.9% 10%',
-    sidebarPrimary: '240 5.9% 10%',
-    sidebarPrimaryFg: '0 0% 98%',
-    accent: '210 40% 96.1%',
-    accentFg: '222.2 47.4% 11.2%',
+    // Command Center: Deep Navy + Electric Blue
+    primary: '217 91% 60%',              // Electric Blue #3B82F6
+    primaryForeground: '0 0% 100%',
+    sidebarBg: '222 47% 11%',            // Deep Navy #0F172A
+    sidebarFg: '213 31% 81%',            // Muted light on navy
+    sidebarAccent: '222 47% 16%',         // Slightly lighter navy
+    sidebarAccentFg: '210 40% 98%',
+    sidebarPrimary: '217 91% 60%',        // Electric Blue
+    sidebarPrimaryFg: '0 0% 100%',
+    accent: '214 95% 93%',                // Subtle blue tint
+    accentFg: '222 47% 11%',
   },
   ocean: {
     primary: '189 94% 37%',
