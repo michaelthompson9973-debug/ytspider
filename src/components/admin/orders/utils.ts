@@ -52,32 +52,62 @@ export const getTrustBadgeConfig = (level: TrustLevel): { emoji: string; label: 
 };
 
 /**
- * Get short order ID
+ * Get date range for filter
  */
-export const getShortOrderId = (id: string): string => {
-  return '#' + id.substring(0, 8).toUpperCase();
+export const getDateRange = (filter: DateFilter): { start: Date | null; end: Date | null } => {
+  const now = new Date();
+  
+  switch (filter) {
+    case 'today':
+      return { start: startOfDay(now), end: null };
+    case 'yesterday':
+      const yesterday = subDays(now, 1);
+      return { start: startOfDay(yesterday), end: startOfDay(now) };
+    case '7days':
+      return { start: subDays(now, 7), end: null };
+    case '30days':
+      return { start: subDays(now, 30), end: null };
+    case 'all':
+    default:
+      return { start: null, end: null };
+  }
 };
 
 /**
- * Get date range filter
+ * Generate short order ID for display
  */
-export const getDateRange = (filter: DateFilter): { from: Date; to: Date } => {
-  const today = startOfDay(new Date());
+export const getShortOrderId = (id: string): string => {
+  return `#${id.slice(0, 8).toUpperCase()}`;
+};
 
-  switch (filter) {
-    case 'today':
-      return { from: today, to: today };
-    case 'yesterday':
-      const yesterday = subDays(today, 1);
-      return { from: yesterday, to: yesterday };
-    case '7days':
-      const last7Days = subDays(today, 7);
-      return { from: last7Days, to: today };
-    case '30days':
-      const last30Days = subDays(today, 30);
-      return { from: last30Days, to: today };
-    case 'all':
-    default:
-      return { from: new Date(0), to: today };
+/**
+ * Truncate text with ellipsis
+ */
+export const truncateText = (text: string, maxLength: number = 30): string => {
+  if (text.length <= maxLength) return text;
+  return text.slice(0, maxLength) + '...';
+};
+
+/**
+ * Convert Bengali digits to English
+ */
+export const bengaliToEnglishDigits = (str: string): string => {
+  const bengaliDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+  return str.replace(/[০-৯]/g, (match) => String(bengaliDigits.indexOf(match)));
+};
+
+/**
+ * Normalize phone number for API calls
+ */
+export const normalizePhone = (phone: string): string => {
+  let normalized = bengaliToEnglishDigits(phone).replace(/[\s\-()]/g, '');
+  if (normalized.startsWith('+88')) {
+    normalized = normalized.slice(3);
+  } else if (normalized.startsWith('88')) {
+    normalized = normalized.slice(2);
   }
+  if (!normalized.startsWith('01') && normalized.length === 10) {
+    normalized = '0' + normalized;
+  }
+  return normalized;
 };
