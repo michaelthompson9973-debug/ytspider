@@ -107,7 +107,7 @@ Deno.serve(async (req) => {
     } else {
       // Create new user
       isNewUser = true;
-      generatedPassword = generateSecurePassword(16);
+      generatedPassword = ownerPassword || generateSecurePassword(16);
 
       const { data: newUser, error: createUserError } = await supabaseAdmin.auth.admin.createUser({
         email: ownerEmail.toLowerCase(),
