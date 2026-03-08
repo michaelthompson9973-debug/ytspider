@@ -378,7 +378,7 @@ export default function AllowedDomains() {
                 <Accordion type="single" collapsible className="w-full">
                   <AccordionItem value="vercel-step1">
                     <AccordionTrigger className="text-sm font-medium">
-                      ধাপ ১: Vercel এ Domain Add করুন
+                      Step 1: Add Domain in Vercel
                     </AccordionTrigger>
                     <AccordionContent className="space-y-3 text-sm">
                       <ol className="list-decimal list-inside space-y-2 text-muted-foreground">
