@@ -87,10 +87,10 @@ export function CreateShopDialog({ open, onOpenChange, onSuccess }: CreateShopDi
         {/* Step indicator */}
         <div className="flex items-center justify-center gap-2 py-2">
           <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors", step >= 1 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>
-            {step > 1 ? <Check className="h-4 w-4" /> : '১'}
+            {step > 1 ? <Check className="h-4 w-4" /> : '1'}
           </div>
           <div className={cn("w-12 h-0.5 transition-colors", step > 1 ? "bg-primary" : "bg-muted")} />
-          <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors", step >= 2 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>২</div>
+          <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors", step >= 2 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>2</div>
         </div>
 
         {step === 1 && (
