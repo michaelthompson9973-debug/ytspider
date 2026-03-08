@@ -97,7 +97,7 @@ export const OrderGrid = React.forwardRef<HTMLDivElement, OrderGridProps>(
                       checked={isSelected}
                       onCheckedChange={(checked) => handleRowSelect(order.id, !!checked)}
                       onClick={(e) => e.stopPropagation()}
-                      aria-label={`সিলেক্ট ${order.customer_name}`}
+                      aria-label={`Select ${order.customer_name}`}
                     />
                     <div>
                       <p className="font-mono text-xs text-muted-foreground">
