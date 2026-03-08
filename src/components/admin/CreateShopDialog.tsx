@@ -61,12 +61,12 @@ export function CreateShopDialog({ open, onOpenChange, onSuccess }: CreateShopDi
     try {
       const slug = data.slug || generateSlug(data.name);
       await createShop(data.name.trim(), slug, { shop_type: selectedType, onboarding_completed: true });
-      toast.success('শপ তৈরি হয়েছে!');
+      toast.success('Shop created!');
       handleClose();
       onSuccess?.();
       navigate('/shop');
     } catch (error: any) {
-      toast.error(error.message || 'শপ তৈরি করতে সমস্যা হয়েছে');
+      toast.error(error.message || 'Failed to create shop');
     } finally { setIsCreating(false); }
   };
 
