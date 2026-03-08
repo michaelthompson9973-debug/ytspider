@@ -140,6 +140,7 @@ const App = () => (
                 <Route path="/admin/products" element={<ProtectedRoute requireAdmin><Products /></ProtectedRoute>} />
                 <Route path="/admin/pages" element={<Navigate to="/admin/pages/manage" replace />} />
                 <Route path="/admin/pages/manage" element={<ProtectedRoute requireAdmin><LandingPages /></ProtectedRoute>} />
+                <Route path="/admin/pages/builder/:pageId" element={<ProtectedRoute requireAdmin><LandingPageBuilder /></ProtectedRoute>} />
                 <Route path="/admin/pages/library" element={<ProtectedRoute requireAdmin><ComponentLibrary /></ProtectedRoute>} />
                 <Route path="/admin/orders" element={<ProtectedRoute requireAdmin><Orders /></ProtectedRoute>} />
                 <Route path="/admin/media" element={<ProtectedRoute requireAdmin><Media /></ProtectedRoute>} />
