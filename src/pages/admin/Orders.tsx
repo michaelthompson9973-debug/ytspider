@@ -271,7 +271,7 @@ export default function Orders() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       setOrderToEdit(null);
-      toast({ title: 'অর্ডার আপডেট হয়েছে' });
+      toast({ title: 'Order updated' });
     },
     onError: (error) => {
       toast({ title: 'এরর', description: error.message, variant: 'destructive' });
