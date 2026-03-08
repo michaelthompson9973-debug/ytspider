@@ -3021,6 +3021,34 @@ export type Database = {
         Args: { _resource_type: string; _shop_id: string }
         Returns: boolean
       }
+      get_admin_shops_overview: {
+        Args: {
+          _limit?: number
+          _offset?: number
+          _search?: string
+          _status_filter?: string
+        }
+        Returns: {
+          created_at: string
+          grace_period_ends_at: string
+          id: string
+          is_active: boolean
+          landing_page_count: number
+          logo_url: string
+          name: string
+          order_count: number
+          owner_email: string
+          owner_id: string
+          owner_name: string
+          plan: string
+          product_count: number
+          shop_type: string
+          slug: string
+          status: string
+          team_member_count: number
+          total_rows: number
+        }[]
+      }
       get_user_shop_role: { Args: { _shop_id: string }; Returns: string }
       get_user_shops: {
         Args: never
