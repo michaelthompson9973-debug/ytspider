@@ -469,7 +469,7 @@ export default function AllowedDomains() {
                     </AccordionTrigger>
                     <AccordionContent className="space-y-3 text-sm">
                       <p className="text-muted-foreground">
-                        আপনার Domain Provider এর DNS Settings এ যান এবং নিচের record যুক্ত করুন:
+                        Go to your Domain Provider's DNS Settings and add the following record:
                       </p>
                       
                       <div className="bg-muted p-3 rounded-lg space-y-2 font-mono text-xs">
