@@ -453,7 +453,7 @@ export default function AllowedDomains() {
                       
                       <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 p-3 rounded-lg">
                         <p className="text-green-800 dark:text-green-200 text-xs">
-                          <strong>✓ SSL/HTTPS:</strong> Vercel automatically SSL certificate সেট করে!
+                          <strong>✓ SSL/HTTPS:</strong> Vercel automatically sets up SSL certificates!
                         </p>
                       </div>
                     </AccordionContent>
