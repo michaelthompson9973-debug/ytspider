@@ -50,6 +50,7 @@ import {
   FileText,
   ShoppingCart,
   Users,
+  KeyRound,
 } from 'lucide-react';
 
 const PAGE_SIZE = 20;
