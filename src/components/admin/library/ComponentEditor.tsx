@@ -39,6 +39,7 @@ export function ComponentEditor({
   const [name, setName] = useState('');
   const [category, setCategory] = useState('general');
   const [html, setHtml] = useState('');
+  const [minPlanTier, setMinPlanTier] = useState('free');
 
   const isEditing = !!component;
 
@@ -47,10 +48,12 @@ export function ComponentEditor({
       setName(component.name);
       setCategory(component.category);
       setHtml(component.html);
+      setMinPlanTier(component.min_plan_tier || 'free');
     } else {
       setName('');
       setCategory('general');
       setHtml(defaultHtml);
+      setMinPlanTier('free');
     }
   }, [component, open]);
 
