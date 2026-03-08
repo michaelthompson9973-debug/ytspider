@@ -585,8 +585,8 @@ export default function AllowedDomains() {
           <CardContent className="py-4">
             <h4 className="font-semibold text-sm mb-2">How it works</h4>
             <ul className="text-sm text-muted-foreground space-y-1">
-              <li>• <strong>Wildcard (*.example.com)</strong> - সব subdomain automatically allowed</li>
-              <li>• <strong>Specific domain</strong> - শুধু ঐ domain allowed</li>
+              <li>• <strong>Wildcard (*.example.com)</strong> - All subdomains automatically allowed</li>
+              <li>• <strong>Specific domain</strong> - Only that domain is allowed</li>
               <li>• Disabled domains will show "Domain Not Authorized" page</li>
               <li>• Localhost, .lovable.app, .vercel.app automatically bypassed</li>
             </ul>
