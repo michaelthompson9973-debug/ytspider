@@ -139,13 +139,9 @@ export default function ComponentLibrary() {
       <div className="flex h-full">
         {/* Desktop Sidebar - Menu Style */}
         {!isMobile && (
-          <SidebarProvider defaultOpen={true}>
-            <Sidebar collapsible="none" className="w-56 shrink-0 border-r bg-sidebar">
-              <SidebarContent className="p-2">
-                <CategorySidebar />
-              </SidebarContent>
-            </Sidebar>
-          </SidebarProvider>
+          <div className="w-56 shrink-0 border-r bg-card overflow-y-auto p-2">
+            <CategorySidebar />
+          </div>
         )}
 
         {/* Main Content */}
