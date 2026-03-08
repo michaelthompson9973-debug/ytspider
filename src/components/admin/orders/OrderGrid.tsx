@@ -182,7 +182,7 @@ export const OrderGrid = React.forwardRef<HTMLDivElement, OrderGridProps>(
                     onClick={() => onPrint(order)}
                   >
                     <Printer className="h-3 w-3 mr-1" />
-                    প্রিন্ট
+                    Print
                   </Button>
                   {!order.tracking_code && (
                     <Button
