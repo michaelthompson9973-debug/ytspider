@@ -158,7 +158,7 @@ export function SubdomainSetupHelper({
               </div>
               
               <p className="text-xs text-muted-foreground">
-                অথবা <span className="font-medium">Vercel Dashboard</span> → Settings → Domains → Add
+                Or go to <span className="font-medium">Vercel Dashboard</span> → Settings → Domains → Add
               </p>
             </div>
           </div>
