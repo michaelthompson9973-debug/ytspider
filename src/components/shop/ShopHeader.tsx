@@ -9,7 +9,7 @@ export function ShopHeader() {
     <header className="sticky top-0 z-40 flex h-14 items-center justify-between gap-4 border-b bg-background px-4">
       {/* Left - Mobile trigger */}
       <div className="flex items-center gap-3">
-        <SidebarTrigger className="-ml-1 md:hidden" />
+        <SidebarTrigger className="-ml-1" />
       </div>
 
       {/* Center - Shop Switcher */}
