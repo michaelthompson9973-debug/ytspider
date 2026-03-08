@@ -12,15 +12,12 @@ import {
 } from '@/components/ui/select';
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
-  Sidebar,
-  SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarProvider,
 } from '@/components/ui/sidebar';
 import {
   Collapsible,
