@@ -1,54 +1,30 @@
 
 
-# "Create Account" → রেজিস্ট্রেশন → সাবস্ক্রিপশন ফ্লো ফিক্স
+## Problem
 
-## বর্তমান সমস্যা
-- "Create Account" বাটন `/login` এ যায় যেখানে শুধু লগইন ফর্ম আছে, কোনো সাইনআপ নেই
-- রেজিস্ট্রেশনের পর সাবস্ক্রিপশন কেনার কোনো ফ্লো নেই
+`ComponentLibrary.tsx` (line 145) wraps its category sidebar in a nested `<SidebarProvider>` + `<Sidebar>` component. Since `AdminLayout` already provides a `SidebarProvider`, nesting another one causes CSS variable conflicts and layout collapse. The component cards in the main content area become invisible or pushed off-screen.
 
-## পরিকল্পনা
+## Root Cause
 
-### ধাপ ১: নতুন `/register` পেজ তৈরি (`src/pages/Register.tsx`)
-
-একটি ShopFlow ব্র্যান্ডেড রেজিস্ট্রেশন ফর্ম:
-- ফিল্ড: পুরো নাম, ইমেইল, পাসওয়ার্ড, পাসওয়ার্ড কনফার্ম
-- Zod ভ্যালিডেশন
-- `supabase.auth.signUp()` কল
-- সফল হলে → `/pricing` পেজে রিডাইরেক্ট (সাবস্ক্রিপশন বেছে নিতে)
-- নিচে "ইতিমধ্যে অ্যাকাউন্ট আছে? লগইন" লিংক
-
-### ধাপ ২: `App.tsx` এ রাউট যোগ
-```text
-<Route path="/register" element={<Register />} />
+```
+AdminLayout → SidebarProvider (outer)
+  └── ComponentLibrary → SidebarProvider (inner) ← CONFLICT
+        └── Sidebar (category menu)
 ```
 
-### ধাপ ৩: `Index.tsx` বাটন লিংক আপডেট
-- "Create Account" → `/register`
-- "Get Started" → `/register`
+The shadcn/ui Sidebar components use CSS variables (`--sidebar-width`) and flex layout that clash when nested.
 
-### ধাপ ৪: `Header.tsx` আপডেট
-- "Get Started" বাটন → `/register`
+## Fix
 
-### ধাপ ৫: `ShopLogin.tsx` এ সাইনআপ লিংক যোগ
-- ফর্মের নিচে "নতুন অ্যাকাউন্ট তৈরি করুন" → `/register` লিংক
+Replace the inner `SidebarProvider` + `Sidebar` wrapper with a plain `<div>` styled as a sidebar panel. The category menu content (Collapsible + SidebarMenu items) can remain, but the outer container must not be a `Sidebar` component.
 
-### সম্পূর্ণ ফ্লো
-```text
-Landing Page → "Create Account" → /register (সাইনআপ ফর্ম)
-  → সফল → /pricing (প্ল্যান বাছাই)
-    → /checkout?plan=slug (পেমেন্ট)
-      → /purchase-success
-```
+### Changes in `src/pages/admin/ComponentLibrary.tsx`:
 
----
+1. **Remove** the `SidebarProvider` and `Sidebar` wrapper around the desktop category panel (lines 144-152).
+2. **Replace** with a simple `<div className="w-56 shrink-0 border-r bg-card overflow-y-auto p-2">` that holds the `<CategorySidebar />` content.
+3. **Remove unused imports**: `Sidebar`, `SidebarContent`, `SidebarProvider` (keep `SidebarGroup`, `SidebarGroupContent`, `SidebarGroupLabel`, `SidebarMenu`, `SidebarMenuButton`, `SidebarMenuItem` since those are used inside CategorySidebar and work fine without a parent `SidebarProvider` context for simple rendering).
 
-## কারিগরি বিবরণ
+Actually — to be safe and avoid any `useSidebar()` context issues from the menu sub-components, we should also replace the `SidebarGroup/SidebarMenu*` components with plain styled `<div>/<button>` elements, or simply keep them since they inherit the outer AdminLayout's SidebarProvider context (which is fine for rendering, they just won't control the admin sidebar).
 
-| ফাইল | পরিবর্তন |
-|------|----------|
-| `src/pages/Register.tsx` | নতুন — রেজিস্ট্রেশন ফর্ম পেজ |
-| `src/App.tsx` | `/register` রাউট যোগ |
-| `src/pages/Index.tsx` | বাটন লিংক `/login` → `/register` |
-| `src/components/landing/Header.tsx` | "Get Started" লিংক → `/register` |
-| `src/pages/shop/ShopLogin.tsx` | সাইনআপ লিংক যোগ |
+The simplest and cleanest fix: keep the `SidebarMenu*` components (they'll inherit the outer provider) but remove the nested `SidebarProvider` + `Sidebar` wrapper, replacing with a plain div container.
 
