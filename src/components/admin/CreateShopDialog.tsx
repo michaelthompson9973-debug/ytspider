@@ -135,9 +135,9 @@ export function CreateShopDialog({ open, onOpenChange, onSuccess }: CreateShopDi
                 </FormItem>
               )} />
               <ResponsiveModalFooter className="pt-4">
-                <Button type="button" variant="outline" onClick={() => setStep(1)} disabled={isCreating} className="gap-2"><ArrowLeft className="h-4 w-4" /> পেছনে</Button>
+                <Button type="button" variant="outline" onClick={() => setStep(1)} disabled={isCreating} className="gap-2"><ArrowLeft className="h-4 w-4" /> Back</Button>
                 <Button type="submit" disabled={isCreating}>
-                  {isCreating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />তৈরি হচ্ছে...</> : 'শপ তৈরি করুন'}
+                  {isCreating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Creating...</> : 'Create Shop'}
                 </Button>
               </ResponsiveModalFooter>
             </form>
