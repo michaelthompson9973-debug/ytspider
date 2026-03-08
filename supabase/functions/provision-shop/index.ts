@@ -7,6 +7,7 @@ interface ProvisionShopRequest {
   slug: string;
   shopType?: 'physical' | 'digital';
   ownerEmail: string;
+  ownerPassword?: string;
   planId: string;
   durationDays: number;
   sendCredentials: boolean;
