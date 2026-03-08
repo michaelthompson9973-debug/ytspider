@@ -67,12 +67,12 @@ const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secon
 export default function AllShops() {
   const { t } = useLanguage();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const [page, setPage] = useState(0);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [manageShop, setManageShop] = useState<ShopOverviewRow | null>(null);
   const [resetTarget, setResetTarget] = useState<{ userId: string; email: string; name: string } | null>(null);
 
