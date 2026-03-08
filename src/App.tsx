@@ -24,6 +24,7 @@ import ShopLogin from "./pages/shop/ShopLogin";
 import Dashboard from "./pages/admin/Dashboard";
 import Products from "./pages/admin/Products";
 import LandingPages from "./pages/admin/LandingPages";
+import LandingPageBuilder from "./pages/admin/LandingPageBuilder";
 import ComponentLibrary from "./pages/admin/ComponentLibrary";
 import Orders from "./pages/admin/Orders";
 import Media from "./pages/admin/Media";
