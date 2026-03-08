@@ -1,9 +1,10 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Search, BookOpen, CheckSquare, XSquare, Expand, X, Monitor, Smartphone } from 'lucide-react';
+import { Search, BookOpen, CheckSquare, XSquare, Expand, X, Monitor, Smartphone, Lock, Crown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -19,8 +20,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
-import { LibraryComponent, componentCategories } from './types';
+import { LibraryComponent, componentCategories, canAccessComponent } from './types';
 import { cn } from '@/lib/utils';
+import { useShop } from '@/contexts/ShopContext';
+import { toast } from 'sonner';
 
 interface LibraryPickerModalProps {
   open: boolean;
@@ -129,13 +132,16 @@ export function LibraryPickerModal({ open, onOpenChange, onSelect }: LibraryPick
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [expandedComponent, setExpandedComponent] = useState<LibraryComponent | null>(null);
   const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>('desktop');
+  const { currentShop } = useShop();
+  const userPlan = currentShop?.plan || 'free';
 
   const { data: components = [], isLoading } = useQuery({
-    queryKey: ['component-library-picker', category],
+    queryKey: ['component-library-picker', category, currentShop?.id],
     queryFn: async () => {
+      // RLS handles isolation: platform globals (shop_id IS NULL) + own shop components
       let query = supabase
         .from('component_library')
-        .select('*')
+        .select('id, name, category, html, thumbnail_url, created_by, created_at, updated_at, min_plan_tier, shop_id, is_approved')
         .order('name');
 
       if (category !== 'all') {
@@ -144,7 +150,7 @@ export function LibraryPickerModal({ open, onOpenChange, onSelect }: LibraryPick
 
       const { data, error } = await query;
       if (error) throw error;
-      return data as LibraryComponent[];
+      return (data || []) as LibraryComponent[];
     },
     enabled: open,
   });
@@ -157,6 +163,16 @@ export function LibraryPickerModal({ open, onOpenChange, onSelect }: LibraryPick
   );
 
   const toggleSelect = (id: string) => {
+    const component = components.find(c => c.id === id);
+    if (component && !canAccessComponent(userPlan, component.min_plan_tier)) {
+      toast.error('Upgrade your plan to use this premium component', {
+        action: {
+          label: 'View Plans',
+          onClick: () => window.location.href = '/shop/subscription',
+        },
+      });
+      return;
+    }
     setSelectedIds(prev => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
@@ -166,7 +182,11 @@ export function LibraryPickerModal({ open, onOpenChange, onSelect }: LibraryPick
   };
 
   const handleSelectAll = () => {
-    setSelectedIds(new Set(filteredComponents.map(c => c.id)));
+    // Only select components the user can access
+    const accessibleIds = filteredComponents
+      .filter(c => canAccessComponent(userPlan, c.min_plan_tier))
+      .map(c => c.id);
+    setSelectedIds(new Set(accessibleIds));
   };
 
   const handleClearAll = () => {
@@ -174,7 +194,6 @@ export function LibraryPickerModal({ open, onOpenChange, onSelect }: LibraryPick
   };
 
   const handleConfirm = () => {
-    // Preserve selection order by filtering from filteredComponents (maintains display order)
     const selectedComponents = filteredComponents.filter(c => selectedIds.has(c.id));
     if (selectedComponents.length > 0) {
       onSelect(selectedComponents);
@@ -199,7 +218,6 @@ export function LibraryPickerModal({ open, onOpenChange, onSelect }: LibraryPick
     setPreviewMode('desktop');
   };
 
-  // When expanded, hide the main dialog
   const isPickerVisible = open && !expandedComponent;
 
   return (
@@ -244,22 +262,11 @@ export function LibraryPickerModal({ open, onOpenChange, onSelect }: LibraryPick
           {/* Select All / Clear All */}
           {filteredComponents.length > 0 && (
             <div className="flex items-center justify-between pb-3 border-b">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleSelectAll}
-                className="text-xs"
-              >
+              <Button variant="ghost" size="sm" onClick={handleSelectAll} className="text-xs">
                 <CheckSquare className="h-4 w-4 mr-1" />
                 Select All
               </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleClearAll}
-                disabled={selectedIds.size === 0}
-                className="text-xs"
-              >
+              <Button variant="ghost" size="sm" onClick={handleClearAll} disabled={selectedIds.size === 0} className="text-xs">
                 <XSquare className="h-4 w-4 mr-1" />
                 Clear All
               </Button>
@@ -282,6 +289,7 @@ export function LibraryPickerModal({ open, onOpenChange, onSelect }: LibraryPick
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 {filteredComponents.map((component) => {
                   const isSelected = selectedIds.has(component.id);
+                  const isLocked = !canAccessComponent(userPlan, component.min_plan_tier);
                   const thumbnailHtml = generateThumbnailHtml(component.html);
                   
                   return (
@@ -289,25 +297,49 @@ export function LibraryPickerModal({ open, onOpenChange, onSelect }: LibraryPick
                       key={component.id}
                       onClick={() => toggleSelect(component.id)}
                       className={cn(
-                        "cursor-pointer rounded-lg border-2 overflow-hidden transition-all hover:shadow-md group",
-                        isSelected
-                          ? "border-primary ring-2 ring-primary/20"
-                          : "border-muted hover:border-muted-foreground/30"
+                        "cursor-pointer rounded-lg border-2 overflow-hidden transition-all group",
+                        isLocked
+                          ? "border-muted opacity-75 hover:opacity-90"
+                          : isSelected
+                            ? "border-primary ring-2 ring-primary/20"
+                            : "border-muted hover:border-muted-foreground/30 hover:shadow-md"
                       )}
                     >
                       {/* Preview iframe */}
                       <div className="aspect-video bg-muted overflow-hidden relative">
                         <iframe
                           srcDoc={thumbnailHtml}
-                          className="w-full h-full pointer-events-none"
+                          className={cn(
+                            "w-full h-full pointer-events-none",
+                            isLocked && "blur-[1px]"
+                          )}
                           sandbox="allow-scripts allow-same-origin"
                           title={component.name}
                         />
-                        {/* Selection overlay */}
-                        <div className={cn(
-                          "absolute inset-0 transition-colors",
-                          isSelected ? "bg-primary/10" : "bg-transparent"
-                        )} />
+                        
+                        {/* Locked overlay */}
+                        {isLocked && (
+                          <div className="absolute inset-0 bg-background/40 flex items-center justify-center">
+                            <div className="flex flex-col items-center gap-1">
+                              <div className="h-10 w-10 rounded-full bg-amber-500/90 flex items-center justify-center">
+                                <Lock className="h-5 w-5 text-white" />
+                              </div>
+                              <Badge className="bg-amber-500 text-white border-0 text-[10px]">
+                                <Crown className="h-3 w-3 mr-1" />
+                                {component.min_plan_tier.toUpperCase()}
+                              </Badge>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Selection overlay (only for unlocked) */}
+                        {!isLocked && (
+                          <div className={cn(
+                            "absolute inset-0 transition-colors",
+                            isSelected ? "bg-primary/10" : "bg-transparent"
+                          )} />
+                        )}
+
                         {/* Expand button */}
                         <button
                           onClick={(e) => handleExpandPreview(e, component)}
@@ -320,15 +352,26 @@ export function LibraryPickerModal({ open, onOpenChange, onSelect }: LibraryPick
                       
                       {/* Component info */}
                       <div className="p-2 flex items-start gap-2 bg-background">
-                        <Checkbox
-                          checked={isSelected}
-                          onCheckedChange={() => toggleSelect(component.id)}
-                          onClick={(e) => e.stopPropagation()}
-                          className="mt-0.5"
-                        />
+                        {isLocked ? (
+                          <Lock className="h-4 w-4 mt-0.5 text-amber-500 shrink-0" />
+                        ) : (
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={() => toggleSelect(component.id)}
+                            onClick={(e) => e.stopPropagation()}
+                            className="mt-0.5"
+                          />
+                        )}
                         <div className="flex-1 min-w-0">
                           <div className="font-medium text-sm line-clamp-1">{component.name}</div>
-                          <div className="text-xs text-muted-foreground capitalize">{component.category}</div>
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground capitalize">
+                            <span>{component.category}</span>
+                            {isLocked && (
+                              <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-amber-300 text-amber-600">
+                                Upgrade
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -346,7 +389,7 @@ export function LibraryPickerModal({ open, onOpenChange, onSelect }: LibraryPick
             <div className="flex items-center gap-3">
               {selectedIds.size > 0 && (
                 <span className="text-sm text-muted-foreground">
-                  {selectedIds.size}টি সিলেক্টেড
+                  {selectedIds.size} selected
                 </span>
               )}
               <Button onClick={handleConfirm} disabled={selectedIds.size === 0}>
@@ -365,9 +408,14 @@ export function LibraryPickerModal({ open, onOpenChange, onSelect }: LibraryPick
             <div className="flex items-center gap-3">
               <h3 className="font-semibold">{expandedComponent.name}</h3>
               <span className="text-sm text-muted-foreground capitalize">({expandedComponent.category})</span>
+              {!canAccessComponent(userPlan, expandedComponent.min_plan_tier) && (
+                <Badge className="bg-amber-500 text-white border-0">
+                  <Crown className="h-3 w-3 mr-1" />
+                  {expandedComponent.min_plan_tier.toUpperCase()} Only
+                </Badge>
+              )}
             </div>
             <div className="flex items-center gap-2">
-              {/* Device Toggle */}
               <div className="flex items-center border rounded-lg p-1">
                 <button
                   onClick={() => setPreviewMode('desktop')}
@@ -394,11 +442,7 @@ export function LibraryPickerModal({ open, onOpenChange, onSelect }: LibraryPick
                   <Smartphone className="h-4 w-4" />
                 </button>
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setExpandedComponent(null)}
-              >
+              <Button variant="ghost" size="icon" onClick={() => setExpandedComponent(null)}>
                 <X className="h-5 w-5" />
               </Button>
             </div>

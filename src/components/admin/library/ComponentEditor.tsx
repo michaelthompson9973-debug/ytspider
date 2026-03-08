@@ -23,8 +23,8 @@ interface ComponentEditorProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   component?: LibraryComponent | null;
-  onSave: (data: { name: string; category: string; html: string }) => void;
-  onUpdate: (data: { id: string; name?: string; category?: string; html?: string }) => void;
+  onSave: (data: { name: string; category: string; html: string; min_plan_tier: string }) => void;
+  onUpdate: (data: { id: string; name?: string; category?: string; html?: string; min_plan_tier?: string }) => void;
   isSaving: boolean;
 }
 
@@ -39,6 +39,7 @@ export function ComponentEditor({
   const [name, setName] = useState('');
   const [category, setCategory] = useState('general');
   const [html, setHtml] = useState('');
+  const [minPlanTier, setMinPlanTier] = useState('free');
 
   const isEditing = !!component;
 
@@ -47,10 +48,12 @@ export function ComponentEditor({
       setName(component.name);
       setCategory(component.category);
       setHtml(component.html);
+      setMinPlanTier(component.min_plan_tier || 'free');
     } else {
       setName('');
       setCategory('general');
       setHtml(defaultHtml);
+      setMinPlanTier('free');
     }
   }, [component, open]);
 
@@ -58,9 +61,9 @@ export function ComponentEditor({
     if (!name.trim() || !html.trim()) return;
 
     if (isEditing) {
-      onUpdate({ id: component.id, name, category, html });
+      onUpdate({ id: component.id, name, category, html, min_plan_tier: minPlanTier });
     } else {
-      onSave({ name, category, html });
+      onSave({ name, category, html, min_plan_tier: minPlanTier });
     }
     onOpenChange(false);
   };
@@ -72,7 +75,7 @@ export function ComponentEditor({
           <DialogTitle>{isEditing ? 'Edit Component' : 'Add Component'}</DialogTitle>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto space-y-4 py-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="name">Name</Label>
               <Input
@@ -94,6 +97,19 @@ export function ComponentEditor({
                       {cat.label}
                     </SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="plan-tier">Min Plan Tier</Label>
+              <Select value={minPlanTier} onValueChange={setMinPlanTier}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="free">Free (All users)</SelectItem>
+                  <SelectItem value="pro">Pro</SelectItem>
+                  <SelectItem value="enterprise">Enterprise</SelectItem>
                 </SelectContent>
               </Select>
             </div>

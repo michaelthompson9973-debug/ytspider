@@ -314,6 +314,7 @@ export type Database = {
           html: string
           id: string
           is_approved: boolean | null
+          min_plan_tier: string
           name: string
           shop_id: string | null
           source_shop_id: string | null
@@ -328,6 +329,7 @@ export type Database = {
           html?: string
           id?: string
           is_approved?: boolean | null
+          min_plan_tier?: string
           name: string
           shop_id?: string | null
           source_shop_id?: string | null
@@ -342,6 +344,7 @@ export type Database = {
           html?: string
           id?: string
           is_approved?: boolean | null
+          min_plan_tier?: string
           name?: string
           shop_id?: string | null
           source_shop_id?: string | null
