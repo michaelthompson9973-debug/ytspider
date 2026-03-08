@@ -307,6 +307,52 @@
   }
 }
 
+/* =============================================
+ * ADMIN COMMAND CENTER THEME
+ * Scoped exclusively to .admin-command-center
+ * Deep Navy + Electric Blue + Light Slate palette
+ * ============================================= */
+.admin-command-center {
+  /* Admin-specific semantic tokens (HSL values) */
+  --admin-primary: 222 47% 11%;           /* #0F172A Deep Navy */
+  --admin-primary-foreground: 210 40% 98%;
+  --admin-accent: 217 91% 60%;            /* #3B82F6 Electric Blue */
+  --admin-accent-foreground: 0 0% 100%;
+  --admin-bg: 210 40% 98%;                /* #F8FAFC Light Slate */
+  --admin-text: 222 47% 15%;              /* #1E293B Dark Charcoal */
+  --admin-text-muted: 215 16% 47%;
+  --admin-border: 214 32% 91%;
+  --admin-card: 0 0% 100%;
+  --admin-card-foreground: 222 47% 15%;
+  
+  /* Override base tokens within admin scope */
+  --background: var(--admin-bg);
+  --foreground: var(--admin-text);
+  --card: var(--admin-card);
+  --card-foreground: var(--admin-card-foreground);
+  --muted-foreground: var(--admin-text-muted);
+  --border: var(--admin-border);
+  --input: var(--admin-border);
+  
+  /* Sidebar overrides for Command Center */
+  --sidebar-background: var(--admin-primary);
+  --sidebar-foreground: 213 31% 81%;       /* Muted light text on navy */
+  --sidebar-primary: var(--admin-accent);
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 222 47% 16%;           /* Slightly lighter navy */
+  --sidebar-accent-foreground: 210 40% 98%;
+  --sidebar-border: 222 47% 16%;
+  --sidebar-ring: var(--admin-accent);
+
+  /* Primary action = Electric Blue */
+  --primary: var(--admin-accent);
+  --primary-foreground: var(--admin-accent-foreground);
+  
+  /* Accent = subtle blue tint */
+  --accent: 214 95% 93%;                   /* Very light blue */
+  --accent-foreground: 222 47% 11%;
+}
+
 @layer base {
   * {
     @apply border-border;

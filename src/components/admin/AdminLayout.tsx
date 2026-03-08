@@ -61,8 +61,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [defaultOpen] = useState(() => getStoredSidebarState());
 
   return (
-    <SidebarProvider defaultOpen={defaultOpen}>
-      <AdminLayoutContent>{children}</AdminLayoutContent>
-    </SidebarProvider>
+    // .admin-command-center scopes all CSS variable overrides to /admin
+    <div className="admin-command-center">
+      <SidebarProvider defaultOpen={defaultOpen}>
+        <AdminLayoutContent>{children}</AdminLayoutContent>
+      </SidebarProvider>
+    </div>
   );
 }
