@@ -16,7 +16,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Loader2, Store, User, Package, Mail, Download, ArrowLeft, Check, Copy, AlertTriangle } from 'lucide-react';
+import { Loader2, Store, User, Package, Mail, Download, ArrowLeft, Check, Copy, AlertTriangle, KeyRound, RefreshCw } from 'lucide-react';
 
 interface PricingPlan {
   id: string;
