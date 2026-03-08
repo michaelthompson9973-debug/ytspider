@@ -477,7 +477,7 @@ export default function Media() {
             </div>
             <DialogFooter className="gap-2 sm:gap-0">
               <Button variant="outline" onClick={() => setBulkDeleteOpen(false)}>
-                বাতিল
+                Cancel
               </Button>
               <Button
                 variant="destructive"
