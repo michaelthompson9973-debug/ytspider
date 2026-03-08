@@ -168,7 +168,7 @@ export function SubdomainSetupHelper({
             <StepIcon step={3} />
             <div className="flex-1 space-y-3">
               <p className="font-medium text-sm">
-                Step 3: DNS Record সেট করুন
+                Step 3: Configure DNS Records
               </p>
               
               {/* CNAME Record */}
