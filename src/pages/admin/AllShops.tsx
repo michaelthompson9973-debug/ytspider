@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { CreateShopForUserDialog } from '@/components/admin/CreateShopForUserDialog';
 import { ShopManageModal, type ShopOverviewRow } from '@/components/admin/ShopManageModal';
+import { ResetCredentialsDialog } from '@/components/admin/ResetCredentialsDialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
