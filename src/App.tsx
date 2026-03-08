@@ -43,6 +43,7 @@ import InboxWhatsapp from "./pages/admin/InboxWhatsapp";
 import Settings from "./pages/admin/Settings";
 import TeamMembers from "./pages/admin/TeamMembers";
 import AllShops from "./pages/admin/AllShops";
+import CreateShop from "./pages/admin/CreateShop";
 import ShopSubscription from "./pages/admin/ShopSubscription";
 import ShopSecurity from "./pages/admin/ShopSecurity";
 import ShopAnalytics from "./pages/admin/ShopAnalytics";
