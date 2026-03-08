@@ -274,7 +274,7 @@ export default function Orders() {
       toast({ title: 'Order updated' });
     },
     onError: (error) => {
-      toast({ title: 'এরর', description: error.message, variant: 'destructive' });
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
     },
   });
 
