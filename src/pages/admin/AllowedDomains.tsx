@@ -382,10 +382,10 @@ export default function AllowedDomains() {
                     </AccordionTrigger>
                     <AccordionContent className="space-y-3 text-sm">
                       <ol className="list-decimal list-inside space-y-2 text-muted-foreground">
-                        <li>Vercel Dashboard → আপনার Project → Settings → Domains</li>
-                        <li>"Add" বাটনে ক্লিক করুন</li>
-                        <li>আপনার domain লিখুন (যেমন: <code className="bg-muted px-1 rounded">example.com</code>)</li>
-                        <li>Wildcard এর জন্য: <code className="bg-muted px-1 rounded">*.example.com</code></li>
+                        <li>Vercel Dashboard → Your Project → Settings → Domains</li>
+                        <li>Click the "Add" button</li>
+                        <li>Enter your domain (e.g., <code className="bg-muted px-1 rounded">example.com</code>)</li>
+                        <li>For wildcard: <code className="bg-muted px-1 rounded">*.example.com</code></li>
                       </ol>
                       
                       <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-3 rounded-lg">
