@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { CreateShopForUserDialog } from '@/components/admin/CreateShopForUserDialog';
 import { ShopManageModal, type ShopOverviewRow } from '@/components/admin/ShopManageModal';
+import { ResetCredentialsDialog } from '@/components/admin/ResetCredentialsDialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -49,6 +50,7 @@ import {
   FileText,
   ShoppingCart,
   Users,
+  KeyRound,
 } from 'lucide-react';
 
 const PAGE_SIZE = 20;
@@ -70,6 +72,7 @@ export default function AllShops() {
   const [statusFilter, setStatusFilter] = useState('');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [manageShop, setManageShop] = useState<ShopOverviewRow | null>(null);
+  const [resetTarget, setResetTarget] = useState<{ userId: string; email: string; name: string } | null>(null);
 
   // Debounced search
   const handleSearch = useCallback((value: string) => {
@@ -303,6 +306,12 @@ export default function AllShops() {
                               <Settings className="h-4 w-4 mr-2" />
                               Manage Shop
                             </DropdownMenuItem>
+                            {shop.owner_id && (
+                              <DropdownMenuItem onClick={() => setResetTarget({ userId: shop.owner_id!, email: shop.owner_email || '', name: shop.owner_name || '' })}>
+                                <KeyRound className="h-4 w-4 mr-2" />
+                                Reset Password
+                              </DropdownMenuItem>
+                            )}
                             <DropdownMenuSeparator />
                             {shop.status !== 'active' && (
                               <DropdownMenuItem
@@ -387,6 +396,15 @@ export default function AllShops() {
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
         onSuccess={() => queryClient.invalidateQueries({ queryKey: ['admin-shops'] })}
+      />
+
+      {/* Reset Credentials Dialog */}
+      <ResetCredentialsDialog
+        open={!!resetTarget}
+        onOpenChange={(open) => !open && setResetTarget(null)}
+        userId={resetTarget?.userId ?? null}
+        userEmail={resetTarget?.email ?? null}
+        userName={resetTarget?.name ?? null}
       />
     </AdminLayout>
   );
