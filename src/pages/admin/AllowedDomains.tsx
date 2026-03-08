@@ -553,7 +553,7 @@ export default function AllowedDomains() {
 
                   <AccordionItem value="vps-step4">
                     <AccordionTrigger className="text-sm font-medium">
-                      ধাপ ৪: এখানে Domain Add করুন
+                      Step 4: Add Domain Here
                     </AccordionTrigger>
                     <AccordionContent className="space-y-3 text-sm">
                       <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
