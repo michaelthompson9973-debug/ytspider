@@ -192,7 +192,7 @@ export const OrderGrid = React.forwardRef<HTMLDivElement, OrderGridProps>(
                       onClick={() => onSendToCourier(order)}
                     >
                       <Truck className="h-3 w-3 mr-1" />
-                      কুরিয়ার
+                      Courier
                     </Button>
                   )}
                   <Button

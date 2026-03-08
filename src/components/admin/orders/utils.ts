@@ -1,28 +1,27 @@
 import { formatDistanceToNow, format, isToday, isYesterday, subDays, startOfDay } from 'date-fns';
-import { bn } from 'date-fns/locale';
 import { TrustLevel, DateFilter } from './types';
 
 /**
- * Format currency in Bengali style with ৳ symbol
+ * Format currency with ৳ symbol
  */
 export const formatCurrency = (amount: number | null, currency?: string | null): string => {
   if (amount === null || amount === undefined) return '-';
   const symbol = currency === 'USD' ? '$' : currency === 'INR' ? '₹' : '৳';
-  return `${symbol}${Number(amount).toLocaleString('bn-BD')}`;
+  return `${symbol}${Number(amount).toLocaleString()}`;
 };
 
 /**
- * Format date as relative time in Bengali
+ * Format date as relative time
  */
 export const formatRelativeTime = (date: string): string => {
-  return formatDistanceToNow(new Date(date), { addSuffix: true, locale: bn });
+  return formatDistanceToNow(new Date(date), { addSuffix: true });
 };
 
 /**
- * Format date in Bengali
+ * Format date
  */
 export const formatDateBengali = (date: string, formatStr: string = 'dd MMM, HH:mm'): string => {
-  return format(new Date(date), formatStr, { locale: bn });
+  return format(new Date(date), formatStr);
 };
 
 /**
@@ -41,80 +40,44 @@ export const getTrustLevel = (successRate: number | null): TrustLevel => {
 export const getTrustBadgeConfig = (level: TrustLevel): { emoji: string; label: string; color: string; bgColor: string } => {
   switch (level) {
     case 'trusted':
-      return { emoji: '🟢', label: 'বিশ্বস্ত', color: 'text-green-700', bgColor: 'bg-green-100' };
+      return { emoji: '🟢', label: 'Trusted', color: 'text-green-700', bgColor: 'bg-green-100' };
     case 'medium':
-      return { emoji: '🟡', label: 'মধ্যম', color: 'text-yellow-700', bgColor: 'bg-yellow-100' };
+      return { emoji: '🟡', label: 'Medium', color: 'text-yellow-700', bgColor: 'bg-yellow-100' };
     case 'risky':
-      return { emoji: '🔴', label: 'ঝুঁকিপূর্ণ', color: 'text-red-700', bgColor: 'bg-red-100' };
+      return { emoji: '🔴', label: 'Risky', color: 'text-red-700', bgColor: 'bg-red-100' };
     case 'new':
     default:
-      return { emoji: '⚪', label: 'নতুন', color: 'text-gray-700', bgColor: 'bg-gray-100' };
+      return { emoji: '⚪', label: 'New', color: 'text-gray-700', bgColor: 'bg-gray-100' };
   }
 };
 
 /**
- * Get date range for filter
- */
-export const getDateRange = (filter: DateFilter): { start: Date | null; end: Date | null } => {
-  const now = new Date();
-  
-  switch (filter) {
-    case 'today':
-      return { start: startOfDay(now), end: null };
-    case 'yesterday':
-      const yesterday = subDays(now, 1);
-      return { start: startOfDay(yesterday), end: startOfDay(now) };
-    case '7days':
-      return { start: subDays(now, 7), end: null };
-    case '30days':
-      return { start: subDays(now, 30), end: null };
-    case 'all':
-    default:
-      return { start: null, end: null };
-  }
-};
-
-/**
- * Generate short order ID for display
+ * Get short order ID
  */
 export const getShortOrderId = (id: string): string => {
-  return `#${id.slice(0, 8).toUpperCase()}`;
+  return '#' + id.substring(0, 8).toUpperCase();
 };
 
 /**
- * Truncate text with ellipsis
+ * Get date range filter
  */
-export const truncateText = (text: string, maxLength: number = 30): string => {
-  if (text.length <= maxLength) return text;
-  return text.slice(0, maxLength) + '...';
-};
+export const getDateRange = (filter: DateFilter): { from: Date; to: Date } => {
+  const today = startOfDay(new Date());
 
-/**
- * Convert Bengali digits to English
- */
-export const bengaliToEnglishDigits = (str: string): string => {
-  const bengaliDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
-  return str.replace(/[০-৯]/g, (match) => String(bengaliDigits.indexOf(match)));
-};
-
-/**
- * Normalize phone number for API calls
- */
-export const normalizePhone = (phone: string): string => {
-  // Remove spaces, dashes, and convert Bengali digits
-  let normalized = bengaliToEnglishDigits(phone).replace(/[\s\-()]/g, '');
-  
-  // Handle +88 prefix
-  if (normalized.startsWith('+88')) {
-    normalized = normalized.slice(3);
-  } else if (normalized.startsWith('88')) {
-    normalized = normalized.slice(2);
+  switch (filter) {
+    case 'today':
+      return { from: today, to: today };
+    case 'yesterday':
+      const yesterday = subDays(today, 1);
+      return { from: yesterday, to: yesterday };
+    case '7days':
+      const last7Days = subDays(today, 7);
+      return { from: last7Days, to: today };
+    case '30days':
+      const last30Days = subDays(today, 30);
+      return { from: last30Days, to: today };
+    case 'all':
+    default:
+      return { from: new Date(0), to: today };
   }
-  
-  // Ensure it starts with 01
-  if (!normalized.startsWith('01') && normalized.length === 10) {
-    normalized = '0' + normalized;
-  }
-  
-  return normalized;
 };

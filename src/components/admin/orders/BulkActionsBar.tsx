@@ -62,7 +62,7 @@ export const BulkActionsBar = React.forwardRef<HTMLDivElement, BulkActionsBarPro
         {/* Bulk Send to Courier */}
         <Button onClick={onBulkSendToCourier} disabled={isProcessing}>
           <Truck className="mr-2 h-4 w-4" />
-          কুরিয়ারে পাঠান
+          Send to Courier
         </Button>
       </div>
     );

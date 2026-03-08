@@ -68,7 +68,7 @@ export const OrderTimeline = React.forwardRef<HTMLDivElement, OrderTimelineProps
                       <ArrowRight className="h-3 w-3 text-muted-foreground" />
                     </>
                   ) : (
-                    <span className="text-xs text-muted-foreground">অর্ডার তৈরি →</span>
+                    <span className="text-xs text-muted-foreground">Order created →</span>
                   )}
                   <span className={cn('px-2 py-0.5 rounded text-xs', newConfig?.bgColor, newConfig?.color)}>
                     {newConfig?.label || item.new_status}

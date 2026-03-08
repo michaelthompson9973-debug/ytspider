@@ -29,7 +29,7 @@ export const StatusTabs = React.forwardRef<HTMLDivElement, StatusTabsProps>(
               : 'bg-muted hover:bg-muted/80 text-muted-foreground'
           )}
         >
-          <span>সব</span>
+          <span>All</span>
           <span className="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 rounded-full bg-background/20 text-xs">
             {allCount}
           </span>
