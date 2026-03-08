@@ -128,7 +128,7 @@ export default function ShopLogin() {
               </div>
             )}
             <CardTitle className="text-2xl">{shopInfo?.name || 'Shop Login'}</CardTitle>
-            <CardDescription>আপনার শপ ড্যাশবোর্ডে প্রবেশ করুন</CardDescription>
+            <CardDescription>Access your shop dashboard</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
