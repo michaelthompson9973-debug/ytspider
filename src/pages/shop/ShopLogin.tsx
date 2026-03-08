@@ -146,7 +146,7 @@ export default function ShopLogin() {
                 </div>
               </div>
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'লগইন হচ্ছে...' : 'লগইন'}
+                {isLoading ? 'Signing in...' : 'Sign In'}
               </Button>
             </form>
             <div className="mt-6 text-center text-sm text-muted-foreground space-y-2">
