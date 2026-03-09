@@ -592,6 +592,6 @@ export default function Orders() {
         />
       </div>
       </ShopGuard>
-    DynamicinLayout>
+    </DynamicLayout>
   );
 }
