@@ -113,25 +113,25 @@ const App = () => (
                 <Route path="/shop" element={<ShopProtectedRoute><ShopDashboard /></ShopProtectedRoute>} />
                 <Route path="/shop/onboarding" element={<ShopOnboarding />} />
                 <Route path="/shop/products" element={<ShopProtectedRoute><ShopProductsPage /></ShopProtectedRoute>} />
-                <Route path="/shop/orders" element={<ShopProtectedRoute><ShopOrdersPage /></ShopProtectedRoute>} />
+                <Route path="/shop/orders" element={<ShopProtectedRoute><Orders /></ShopProtectedRoute>} />
                 <Route path="/shop/customers" element={<ShopProtectedRoute><ShopCustomers /></ShopProtectedRoute>} />
                 <Route path="/shop/coupons" element={<ShopProtectedRoute><ShopCoupons /></ShopProtectedRoute>} />
                 <Route path="/shop/returns" element={<ShopProtectedRoute><ShopReturns /></ShopProtectedRoute>} />
                 <Route path="/shop/cod" element={<ShopProtectedRoute><ShopCOD /></ShopProtectedRoute>} />
                 <Route path="/shop/pages" element={<Navigate to="/shop/pages/manage" replace />} />
-                <Route path="/shop/pages/manage" element={<ShopProtectedRoute><ShopLandingPagesPage /></ShopProtectedRoute>} />
+                <Route path="/shop/pages/manage" element={<ShopProtectedRoute><LandingPages /></ShopProtectedRoute>} />
                 <Route path="/shop/pages/builder/:pageId" element={<ShopProtectedRoute><LandingPageBuilder /></ShopProtectedRoute>} />
-                <Route path="/shop/pages/library" element={<ShopProtectedRoute><ShopComponentLibraryPage /></ShopProtectedRoute>} />
-                <Route path="/shop/media" element={<ShopProtectedRoute><ShopMediaPage /></ShopProtectedRoute>} />
+                <Route path="/shop/pages/library" element={<ShopProtectedRoute><ComponentLibrary /></ShopProtectedRoute>} />
+                <Route path="/shop/media" element={<ShopProtectedRoute><Media /></ShopProtectedRoute>} />
                 <Route path="/shop/inbox" element={<Navigate to="/shop/inbox/messenger" replace />} />
-                <Route path="/shop/inbox/messenger" element={<ShopProtectedRoute><ShopInboxMessengerPage /></ShopProtectedRoute>} />
-                <Route path="/shop/tracking" element={<ShopProtectedRoute><ShopTrackingPage /></ShopProtectedRoute>} />
-                <Route path="/shop/courier" element={<ShopProtectedRoute><ShopCourierPage /></ShopProtectedRoute>} />
-                <Route path="/shop/ai" element={<ShopProtectedRoute><ShopAiPage /></ShopProtectedRoute>} />
-                <Route path="/shop/team" element={<ShopProtectedRoute><ShopTeamPage /></ShopProtectedRoute>} />
-                <Route path="/shop/security" element={<ShopProtectedRoute><ShopSecurityPage /></ShopProtectedRoute>} />
+                <Route path="/shop/inbox/messenger" element={<ShopProtectedRoute><InboxMessenger /></ShopProtectedRoute>} />
+                <Route path="/shop/tracking" element={<ShopProtectedRoute><Tracking /></ShopProtectedRoute>} />
+                <Route path="/shop/courier" element={<ShopProtectedRoute><ApiCourier /></ShopProtectedRoute>} />
+                <Route path="/shop/ai" element={<ShopProtectedRoute><ApiAi /></ShopProtectedRoute>} />
+                <Route path="/shop/team" element={<ShopProtectedRoute><TeamMembers /></ShopProtectedRoute>} />
+                <Route path="/shop/security" element={<ShopProtectedRoute><ShopSecurity /></ShopProtectedRoute>} />
                 <Route path="/shop/subscription" element={<ShopProtectedRoute><ShopSubscriptionPage /></ShopProtectedRoute>} />
-                <Route path="/shop/analytics" element={<ShopProtectedRoute><ShopAnalyticsPage /></ShopProtectedRoute>} />
+                <Route path="/shop/analytics" element={<ShopProtectedRoute><ShopAnalytics /></ShopProtectedRoute>} />
                 <Route path="/shop/settings" element={<ShopProtectedRoute><ShopSettingsPage /></ShopProtectedRoute>} />
                 
                 {/* ================================== */}
