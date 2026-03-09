@@ -19,14 +19,14 @@ Deno.serve(async (req) => {
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
-    const { error } = await supabaseAdmin.auth.admin.updateUser(userId, {
+    const { data, error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
       password: newPassword,
     });
 
     if (error) throw error;
 
     return new Response(
-      JSON.stringify({ success: true }),
+      JSON.stringify({ success: true, email: data?.user?.email }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
