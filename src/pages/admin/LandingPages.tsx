@@ -44,7 +44,7 @@ export default function LandingPages() {
   };
 
   return (
-    <DynamicicLayout>
+    <DynamicLayout>
       <ShopGuard>
         <div className="space-y-5">
           <LandingPageHeader onNewPage={handleNewPage} />

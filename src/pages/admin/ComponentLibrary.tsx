@@ -135,7 +135,7 @@ export default function ComponentLibrary() {
   );
 
   return (
-    <DynamicicLayout>
+    <DynamicLayout>
       <div className="flex h-full">
         {/* Desktop Sidebar - Sticky Category Filter */}
         {!isMobile && (
