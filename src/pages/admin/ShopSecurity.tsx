@@ -3,7 +3,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useShop } from '@/contexts/ShopContext';
 import { useShopApiKeys } from '@/hooks/useShopApiKeys';
-import AdminLayout from '@/components/admin/AdminLayout';
+import { DynamicLayout } from '@/components/DynamicLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -61,16 +61,16 @@ export default function ShopSecurity() {
 
   if (!currentShop) {
     return (
-      <AdminLayout>
+      <DynamicLayout>
         <div className="flex items-center justify-center h-64">
           <p className="text-muted-foreground">No shop selected</p>
         </div>
-      </AdminLayout>
+      </DynamicLayout>
     );
   }
 
   return (
-    <AdminLayout>
+    <DynamicLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-3">
@@ -257,6 +257,6 @@ export default function ShopSecurity() {
           </CardContent>
         </Card>
       </div>
-    </AdminLayout>
+    </DynamicLayout>
   );
 }

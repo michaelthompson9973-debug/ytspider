@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import AdminLayout from '@/components/admin/AdminLayout';
+import { DynamicLayout } from '@/components/DynamicLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -188,7 +188,7 @@ export default function TeamMembers() {
   const canManageStaff = isSuperAdmin || platformRole === 'admin';
 
   return (
-    <AdminLayout>
+    <DynamicLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -446,6 +446,6 @@ export default function TeamMembers() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </AdminLayout>
+    </DynamicLayout>
   );
 }

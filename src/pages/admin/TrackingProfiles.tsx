@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import AdminLayout from '@/components/admin/AdminLayout';
+import { DynamicLayout } from '@/components/DynamicLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus, Search } from 'lucide-react';
@@ -119,7 +119,7 @@ export default function TrackingProfiles() {
   };
 
   return (
-    <AdminLayout>
+    <DynamicLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -187,6 +187,6 @@ export default function TrackingProfiles() {
           description="Are you sure you want to delete this tracking profile? Landing pages using this profile will no longer have tracking configured."
         />
       </div>
-    </AdminLayout>
+    </DynamicLayout>
   );
 }

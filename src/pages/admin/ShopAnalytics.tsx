@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useShop } from '@/contexts/ShopContext';
 import { useShopAnalytics } from '@/hooks/useShopAnalytics';
-import AdminLayout from '@/components/admin/AdminLayout';
+import { DynamicLayout } from '@/components/DynamicLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -18,11 +18,11 @@ export default function ShopAnalytics() {
 
   if (!currentShop) {
     return (
-      <AdminLayout>
+      <DynamicLayout>
         <div className="flex items-center justify-center h-64">
           <p className="text-muted-foreground">No shop selected</p>
         </div>
-      </AdminLayout>
+      </DynamicLayout>
     );
   }
 
@@ -58,7 +58,7 @@ export default function ShopAnalytics() {
   ];
 
   return (
-    <AdminLayout>
+    <DynamicLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -254,6 +254,6 @@ export default function ShopAnalytics() {
           </Card>
         </div>
       </div>
-    </AdminLayout>
+    </DynamicLayout>
   );
 }

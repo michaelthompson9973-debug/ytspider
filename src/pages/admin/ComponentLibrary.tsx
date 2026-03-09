@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Plus, BookOpen, FolderOpen, Folder, ChevronDown, ChevronRight } from 'lucide-react';
-import AdminLayout from '@/components/admin/AdminLayout';
+import { DynamicLayout } from '@/components/DynamicLayout';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import {
@@ -135,7 +135,7 @@ export default function ComponentLibrary() {
   );
 
   return (
-    <AdminLayout>
+    <DynamicLayout>
       <div className="flex h-full">
         {/* Desktop Sidebar - Sticky Category Filter */}
         {!isMobile && (
@@ -237,6 +237,6 @@ export default function ComponentLibrary() {
         onOpenChange={setPreviewOpen}
         component={previewComponent}
       />
-    </AdminLayout>
+    </DynamicLayout>
   );
 }

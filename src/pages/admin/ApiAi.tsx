@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import AdminLayout from '@/components/admin/AdminLayout';
+import { DynamicLayout } from '@/components/DynamicLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -328,7 +328,7 @@ export default function ApiSettings() {
   };
 
   return (
-    <AdminLayout>
+    <DynamicLayout>
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold">API Settings</h1>
@@ -545,6 +545,6 @@ export default function ApiSettings() {
           </CardContent>
         </Card>
       </div>
-    </AdminLayout>
+    </DynamicLayout>
   );
 }

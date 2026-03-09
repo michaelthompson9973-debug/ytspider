@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import AdminLayout from '@/components/admin/AdminLayout';
+import { DynamicLayout } from '@/components/DynamicLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CourierCredentialsList, PathaoStoreConfig, WebhookStatusCard } from '@/components/admin/courier';
 import { Truck } from 'lucide-react';
@@ -8,7 +8,7 @@ export default function ApiCourier() {
   const [activeTab, setActiveTab] = useState<'steadfast' | 'pathao'>('steadfast');
 
   return (
-    <AdminLayout>
+    <DynamicLayout>
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -38,6 +38,6 @@ export default function ApiCourier() {
           </TabsContent>
         </Tabs>
       </div>
-    </AdminLayout>
+    </DynamicLayout>
   );
 }

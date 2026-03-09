@@ -1,4 +1,4 @@
-import AdminLayout from '@/components/admin/AdminLayout';
+import { DynamicLayout } from '@/components/DynamicLayout';
 import { InboxLayout } from '@/components/admin/messenger';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
@@ -6,7 +6,7 @@ import { ExternalLink } from 'lucide-react';
 
 export default function InboxMessenger() {
   return (
-    <AdminLayout>
+    <DynamicLayout>
       <div className="space-y-4">
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -19,6 +19,6 @@ export default function InboxMessenger() {
         </div>
         <InboxLayout />
       </div>
-    </AdminLayout>
+    </DynamicLayout>
   );
 }
