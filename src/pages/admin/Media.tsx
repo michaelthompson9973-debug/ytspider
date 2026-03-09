@@ -216,7 +216,7 @@ export default function Media() {
   };
 
   return (
-    <DynamicLayout>
+    <DynamicicLayout>
       <ShopGuard>
       <div className="space-y-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -499,6 +499,6 @@ export default function Media() {
         </Dialog>
       </div>
       </ShopGuard>
-    </AdminLayout>
+    DynamicinLayout>
   );
 }

@@ -8,7 +8,7 @@ export default function ApiCourier() {
   const [activeTab, setActiveTab] = useState<'steadfast' | 'pathao'>('steadfast');
 
   return (
-    <DynamicLayout>
+    <DynamicicLayout>
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -38,6 +38,6 @@ export default function ApiCourier() {
           </TabsContent>
         </Tabs>
       </div>
-    </AdminLayout>
+    DynamicinLayout>
   );
 }

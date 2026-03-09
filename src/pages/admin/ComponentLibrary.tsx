@@ -135,7 +135,7 @@ export default function ComponentLibrary() {
   );
 
   return (
-    <DynamicLayout>
+    <DynamicicLayout>
       <div className="flex h-full">
         {/* Desktop Sidebar - Sticky Category Filter */}
         {!isMobile && (
@@ -237,6 +237,6 @@ export default function ComponentLibrary() {
         onOpenChange={setPreviewOpen}
         component={previewComponent}
       />
-    </AdminLayout>
+    DynamicinLayout>
   );
 }

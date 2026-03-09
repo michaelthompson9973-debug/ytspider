@@ -6,7 +6,7 @@ import { ExternalLink } from 'lucide-react';
 
 export default function InboxMessenger() {
   return (
-    <DynamicLayout>
+    <DynamicicLayout>
       <div className="space-y-4">
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -19,6 +19,6 @@ export default function InboxMessenger() {
         </div>
         <InboxLayout />
       </div>
-    </AdminLayout>
+    DynamicinLayout>
   );
 }

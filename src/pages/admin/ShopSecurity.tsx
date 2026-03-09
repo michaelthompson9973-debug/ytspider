@@ -257,6 +257,6 @@ export default function ShopSecurity() {
           </CardContent>
         </Card>
       </div>
-    </AdminLayout>
+    </DynamicLayout>
   );
 }

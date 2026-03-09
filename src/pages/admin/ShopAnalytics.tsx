@@ -254,6 +254,6 @@ export default function ShopAnalytics() {
           </Card>
         </div>
       </div>
-    </AdminLayout>
+    </DynamicLayout>
   );
 }

@@ -328,7 +328,7 @@ export default function ApiSettings() {
   };
 
   return (
-    <DynamicLayout>
+    <DynamicicLayout>
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold">API Settings</h1>
@@ -545,6 +545,6 @@ export default function ApiSettings() {
           </CardContent>
         </Card>
       </div>
-    </AdminLayout>
+    DynamicinLayout>
   );
 }

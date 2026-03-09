@@ -44,7 +44,7 @@ export default function LandingPages() {
   };
 
   return (
-    <DynamicLayout>
+    <DynamicicLayout>
       <ShopGuard>
         <div className="space-y-5">
           <LandingPageHeader onNewPage={handleNewPage} />
@@ -99,6 +99,6 @@ export default function LandingPages() {
           onConfirm={() => { if (deletingPageId) lp.deleteMutation.mutate(deletingPageId); setDeleteDialogOpen(false); setDeletingPageId(null); }}
           title="ল্যান্ডিং পেজ ডিলিট" description="আপনি কি নিশ্চিত যে এই ল্যান্ডিং পেজটি ডিলিট করতে চান? সকল সেকশন এবং সেটিংস স্থায়ীভাবে মুছে যাবে। এই কাজটি আর ফেরানো যাবে না।" />
       </ShopGuard>
-    </AdminLayout>
+    DynamicinLayout>
   );
 }

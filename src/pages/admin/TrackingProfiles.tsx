@@ -119,7 +119,7 @@ export default function TrackingProfiles() {
   };
 
   return (
-    <DynamicLayout>
+    <DynamicicLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -187,6 +187,6 @@ export default function TrackingProfiles() {
           description="Are you sure you want to delete this tracking profile? Landing pages using this profile will no longer have tracking configured."
         />
       </div>
-    </AdminLayout>
+    DynamicinLayout>
   );
 }

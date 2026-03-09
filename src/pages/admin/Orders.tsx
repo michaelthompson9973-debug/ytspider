@@ -419,7 +419,7 @@ export default function Orders() {
   }, [courierHistoryMap, fraudCheckPhone]);
 
   return (
-    <DynamicLayout>
+    <DynamicicLayout>
       <ShopGuard>
       <div className="space-y-6">
         {/* Header */}
@@ -592,6 +592,6 @@ export default function Orders() {
         />
       </div>
       </ShopGuard>
-    </AdminLayout>
+    DynamicinLayout>
   );
 }
