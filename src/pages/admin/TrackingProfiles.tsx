@@ -187,6 +187,6 @@ export default function TrackingProfiles() {
           description="Are you sure you want to delete this tracking profile? Landing pages using this profile will no longer have tracking configured."
         />
       </div>
-    DynamicinLayout>
+    </DynamicLayout>
   );
 }

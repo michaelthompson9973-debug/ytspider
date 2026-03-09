@@ -19,6 +19,6 @@ export default function InboxMessenger() {
         </div>
         <InboxLayout />
       </div>
-    DynamicinLayout>
+    </DynamicLayout>
   );
 }

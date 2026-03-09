@@ -237,6 +237,6 @@ export default function ComponentLibrary() {
         onOpenChange={setPreviewOpen}
         component={previewComponent}
       />
-    DynamicinLayout>
+    </DynamicLayout>
   );
 }

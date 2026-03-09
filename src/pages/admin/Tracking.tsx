@@ -229,6 +229,6 @@ export default function Tracking() {
           </Card>
         )}
       </div>
-    DynamicinLayout>
+    </DynamicLayout>
   );
 }

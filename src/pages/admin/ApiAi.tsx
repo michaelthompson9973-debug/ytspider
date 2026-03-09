@@ -545,6 +545,6 @@ export default function ApiSettings() {
           </CardContent>
         </Card>
       </div>
-    DynamicinLayout>
+    </DynamicLayout>
   );
 }

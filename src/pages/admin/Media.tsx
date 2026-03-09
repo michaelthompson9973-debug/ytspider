@@ -499,6 +499,6 @@ export default function Media() {
         </Dialog>
       </div>
       </ShopGuard>
-    DynamicinLayout>
+    </DynamicLayout>
   );
 }

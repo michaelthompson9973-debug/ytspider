@@ -446,6 +446,6 @@ export default function TeamMembers() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    DynamicinLayout>
+    </DynamicLayout>
   );
 }

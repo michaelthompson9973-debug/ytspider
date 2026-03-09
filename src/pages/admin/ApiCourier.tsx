@@ -38,6 +38,6 @@ export default function ApiCourier() {
           </TabsContent>
         </Tabs>
       </div>
-    DynamicinLayout>
+    </DynamicLayout>
   );
 }
