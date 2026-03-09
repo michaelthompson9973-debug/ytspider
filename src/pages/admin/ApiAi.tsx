@@ -328,7 +328,7 @@ export default function ApiSettings() {
   };
 
   return (
-    <AdminLayout>
+    <DynamicLayout>
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold">API Settings</h1>
