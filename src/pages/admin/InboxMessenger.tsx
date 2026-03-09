@@ -1,4 +1,4 @@
-import AdminLayout from '@/components/admin/AdminLayout';
+import { DynamicLayout } from '@/components/DynamicLayout';
 import { InboxLayout } from '@/components/admin/messenger';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';

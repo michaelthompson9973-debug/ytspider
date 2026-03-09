@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Plus, BookOpen, FolderOpen, Folder, ChevronDown, ChevronRight } from 'lucide-react';
-import AdminLayout from '@/components/admin/AdminLayout';
+import { DynamicLayout } from '@/components/DynamicLayout';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import {

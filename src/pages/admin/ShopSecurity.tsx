@@ -3,7 +3,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useShop } from '@/contexts/ShopContext';
 import { useShopApiKeys } from '@/hooks/useShopApiKeys';
-import AdminLayout from '@/components/admin/AdminLayout';
+import { DynamicLayout } from '@/components/DynamicLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';

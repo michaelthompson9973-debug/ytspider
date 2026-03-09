@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useShop } from '@/contexts/ShopContext';
 import { useShopAnalytics } from '@/hooks/useShopAnalytics';
-import AdminLayout from '@/components/admin/AdminLayout';
+import { DynamicLayout } from '@/components/DynamicLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';

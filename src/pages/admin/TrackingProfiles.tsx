@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import AdminLayout from '@/components/admin/AdminLayout';
+import { DynamicLayout } from '@/components/DynamicLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus, Search } from 'lucide-react';

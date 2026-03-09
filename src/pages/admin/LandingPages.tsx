@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import AdminLayout from '@/components/admin/AdminLayout';
+import { DynamicLayout } from '@/components/DynamicLayout';
 import { ShopGuard } from '@/components/admin/ShopGuard';
 import { DeleteConfirmDialog } from '@/components/admin/landing-page-editor/DeleteConfirmDialog';
 import { Card, CardContent } from '@/components/ui/card';
