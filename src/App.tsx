@@ -70,18 +70,6 @@ import ShopCoupons from "./pages/shop/ShopCoupons";
 import ShopReturns from "./pages/shop/ShopReturns";
 import ShopCOD from "./pages/shop/ShopCOD";
 import { ShopProductsPage, ShopSubscriptionPage, ShopSettingsPage } from "./pages/shop/ShopPages";
-import Orders from "./pages/admin/Orders";
-import LandingPages from "./pages/admin/LandingPages";
-import ComponentLibrary from "./pages/admin/ComponentLibrary";
-import Media from "./pages/admin/Media";
-import InboxMessenger from "./pages/admin/InboxMessenger";
-import Tracking from "./pages/admin/Tracking";
-import TrackingProfiles from "./pages/admin/TrackingProfiles";
-import ApiCourier from "./pages/admin/ApiCourier";
-import ApiAi from "./pages/admin/ApiAi";
-import TeamMembers from "./pages/admin/TeamMembers";
-import ShopAnalytics from "./pages/admin/ShopAnalytics";
-import ShopSecurity from "./pages/admin/ShopSecurity";
 
 // Public pages
 import LandingPage from "./pages/LandingPage";
