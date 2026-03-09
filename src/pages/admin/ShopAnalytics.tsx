@@ -22,7 +22,7 @@ export default function ShopAnalytics() {
         <div className="flex items-center justify-center h-64">
           <p className="text-muted-foreground">No shop selected</p>
         </div>
-      </AdminLayout>
+      </DynamicLayout>
     );
   }
 
