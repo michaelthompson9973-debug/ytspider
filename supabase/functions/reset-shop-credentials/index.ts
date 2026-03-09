@@ -17,7 +17,7 @@ Deno.serve(async (req) => {
   if (!rateLimit.allowed) return rateLimitedResponse();
 
   const auth = await verifyAuth(req);
-  if (!auth.authenticated || !auth.isAdmin) {
+  if (!auth.authenticated || (!auth.isAdmin && !auth.isServiceRole)) {
     logRequest('reset-shop-credentials', req, auth, 'unauthorized');
     return unauthorizedResponse('Admin access required');
   }
