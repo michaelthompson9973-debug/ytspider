@@ -205,46 +205,60 @@ export function ProductsContent() {
   return (
     <ShopGuard>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">{t('products.title')}</h1>
-          <Button onClick={() => { resetForm(); setDialogOpen(true); }}>
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold font-heading">{t('products.title')}</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              {products?.length ?? 0} টি প্রোডাক্ট
+            </p>
+          </div>
+          <Button onClick={() => { resetForm(); setDialogOpen(true); }} className="shrink-0">
             <Plus className="mr-2 h-4 w-4" />
             {t('products.addProduct')}
           </Button>
         </div>
 
-        <Card>
+        {/* Products Table */}
+        <Card className="shadow-sm">
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b bg-accent/50 text-accent-foreground">
-                    <th className="px-4 py-3 text-left font-medium w-16">{t('products.image')}</th>
-                     <th className="px-4 py-3 text-left font-medium">{t('products.name')}</th>
-                     <th className="px-4 py-3 text-left font-medium">{t('products.price')}</th>
-                     <th className="px-4 py-3 text-left font-medium">স্টক</th>
-                     <th className="px-4 py-3 text-left font-medium">{t('common.status')}</th>
-                     <th className="px-4 py-3 text-right font-medium">{t('common.actions')}</th>
+                  <tr className="border-b bg-muted/50">
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground w-16">{t('products.image')}</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t('products.name')}</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t('products.price')}</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">স্টক</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t('common.status')}</th>
+                    <th className="px-4 py-3 text-right font-medium text-muted-foreground">{t('common.actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {isLoading ? (
                     <tr>
-                     <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
-                         {t('common.loading')}
-                       </td>
-                     </tr>
-                   ) : products?.length === 0 ? (
-                     <tr>
-                       <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
-                         {t('products.noProducts')}
+                      <td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">
+                        {t('common.loading')}
+                      </td>
+                    </tr>
+                  ) : products?.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-4 py-12 text-center">
+                        <div className="flex flex-col items-center gap-2">
+                          <ImageIcon className="h-10 w-10 text-muted-foreground/40" />
+                          <p className="text-muted-foreground">{t('products.noProducts')}</p>
+                          <Button size="sm" variant="outline" onClick={() => { resetForm(); setDialogOpen(true); }}>
+                            <Plus className="mr-1.5 h-3.5 w-3.5" />
+                            প্রথম প্রোডাক্ট যোগ করুন
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ) : (
                     products?.map((product) => (
-                      <tr key={product.id} className="border-b">
+                      <tr key={product.id} className="border-b hover:bg-muted/30 transition-colors">
                         <td className="px-4 py-3">
-                          <div className="w-12 h-12 rounded border overflow-hidden bg-muted flex items-center justify-center">
+                          <div className="w-11 h-11 rounded-md border overflow-hidden bg-muted flex items-center justify-center">
                             {product.images?.[0] ? (
                               <img
                                 src={product.images[0]}
@@ -252,44 +266,44 @@ export function ProductsContent() {
                                 className="w-full h-full object-cover"
                               />
                             ) : (
-                              <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                              <ImageIcon className="h-4 w-4 text-muted-foreground" />
                             )}
                           </div>
                         </td>
                         <td className="px-4 py-3 font-medium">{product.name}</td>
-                         <td className="px-4 py-3">৳{Number(product.price).toLocaleString()}</td>
-                         <td className="px-4 py-3">
-                           {(product as any).track_stock ? (
-                             <div className="flex items-center gap-1.5">
-                               <span className="font-medium">{(product as any).stock ?? 0}</span>
-                               {(product as any).stock !== null && (product as any).stock <= ((product as any).low_stock_threshold || 5) && (
-                                 <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
-                                   <AlertTriangle className="h-3 w-3 mr-0.5" />লো
-                                 </Badge>
-                               )}
-                             </div>
-                           ) : (
-                             <span className="text-muted-foreground text-xs">ট্র্যাক নেই</span>
-                           )}
-                         </td>
-                         <td className="px-4 py-3">
-                          <span className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${
-                            product.active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                          }`}>
+                        <td className="px-4 py-3 font-digit">৳{Number(product.price).toLocaleString()}</td>
+                        <td className="px-4 py-3">
+                          {(product as any).track_stock ? (
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-medium font-digit">{(product as any).stock ?? 0}</span>
+                              {(product as any).stock !== null && (product as any).stock <= ((product as any).low_stock_threshold || 5) && (
+                                <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
+                                  <AlertTriangle className="h-3 w-3 mr-0.5" />লো
+                                </Badge>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">ট্র্যাক নেই</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          <Badge variant={product.active ? 'default' : 'secondary'} className="text-xs">
                             {product.active ? t('common.active') : t('common.inactive')}
-                          </span>
+                          </Badge>
                         </td>
                         <td className="px-4 py-3 text-right">
                           <Button
                             variant="ghost"
-                            size="sm"
+                            size="icon"
+                            className="h-8 w-8"
                             onClick={() => openEdit(product)}
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
-                            size="sm"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:text-destructive"
                             onClick={() => deleteMutation.mutate(product.id)}
                           >
                             <Trash2 className="h-4 w-4" />
